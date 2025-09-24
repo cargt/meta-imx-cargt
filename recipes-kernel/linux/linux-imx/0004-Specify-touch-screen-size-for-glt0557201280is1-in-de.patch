@@ -1,0 +1,23 @@
+From 6db2732e7b39c98ff184a6a93853481f858f247b Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Wed, 24 Sep 2025 11:21:46 -0500
+Subject: [PATCH] Specify touch screen size for glt0557201280is1 in device
+ tree.
+
+---
+ .../dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dtsi | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dtsi b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dtsi
+index 42f6cf4cdc2a..9f2b696d9675 100644
+--- a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dtsi
++++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dtsi
+@@ -63,6 +63,8 @@ touchscreen@41 {
+ 		interrupts = <11 IRQ_TYPE_LEVEL_LOW>;
+ 		touchscreen-swapped-x-y;
+ 		touchscreen-inverted-x;
++		touchscreen-size-x = <720>;
++        touchscreen-size-y = <1280>;
+ 		wakeup-source;
+ 	};
+ };
