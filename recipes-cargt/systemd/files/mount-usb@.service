@@ -1,0 +1,6 @@
+[Unit]
+Description=usb media mount service
+After=local-fs.target
+
+[Service]
+ExecStart=/bin/mount /dev/%I /mnt

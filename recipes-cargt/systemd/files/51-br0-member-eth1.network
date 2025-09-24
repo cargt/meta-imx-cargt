@@ -1,0 +1,10 @@
+[Match]
+Name=eth1
+
+[Link]
+RequiredForOnline=yes
+
+[Network]
+Description=Add eth1 to the bridge
+Bridge=br0
+

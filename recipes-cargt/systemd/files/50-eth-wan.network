@@ -1,0 +1,9 @@
+[Match]
+Name=eth-wan
+
+[Network]
+DHCP=yes
+
+[Link]
+Unmanaged=no
+RequiredForOnline=yes

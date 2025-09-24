@@ -1,0 +1,11 @@
+[Unit]
+Description=MP3924 POE Power service
+Before=network-pre.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/mp3924_init 
+ExecStart=/usr/bin/mp3924_power_cycle_ports
+
+[Install]
+WantedBy=multi-user.target

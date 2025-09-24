@@ -1,0 +1,12 @@
+[Unit]
+Description=LoRa Packet Forwarder Daemon
+Wants=network-online.target
+After=network-online.target
+
+[Service]
+WorkingDirectory=/usr/bin
+ExecStart=/usr/bin/packet_forwarder -c /etc/lora/global_conf.json
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

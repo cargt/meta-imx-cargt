@@ -1,0 +1,11 @@
+[Unit]
+Description=POE MQTT Publish service
+After=poe-power.service dnsmasq.service mosquitto.service systemd-networkd.service network.target
+Wants=poe-mqtt-publish.timer
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/mp3924_publish_stats.py
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,8 @@
+[Match]
+Name=br0
+
+[Network]
+Description=Bridge interface
+Address=172.16.0.2/16
+Gateway=172.16.0.1
+DNS=172.16.0.1

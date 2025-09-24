@@ -1,0 +1,12 @@
+[Unit]
+Description=Morse Micro Host AP service
+After=network-online.target
+BindsTo=sys-subsystem-net-devices-wlan0.device
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/hostapd_s1g /etc/hostapd/hostapd_s1g.conf
+
+[Install]
+WantedBy=multi-user.target
+WantedBy=sys-subsystem-net-devices-wlan0.device

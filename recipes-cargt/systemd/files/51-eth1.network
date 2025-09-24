@@ -1,0 +1,7 @@
+[Match]
+Name=eth1
+
+[Link]
+Unmanaged=yes
+RequiredForOnline=no
+

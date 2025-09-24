@@ -1,0 +1,15 @@
+[Unit]
+Description=chromium service
+
+[Service]
+Type=simple
+User=root
+Environment=DISPLAY=:0
+Environment=XDG_RUNTIME_DIR="/run/user/0"
+
+ExecStart=/usr/bin/chromium --no-sandbox --disable-pinch --gpu-no-context-lost --no-first-run --incognito --start-maximized --kiosk http://localhost:3000/
+
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

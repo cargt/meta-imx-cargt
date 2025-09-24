@@ -1,0 +1,10 @@
+[Match]
+Name=wlan0
+WLANInterfaceType=ap
+
+[Link]
+RequiredForOnline=no
+
+[Network]
+Description=Add wlan0 to the bridge
+Bridge=br0

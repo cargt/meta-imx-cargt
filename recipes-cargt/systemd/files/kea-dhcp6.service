@@ -1,0 +1,15 @@
+[Unit]
+Description=ISC KEA IPv6 DHCP daemon
+Documentation=man:kea-dhcp6(8)
+Wants=network-online.target
+Requires=kea-ctrl-agent.service
+After=network-online.target
+
+[Service]
+ExecStartPre=/bin/mkdir -p /var/run/kea
+ExecStartPre=/bin/mkdir -p /var/lib/kea
+ExecStart=/usr/sbin/kea-dhcp6 -c /etc/kea/cargt-router-kea-dhcp6.conf
+Restart=always
+
+[Install]
+WantedBy=multi-user.target

@@ -1,0 +1,11 @@
+[Unit]
+Description=NXP WiFi service
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/env modprobe moal mod_para=nxp/wifi_mod_para.conf drvdbg=0x00000000
+ExecStartPost=/usr/bin/sleep 3
+
+[Install]
+WantedBy=multi-user.target

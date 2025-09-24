@@ -1,0 +1,12 @@
+[Unit]
+Description=nodejs service
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/bin/node /usr/lib/node/main.js
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target

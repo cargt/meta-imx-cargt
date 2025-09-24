@@ -1,0 +1,11 @@
+[Unit]
+Description=POE MQTT Publish timer
+Requires=poe-mqtt-publish.service
+
+[Timer]
+OnBootSec=15sec
+OnUnitActiveSec=10sec
+Unit=poe-mqtt-publish.service
+
+[Install]
+WantedBy=timers.target

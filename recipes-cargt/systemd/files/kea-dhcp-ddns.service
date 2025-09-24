@@ -1,0 +1,16 @@
+[Unit]
+Description=ISC KEA DDNS Service
+Documentation=man:kea-dhcp-ddns(8)
+Wants=network-online.target
+Requires=kea-ctrl-agent.service
+After=network-online.target
+
+[Service]
+ExecStartPre=/bin/mkdir -p /var/run/kea
+ExecStartPre=/bin/mkdir -p /var/lib/kea
+ExecStart=/usr/sbin/kea-dhcp-ddns -c /etc/kea/cargt-router-kea-dhcp-ddns.conf
+Restart=always
+
+[Install]
+WantedBy=kea-dhcp4.service
+WantedBy=kea-dhcp6.service

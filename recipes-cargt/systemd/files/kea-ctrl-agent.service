@@ -1,0 +1,16 @@
+[Unit]
+Description=ISC KEA CTRL AGENT
+Documentation=man:kea-ctrl-agent(8)
+Wants=network-online.target
+# After=network-online.target time-sync.target
+After=network-online.target
+
+[Service]
+ExecStartPre=/bin/mkdir -p /var/run/kea
+ExecStartPre=/bin/mkdir -p /var/lib/kea
+ExecStart=/usr/sbin/kea-ctrl-agent -c /etc/kea/cargt-router-kea-ctrl-agent.conf
+Restart=always
+
+[Install]
+WantedBy=kea-dhcp4.service
+WantedBy=kea-dhcp6.service

@@ -1,0 +1,11 @@
+[Match]
+Name=eth-lan
+
+[Link]
+Unmanaged=no
+RequiredForOnline=no
+
+[Network]
+DHCP=no
+Address=192.0.0.1/24
+DNS=127.0.0.1

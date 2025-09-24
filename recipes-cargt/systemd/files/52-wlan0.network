@@ -1,0 +1,10 @@
+[Match]
+Name=wlan0
+WLANInterfaceType=ap
+
+[Link]
+RequiredForOnline=no
+
+[Network]
+Address=192.0.0.1/24
+

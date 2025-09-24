@@ -1,0 +1,13 @@
+[Unit]
+Description=NXP Bluetooth service
+Requires=nxp-wifi.service
+After=nxp-wifi.service
+
+[Service]
+Type=oneshot
+ExecStartPre=/usr/bin/env modprobe btnxpuart
+ExecStart=/usr/bin/sleep 3
+ExecStartPost=/usr/bin/hciconfig hci0 up
+
+[Install]
+WantedBy=multi-user.target

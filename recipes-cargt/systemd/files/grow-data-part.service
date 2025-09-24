@@ -1,0 +1,11 @@
+[Unit]
+Description=Grow data partition
+After=local-fs.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/grow-data-part.sh
+ExecStop=/bin/systemctl disable grow-data-part
+
+[Install]
+WantedBy=multi-user.target
