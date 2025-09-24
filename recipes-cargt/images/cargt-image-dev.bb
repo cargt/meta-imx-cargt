@@ -64,7 +64,6 @@ IMAGE_INSTALL += " \
     teleport \
     swupdate swupdate-progress swupdate-www \
     board-version \
-    ffmpeg \
     v4l-utils \
 "
 
