@@ -1,7 +1,7 @@
 From 7a5fcee2947b448b44f17df6ec9a4e8066f77e93 Mon Sep 17 00:00:00 2001
 From: Tim Carney <tim.carney@cargt.com>
 Date: Wed, 24 Sep 2025 11:19:16 -0500
-Subject: [PATCH] Add support for Globaltech (GTC) panels.
+Subject: [PATCH] Add support for Globaltech (GTG) panels.
 
 ---
  drivers/gpu/drm/panel/panel-ilitek-ili9881c.c | 231 ++++++++++++++
