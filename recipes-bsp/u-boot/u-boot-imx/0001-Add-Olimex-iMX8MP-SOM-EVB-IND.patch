@@ -1,4 +1,4 @@
-From 49c68f7f9657684f04f3eaee18273d9304e2578e Mon Sep 17 00:00:00 2001
+From e0af3040a094c1f98727869626343ecaa41c730c Mon Sep 17 00:00:00 2001
 From: Leon Anavi <leon.anavi@konsulko.com>
 Date: Thu, 7 Nov 2024 11:39:12 +0000
 Subject: [PATCH] imx: add Olimex iMX8MP-SOM-4GB-IND
