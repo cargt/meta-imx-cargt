@@ -18,7 +18,7 @@ echo "DISTRO = $DISTRO"
 EULA=$EULA DISTRO=$DISTRO MACHINE=$MACHINE . ./imx-setup-release.sh $@
 
 echo "# layers for Cargt i.MX" >> conf/bblayers.conf
-echo "BBLAYERS += \"\${BSPDIR}/sources/meta-browser\meta-chromium\"" >> conf/bblayers.conf
+echo "BBLAYERS += \"\${BSPDIR}/sources/meta-browser/meta-chromium\"" >> conf/bblayers.conf
 echo "BBLAYERS += \"\${BSPDIR}/sources/meta-imx-cargt\"" >> conf/bblayers.conf
 echo "BBLAYERS += \"\${BSPDIR}/sources/meta-swupdate\"" >> conf/bblayers.conf
 
