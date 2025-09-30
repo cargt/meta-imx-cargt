@@ -1,0 +1,22 @@
+From e8fd5978c1bba0490700e24f58a5cad40be95e87 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Tue, 30 Sep 2025 08:39:22 -0500
+Subject: [PATCH] Autosave env when defaults are set.
+
+---
+ env/common.c | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/env/common.c b/env/common.c
+index 48a565107c1..fa665a3b551 100644
+--- a/env/common.c
++++ b/env/common.c
+@@ -393,6 +393,8 @@ void env_set_default(const char *s, int flags)
+ 
+ 	gd->flags |= GD_FLG_ENV_READY;
+ 	gd->flags |= GD_FLG_ENV_DEFAULT;
++
++	env_save();
+ }
+ 
+ 
