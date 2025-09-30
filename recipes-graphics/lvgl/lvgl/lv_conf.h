@@ -550,11 +550,11 @@
 
 #define LV_WIDGETS_HAS_DEFAULT_VALUE 1
 
-#define LV_USE_ANIMIMG 0
+#define LV_USE_ANIMIMG 1
 
 #define LV_USE_ARC 0
 
-#define LV_USE_BAR 0
+#define LV_USE_BAR 1
 
 #define LV_USE_BUTTON 1
 
@@ -586,7 +586,7 @@
 
 #define LV_USE_IMAGE 1
 
-#define LV_USE_IMAGEBUTTON 0
+#define LV_USE_IMAGEBUTTON 1
 
 #define LV_USE_KEYBOARD 0
 
@@ -602,7 +602,7 @@
 
 #define LV_USE_LED 0
 
-#define LV_USE_LINE 0
+#define LV_USE_LINE 1
 
 #define LV_USE_LIST 0
 
@@ -612,11 +612,11 @@
 
 #define LV_USE_MSGBOX 0
 
-#define LV_USE_ROLLER 0
+#define LV_USE_ROLLER 1
 
 #define LV_USE_SCALE 0
 
-#define LV_USE_SLIDER 0
+#define LV_USE_SLIDER 1
 
 #define LV_USE_SPAN 0
 #if LV_USE_SPAN
@@ -639,7 +639,7 @@
 
 #define LV_USE_TABVIEW 0
 
-#define LV_USE_TILEVIEW 0
+#define LV_USE_TILEVIEW 1
 
 #define LV_USE_VIDEO 0
 
