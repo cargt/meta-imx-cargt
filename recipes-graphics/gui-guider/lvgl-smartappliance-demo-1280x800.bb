@@ -6,7 +6,12 @@ LICENSE = "Proprietary"
 LIC_FILES_CHKSUM = "file://LICENSE.txt;md5=a9b152a21821b0419330795aee9f6602"
 
 
-SRC_URI = "file://${BPN}.zip;subdir=${BP}"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${BPN}:"
+
+SRC_URI = "file://${BPN}.zip;subdir=${BP} \
+            file://${BPN}.png \
+            "
+
 SRC_URI[md5sum] = "47d1f96c63266c98535efb26defa892b"
 
 REQUIRED_DISTRO_FEATURES = "wayland"
@@ -27,4 +32,14 @@ inherit pkgconfig
 
 TARGET_CFLAGS += "-I${RECIPE_SYSROOT}/${includedir}/lvgl"
 TARGET_CFLAGS += "-I${RECIPE_SYSROOT}/${includedir}/lvgl/src"
+
+do_install:append () {
+
+    install -d ${D}/usr/share/weston/icon/
+    install -Dm 0644 ${WORKDIR}/${BPN}.png ${D}/usr/share/weston/icon/    
+}
+
+FILES:${PN} = "/usr/bin/${BPN} \
+                /usr/share/weston/icon/${BPN}.png \
+                "
 
