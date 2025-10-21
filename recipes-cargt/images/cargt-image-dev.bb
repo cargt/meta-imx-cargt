@@ -66,7 +66,6 @@ IMAGE_INSTALL += " \
     swupdate swupdate-progress swupdate-www \
     board-version \
     v4l-utils \
-    imx-ele-app \
 "
 
 CLINFO              ?= ""
