@@ -14,6 +14,7 @@ IMAGE_FEATURES += " \
     ssh-server-openssh \
     hwcodecs \
     ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'weston','', d)} \
+    empty-root-password serial-autologin-root \
 "
 
 SDKIMAGE_FEATURES:append = " \
@@ -65,6 +66,7 @@ IMAGE_INSTALL += " \
     swupdate swupdate-progress swupdate-www \
     board-version \
     v4l-utils \
+    imx-ele-app \
 "
 
 CLINFO              ?= ""
