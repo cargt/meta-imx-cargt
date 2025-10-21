@@ -14,6 +14,7 @@ IMAGE_FEATURES += " \
     ssh-server-openssh \
     hwcodecs \
     ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'weston','', d)} \
+    empty-root-password serial-autologin-root \
 "
 
 SDKIMAGE_FEATURES:append = " \
