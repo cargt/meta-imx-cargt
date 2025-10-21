@@ -1,0 +1,67 @@
+From 4583f7767324309cef0eb7ca10cb38d5f1c9e009 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Tue, 11 Nov 2025 14:30:28 -0600
+Subject: [PATCH] WIP: Assign all resources to the application processor.
+
+---
+ .../dts/imx8mp-cargt-00377-00365-u-boot.dtsi  | 47 +++++++++++++++++++
+ 1 file changed, 47 insertions(+)
+
+diff --git a/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi b/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi
+index 1e423bc1ae3..8a0c07488b9 100644
+--- a/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi
++++ b/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi
+@@ -10,6 +10,53 @@
+ 		wdt = <&wdog1>;
+ 		bootph-pre-ram;
+ 	};
++	
++	mcu_rdc {
++		compatible = "imx8m,mcu_rdc";
++			    /* rdc config when MCU starts
++			     * master
++			     *   SDMA3p --> domain 0
++			     *   SDMA3b --> domian 0
++			     *   SDMA3_SPBA2  --> domian 0
++			     * peripheral:
++			     *   SAI3   --> Only Domian 0 can access
++			     *   UART4  --> Only Domian 0 can access
++			     *   GPT1   --> Only Domian 0 can access
++			     *   SDMA3  --> Only Domian 0 can access
++			     *   I2C3   --> Only Domian 0 can access
++			     * memory:
++			     *   TCM    --> Only Domian 0 can access (0x7E0000~0x81FFFF)
++			     *   DDR    --> Only Domian 0 can access (0x80000000~0x81000000)
++			     * end.
++			     */
++		start-config = <
++			    RDC_MDA  RDC_MDA_SDMA3p DID0 0x0 0x0
++			    RDC_MDA  RDC_MDA_ENET1_TX DID0 0x0 0x0
++			    RDC_MDA  RDC_MDA_ENET1_RX DID0 0x0 0x0
++			    RDC_MDA  RDC_MDA_SDMA3b DID0 0x0 0x0
++			    RDC_MDA  RDC_MDA_SDMA3_SPBA2 DID0 0x0 0x0
++			    RDC_PDAP RDC_PDAP_ENET1 PDAP_D0D1_ACCESS 0x0 0x0
++			    RDC_PDAP RDC_PDAP_SAI3  PDAP_D0_ACCESS 0x0 0x0
++			    RDC_PDAP RDC_PDAP_UART4 PDAP_D0_ACCESS 0x0 0x0
++			    RDC_PDAP RDC_PDAP_GPT1  PDAP_D0_ACCESS 0x0 0x0
++			    RDC_PDAP RDC_PDAP_SDMA3 PDAP_D0_ACCESS 0x0 0x0
++			    RDC_PDAP RDC_PDAP_I2C3  PDAP_D0_ACCESS 0x0 0x0
++			    RDC_MEM_REGION 22 TCM_START TCM_END MEM_D0_ACCESS
++			    RDC_MEM_REGION 39 M4_DDR_START M4_DDR_END MEM_D0_ACCESS
++			    0x0      0x0            0x0  0x0 0x0
++			  >;
++			    /* rdc config when MCU stops
++			     * memory:
++			     *   TCM    --> domain 0/1 can access (0x7E0000~0x81FFFF)
++			     *   DDR    --> domain 0/1 can access (0x80000000~0x81000000)
++			     * end.
++			     */
++		stop-config = <
++			    RDC_MEM_REGION 22 TCM_START TCM_END MEM_D0D1_ACCESS
++			    RDC_MEM_REGION 39 M4_DDR_START M4_DDR_END MEM_D0D1_ACCESS
++			    0x0      0x0            0x0  0x0 0x0
++			  >;
++	};		
+ };
+ 
+ &pinctrl_i2c1 {

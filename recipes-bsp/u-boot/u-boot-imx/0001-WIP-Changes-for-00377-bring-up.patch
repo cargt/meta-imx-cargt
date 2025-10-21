@@ -1,0 +1,300 @@
+From b43be9a70a3e99835788c12654cd326c1d26e5f8 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Tue, 11 Nov 2025 12:49:55 -0600
+Subject: [PATCH] WIP: Changes for 00377 bring-up.
+
+---
+ .../dts/imx8mp-cargt-00377-00365-u-boot.dtsi  | 61 ++++-------------
+ arch/arm/dts/imx8mp-cargt-00377-00365.dts     | 66 ++++++++++++-------
+ arch/arm/dts/imx8mp-cargt-00377-osm-som.dts   |  1 +
+ board/cargt/imx8mp_00377/imx8mp_00377.c       |  6 +-
+ board/freescale/imx8mp_evk/imx8mp_evk.c       |  6 +-
+ include/configs/imx8mp_00377.h                |  2 +-
+ 6 files changed, 64 insertions(+), 78 deletions(-)
+
+diff --git a/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi b/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi
+index a3872b175ac..972f168ac04 100644
+--- a/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi
++++ b/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi
+@@ -12,53 +12,6 @@
+ 		wdt = <&wdog1>;
+ 		bootph-pre-ram;
+ 	};
+-
+-	mcu_rdc {
+-		compatible = "imx8m,mcu_rdc";
+-			    /* rdc config when MCU starts
+-			     * master
+-			     *   SDMA3p --> domain 1
+-			     *   SDMA3b --> domian 1
+-			     *   SDMA3_SPBA2  --> domian 1
+-			     * peripheral:
+-			     *   SAI3   --> Only Domian 1 can access
+-			     *   UART4  --> Only Domian 1 can access
+-			     *   GPT1   --> Only Domian 1 can access
+-			     *   SDMA3  --> Only Domian 1 can access
+-			     *   I2C3   --> Only Domian 1 can access
+-			     * memory:
+-			     *   TCM    --> Only Domian 1 can access (0x7E0000~0x81FFFF)
+-			     *   DDR    --> Only Domian 1 can access (0x80000000~0x81000000)
+-			     * end.
+-			     */
+-		start-config = <
+-			    RDC_MDA  RDC_MDA_SDMA3p DID1 0x0 0x0
+-			    RDC_MDA  RDC_MDA_ENET1_TX DID1 0x0 0x0
+-			    RDC_MDA  RDC_MDA_ENET1_RX DID1 0x0 0x0
+-			    RDC_MDA  RDC_MDA_SDMA3b DID1 0x0 0x0
+-			    RDC_MDA  RDC_MDA_SDMA3_SPBA2 DID1 0x0 0x0
+-			    RDC_PDAP RDC_PDAP_ENET1 PDAP_D0D1_ACCESS 0x0 0x0
+-			    RDC_PDAP RDC_PDAP_SAI3  PDAP_D1_ACCESS 0x0 0x0
+-			    RDC_PDAP RDC_PDAP_UART4 PDAP_D1_ACCESS 0x0 0x0
+-			    RDC_PDAP RDC_PDAP_GPT1  PDAP_D1_ACCESS 0x0 0x0
+-			    RDC_PDAP RDC_PDAP_SDMA3 PDAP_D1_ACCESS 0x0 0x0
+-			    RDC_PDAP RDC_PDAP_I2C3  PDAP_D1_ACCESS 0x0 0x0
+-			    RDC_MEM_REGION 22 TCM_START TCM_END MEM_D1_ACCESS
+-			    RDC_MEM_REGION 39 M4_DDR_START M4_DDR_END MEM_D1_ACCESS
+-			    0x0      0x0            0x0  0x0 0x0
+-			  >;
+-			    /* rdc config when MCU stops
+-			     * memory:
+-			     *   TCM    --> domain 0/1 can access (0x7E0000~0x81FFFF)
+-			     *   DDR    --> domain 0/1 can access (0x80000000~0x81000000)
+-			     * end.
+-			     */
+-		stop-config = <
+-			    RDC_MEM_REGION 22 TCM_START TCM_END MEM_D0D1_ACCESS
+-			    RDC_MEM_REGION 39 M4_DDR_START M4_DDR_END MEM_D0D1_ACCESS
+-			    0x0      0x0            0x0  0x0 0x0
+-			  >;
+-	};
+ };
+ 
+ &pinctrl_i2c1 {
+@@ -77,6 +30,10 @@
+ 	bootph-all;
+ };
+ 
++&pinctrl_uart1 {
++	bootph-pre-ram;
++};
++
+ &pinctrl_uart4 {
+ 	bootph-pre-ram;
+ };
+@@ -109,7 +66,11 @@
+ 	bootph-pre-ram;
+ };
+ 
+-&uart2 {
++&uart1 {
++	bootph-pre-ram;
++};
++
++&uart4 {
+ 	bootph-pre-ram;
+ };
+ 
+@@ -154,6 +115,10 @@
+ 	bootph-pre-ram;
+ };
+ 
++&media_blk_ctrl {
++	assigned-clock-rates = <500000000>, <200000000>;
++};
++
+ &usb_dwc3_0 {
+ 	compatible = "fsl,imx8mq-dwc3", "snps,dwc3";
+ 	assigned-clocks = <&clk IMX8MP_CLK_HSIO_AXI>;
+diff --git a/arch/arm/dts/imx8mp-cargt-00377-00365.dts b/arch/arm/dts/imx8mp-cargt-00377-00365.dts
+index 1717c7b9153..7fbcbff3305 100644
+--- a/arch/arm/dts/imx8mp-cargt-00377-00365.dts
++++ b/arch/arm/dts/imx8mp-cargt-00377-00365.dts
+@@ -10,15 +10,38 @@
+  
+  / {
+ 	model = "Cargt i.MX8MP 00377 OSM-L SOM on 00365 carrier board";
++
++	cbtl04gp {
++		compatible = "nxp,cbtl04gp";
++		switch-gpios = <&pca9555_20 10 GPIO_ACTIVE_LOW>;
++		orientation-switch;
++
++		port {
++			usb3_data_ss: endpoint {
++				remote-endpoint = <&typec_con_ss>;
++			};
++		};
++	};	
++		
++	reg_usdhc2_vmmc: regulator-usdhc2 {
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_reg_usdhc2_vmmc>;
++		compatible = "regulator-fixed";
++		regulator-name = "SD2_3P3V";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&gpio2 19 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++	};
+  };
+ 
+-  &lpi2c2 {
++&i2c2 {
+ 	 #address-cells = <1>;
+ 	 #size-cells = <0>;
+ 	 clock-frequency = <400000>;
+ 	 pinctrl-names = "default", "sleep";
+-	 pinctrl-0 = <&pinctrl_lpi2c2>;
+-	 pinctrl-1 = <&pinctrl_lpi2c2>;
++	 pinctrl-0 = <&pinctrl_i2c2>;
++	 pinctrl-1 = <&pinctrl_i2c2>;
+ 	 status = "okay";
+  
+ 	 pca9555_20: pca9555@20 {
+@@ -56,7 +79,7 @@
+ 			 self-powered;
+ 		 };
+ 	 };
+- 
++
+ 	 ptn5110_52: tcpc@52 {
+ 		 compatible = "nxp,ptn5110";
+ 		 reg = <0x52>;
+@@ -89,25 +112,11 @@
+ 					};
+ 				};
+ 			};
+-
+-	 };
+-
+-	cbtl04gp {
+-		compatible = "nxp,cbtl04gp";
+-		switch-gpios = <&pcal6416_1 4 GPIO_ACTIVE_LOW>;
+-		orientation-switch;
+-
+-		port {
+-			usb3_data_ss: endpoint {
+-				remote-endpoint = <&typec_con_ss>;
+-			};
+-		};
+-	};	 
+- };
+-
++		}; 
++	};
++};
+ 
+ &uart2 {
+-	/* OSM UART_A */
+  	/* These pins are needed for ETH and USB interrupts
+ 	 * on the 00365 carrier board, so disable UART2
+ 	 */
+@@ -157,7 +166,6 @@
+ };
+ 
+ &usb_dwc3_1 {
+-	vbus-supply = <&reg_usb_vbus>;
+ 	dr_mode = "peripheral";
+ 	status = "okay";
+ };
+@@ -217,6 +225,12 @@
+ 			MX8MP_IOMUXC_SD2_CD_B__GPIO2_IO12	0x1c4
+ 		>;
+ 	};
++		
++	pinctrl_reg_usdhc2_vmmc: regusdhc2vmmcgrp {
++		fsl,pins = <
++			MX8MP_IOMUXC_SD2_RESET_B__GPIO2_IO19	0x40
++		>;
++	};
+ 	
+ 	pinctrl_ptn5110_51: ptn5110_51grp {
+ 		fsl,pins = <
+@@ -229,6 +243,12 @@
+ 			MX8MP_IOMUXC_SAI3_RXD__GPIO4_IO30		0x31e
+ 		>;
+ 	};
+-
++		
++	pinctrl_i2c2: i2c2grp {
++		fsl,pins = <
++			MX8MP_IOMUXC_I2C2_SCL__I2C2_SCL		0x400001c2
++			MX8MP_IOMUXC_I2C2_SDA__I2C2_SDA		0x400001c2
++		>;
++	};
+  };
+   
+\ No newline at end of file
+diff --git a/arch/arm/dts/imx8mp-cargt-00377-osm-som.dts b/arch/arm/dts/imx8mp-cargt-00377-osm-som.dts
+index 5636ec27ffa..1854e33c3a5 100644
+--- a/arch/arm/dts/imx8mp-cargt-00377-osm-som.dts
++++ b/arch/arm/dts/imx8mp-cargt-00377-osm-som.dts
+@@ -13,6 +13,7 @@
+ 	 compatible = "cargt,imx8mp-00377", "fsl,imx8mp";
+ 
+ 	chosen {
++		bootargs = "console=ttymxc1,115200 earlycon=ec_imx6q,0x30890000,115200";
+ 		stdout-path = &uart4;
+ 	};
+ 
+diff --git a/board/cargt/imx8mp_00377/imx8mp_00377.c b/board/cargt/imx8mp_00377/imx8mp_00377.c
+index bb42199ec7f..d94427f9c38 100644
+--- a/board/cargt/imx8mp_00377/imx8mp_00377.c
++++ b/board/cargt/imx8mp_00377/imx8mp_00377.c
+@@ -34,8 +34,8 @@ DECLARE_GLOBAL_DATA_PTR;
+ #define WDOG_PAD_CTRL	(PAD_CTL_DSE6 | PAD_CTL_ODE | PAD_CTL_PUE | PAD_CTL_PE)
+ 
+ static const iomux_v3_cfg_t uart_pads[] = {
+-	MX8MP_PAD_UART2_RXD__UART2_DCE_RX | MUX_PAD_CTRL(UART_PAD_CTRL),
+-	MX8MP_PAD_UART2_TXD__UART2_DCE_TX | MUX_PAD_CTRL(UART_PAD_CTRL),
++	MX8MP_PAD_UART4_RXD__UART4_DCE_RX | MUX_PAD_CTRL(UART_PAD_CTRL),
++	MX8MP_PAD_UART4_TXD__UART4_DCE_TX | MUX_PAD_CTRL(UART_PAD_CTRL),
+ };
+ 
+ static const iomux_v3_cfg_t wdog_pads[] = {
+@@ -77,7 +77,7 @@ int board_early_init_f(void)
+ 
+ 	imx_iomux_v3_setup_multiple_pads(uart_pads, ARRAY_SIZE(uart_pads));
+ 
+-	init_uart_clk(1);
++	init_uart_clk(3);
+ 
+ 	return 0;
+ }
+diff --git a/board/freescale/imx8mp_evk/imx8mp_evk.c b/board/freescale/imx8mp_evk/imx8mp_evk.c
+index 9fa9b4c8071..c0029d7516c 100644
+--- a/board/freescale/imx8mp_evk/imx8mp_evk.c
++++ b/board/freescale/imx8mp_evk/imx8mp_evk.c
+@@ -33,8 +33,8 @@ DECLARE_GLOBAL_DATA_PTR;
+ #define WDOG_PAD_CTRL	(PAD_CTL_DSE6 | PAD_CTL_ODE | PAD_CTL_PUE | PAD_CTL_PE)
+ 
+ static iomux_v3_cfg_t const uart_pads[] = {
+-	MX8MP_PAD_UART2_RXD__UART2_DCE_RX | MUX_PAD_CTRL(UART_PAD_CTRL),
+-	MX8MP_PAD_UART2_TXD__UART2_DCE_TX | MUX_PAD_CTRL(UART_PAD_CTRL),
++	MX8MP_PAD_UART4_RXD__UART4_DCE_RX | MUX_PAD_CTRL(UART_PAD_CTRL),
++	MX8MP_PAD_UART4_TXD__UART4_DCE_TX | MUX_PAD_CTRL(UART_PAD_CTRL),
+ };
+ 
+ static iomux_v3_cfg_t const wdog_pads[] = {
+@@ -76,7 +76,7 @@ int board_early_init_f(void)
+ 
+ 	imx_iomux_v3_setup_multiple_pads(uart_pads, ARRAY_SIZE(uart_pads));
+ 
+-	init_uart_clk(1);
++	init_uart_clk(3);
+ 
+ 	return 0;
+ }
+diff --git a/include/configs/imx8mp_00377.h b/include/configs/imx8mp_00377.h
+index 9d34c54d66d..8a3dc1b89b6 100644
+--- a/include/configs/imx8mp_00377.h
++++ b/include/configs/imx8mp_00377.h
+@@ -172,7 +172,7 @@
+ #define PHYS_SDRAM_2_SIZE		0xC0000000	/* 3 GB */
+ #endif
+ 
+-#define CFG_MXC_UART_BASE		UART2_BASE_ADDR
++#define CFG_MXC_UART_BASE		UART4_BASE_ADDR
+ 
+ #define CFG_SYS_NAND_BASE           0x20000000
+ 

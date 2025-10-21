@@ -1,0 +1,423 @@
+From 3bfb1df36f05fbbd013d9095e99b428542f5e815 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Tue, 11 Nov 2025 17:02:24 -0600
+Subject: [PATCH] WIP: REMOVE - Add debug printing.
+
+---
+ arch/arm/mach-imx/spl.c                 |  7 ++++
+ arch/arm/mach-imx/spl_imx_romapi.c      | 24 ++++++++++++-
+ board/cargt/imx8mp_00377/imx8mp_00377.c |  8 +++++
+ board/cargt/imx8mp_00377/spl.c          | 18 ++++++++--
+ common/spl/spl.c                        |  6 +++-
+ common/spl/spl_bootrom.c                |  1 +
+ common/spl/spl_fit.c                    | 46 ++++++++++++++++++++-----
+ 7 files changed, 98 insertions(+), 12 deletions(-)
+
+diff --git a/arch/arm/mach-imx/spl.c b/arch/arm/mach-imx/spl.c
+index 68f3e156b32..fd0ebc4a8ed 100644
+--- a/arch/arm/mach-imx/spl.c
++++ b/arch/arm/mach-imx/spl.c
+@@ -5,6 +5,7 @@
+  *
+  * Author: Tim Harvey <tharvey@gateworks.com>
+  */
++#define DEBUG
+ 
+ #include <common.h>
+ #include <hang.h>
+@@ -518,6 +519,8 @@ int board_spl_fit_post_load(const void *fit, struct spl_image_info *spl_image)
+ 	int ret;
+ #endif
+ 
++printf("SPL: FIT image loaded to 0x%p\n", fit);
++
+ 	if (IS_ENABLED(CONFIG_IMX_HAB)) {
+ 		u32 offset = ALIGN(fdt_totalsize(fit), 0x1000);
+ 
+@@ -534,12 +537,14 @@ int board_spl_fit_post_load(const void *fit, struct spl_image_info *spl_image)
+ 	}
+ #if defined(CONFIG_IMX8MP) || defined(CONFIG_IMX8MN)
+ #define MCU_RDC_MAGIC "mcu_rdc"
++printf("Handle MCU RDC config\n");
+ 	memcpy((void *)CONFIG_IMX8M_MCU_RDC_START_CONFIG_ADDR, MCU_RDC_MAGIC, ALIGN(strlen(MCU_RDC_MAGIC), 4));
+ 	memcpy((void *)CONFIG_IMX8M_MCU_RDC_STOP_CONFIG_ADDR, MCU_RDC_MAGIC, ALIGN(strlen(MCU_RDC_MAGIC), 4));
+ 	board_handle_rdc_config(spl_image->fdt_addr, "start-config",
+ 				(void *)(CONFIG_IMX8M_MCU_RDC_START_CONFIG_ADDR + ALIGN(strlen(MCU_RDC_MAGIC), 4)));
+ 	board_handle_rdc_config(spl_image->fdt_addr, "stop-config",
+ 				(void *)(CONFIG_IMX8M_MCU_RDC_STOP_CONFIG_ADDR + ALIGN(strlen(MCU_RDC_MAGIC), 4)));
++printf("MCU RDC config handled\n");
+ #endif
+ 
+ #ifdef CONFIG_IMX_TRUSTY_OS
+@@ -579,6 +584,8 @@ int board_spl_fit_post_load(const void *fit, struct spl_image_info *spl_image)
+         }
+ #endif
+ 
++	printf("board_spl_fit_post_load done\n");
++
+ 	return 0;
+ }
+ 
+diff --git a/arch/arm/mach-imx/spl_imx_romapi.c b/arch/arm/mach-imx/spl_imx_romapi.c
+index 8b8d16d911f..bfd2118e296 100644
+--- a/arch/arm/mach-imx/spl_imx_romapi.c
++++ b/arch/arm/mach-imx/spl_imx_romapi.c
+@@ -400,12 +400,16 @@ static int spl_romapi_load_image_stream(struct spl_image_info *spl_image,
+ 
+ 		ret = rom_api_download_image(p, 0, imagesize);
+ 
++		printf("rom_api_download_image returned %d\n", ret);
++
+ 		p += imagesize;
+ 
+ 		if (ret != ROM_API_OKAY) {
+ 			printf("Failure download %d\n", imagesize);
+ 			return -1;
+ 		}
++
++		printf("spl_romapi_load_image_stream continuing...\n");
+ 	}
+ 
+ 	if (IS_ENABLED(CONFIG_SPL_LOAD_FIT)) {
+@@ -420,9 +424,12 @@ static int spl_romapi_load_image_stream(struct spl_image_info *spl_image,
+ 		load.read = spl_romapi_read_stream;
+ 		load.priv = &ss;
+ 
++		printf("Calling spl_load_simple_fit (%s)\n", spl_image->name);
+ 		return spl_load_simple_fit(spl_image, &load, (ulong)phdr, phdr);
+ 	}
+ 
++	printf("Image total size calc\n");
++
+ 	total = img_total_size(phdr);
+ 	total += 3;
+ 	total &= ~0x3;
+@@ -444,8 +451,12 @@ static int spl_romapi_load_image_stream(struct spl_image_info *spl_image,
+ 	load.read = spl_ram_load_read;
+ 
+ 	if (IS_ENABLED(CONFIG_SPL_LOAD_IMX_CONTAINER))
++	{
++		printf("Calling spl_load_imx_container\n");
+ 		return spl_load_imx_container(spl_image, &load, (ulong)phdr);
++	}
+ 
++	printf("Unsupported image type\n");
+ 	return -1;
+ }
+ 
+@@ -454,14 +465,21 @@ int board_return_to_bootrom(struct spl_image_info *spl_image,
+ {
+ 	int ret;
+ 	u32 boot, bstage;
++	printf("Enter board_return_to_bootrom\n");
+ 
+ 	ret = rom_api_query_boot_infor(QUERY_BT_DEV, &boot);
+ 	if (ret != ROM_API_OKAY)
++	{
++		printf("ROMAPI: failure at query_boot_info\n");
+ 		goto err;
++	}
+ 
+ 	ret = rom_api_query_boot_infor(QUERY_BT_STAGE, &bstage);
+ 	if (ret != ROM_API_OKAY)
+-		goto err;
++	{
++		printf("ROMAPI: failure at query_boot_info\n");
++		goto err;	
++	}
+ 
+ 	printf("Boot Stage: ");
+ 
+@@ -483,8 +501,12 @@ int board_return_to_bootrom(struct spl_image_info *spl_image,
+ 	}
+ 
+ 	if (is_boot_from_stream_device(boot))
++	{
++		printf("Boot from stream device\n");
+ 		return spl_romapi_load_image_stream(spl_image, bootdev);
++	}
+ 
++	printf("Boot from seekable device\n");
+ 	return spl_romapi_load_image_seekable(spl_image, bootdev, boot);
+ err:
+ 	puts("ROMAPI: failure at query_boot_info\n");
+diff --git a/board/cargt/imx8mp_00377/imx8mp_00377.c b/board/cargt/imx8mp_00377/imx8mp_00377.c
+index d94427f9c38..58f6d43c82a 100644
+--- a/board/cargt/imx8mp_00377/imx8mp_00377.c
++++ b/board/cargt/imx8mp_00377/imx8mp_00377.c
+@@ -79,6 +79,7 @@ int board_early_init_f(void)
+ 
+ 	init_uart_clk(3);
+ 
++	printf("Board early init done.\n");
+ 	return 0;
+ }
+ 
+@@ -428,27 +429,34 @@ int board_typec_get_mode(int index)
+ 
+ int board_init(void)
+ {
++	printf("Board init\n");
+ #ifdef CONFIG_DM_REGULATOR
++printf("Regulator init\n");
+ 	regulators_enable_boot_on(false);
+ #endif
+ 
+ #ifdef CONFIG_USB_TCPC
++	printf("Type-C PD init\n");
+ 	setup_typec();
+ #endif
+ 
+ #ifdef CONFIG_NAND_MXS
++printf("NAND init\n");	
+ 	setup_gpmi_nand();
+ #endif
+ 
+ #if defined(CONFIG_USB_DWC3) || defined(CONFIG_USB_XHCI_IMX8M)
++	printf("USB init\n");	
+ 	init_usb_clk();
+ #endif
+ 
++	printf("Board init done.\n");
+ 	return 0;
+ }
+ 
+ int board_late_init(void)
+ {
++	printf("Board late init\n");
+ #ifdef CONFIG_ENV_IS_IN_MMC
+ 	board_late_mmc_env_init();
+ #endif
+diff --git a/board/cargt/imx8mp_00377/spl.c b/board/cargt/imx8mp_00377/spl.c
+index 95015d51643..4dcb80517bf 100644
+--- a/board/cargt/imx8mp_00377/spl.c
++++ b/board/cargt/imx8mp_00377/spl.c
+@@ -157,14 +157,19 @@ void board_init_f(ulong dummy)
+ 
+ 	board_early_init_f();
+ 
++	printf("Board init f finished\n");
++	printf("Timer init\n");
+ 	timer_init();
+-
++	printf("Timer initialized\n");
++	printf("SPL early init\n");
+ 	ret = spl_early_init();
+ 	if (ret) {
+-		debug("spl_early_init() failed: %d\n", ret);
++		printf("spl_early_init() failed: %d\n", ret);
+ 		hang();
+ 	}
++	printf("SPL early init done\n");
+ 
++	printf("Get clock device\n");
+ 	ret = uclass_get_device_by_name(UCLASS_CLK,
+ 					"clock-controller@30380000",
+ 					&dev);
+@@ -173,14 +178,23 @@ void board_init_f(ulong dummy)
+ 		hang();
+ 	}
+ 
++	printf("Console init\n");
+ 	preloader_console_init();
++	printf("Console initialized\n");
+ 
++	printf("Enable TZC380\n");
+ 	enable_tzc380();
++	printf("TZC380 enabled\n");
+ 
++	printf("init board\n");
+ 	power_init_board();
++	printf("init board complete\n");
+ 
+ 	/* DDR initialization */
++	printf("init DRAM\n");
+ 	spl_dram_init();
++	printf("DRAM initialized\n");
+ 
++	printf("Jump to board_init_r\n");
+ 	board_init_r(NULL, 0);
+ }
+diff --git a/common/spl/spl.c b/common/spl/spl.c
+index b65c439e7aa..d503e0a4e8f 100644
+--- a/common/spl/spl.c
++++ b/common/spl/spl.c
+@@ -5,6 +5,7 @@
+  *
+  * Aneesh V <aneesh@ti.com>
+  */
++#define DEBUG
+ 
+ #include <common.h>
+ #include <bloblist.h>
+@@ -677,7 +678,7 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
+ 	struct spl_image_info spl_image;
+ 	int ret, os;
+ 
+-	debug(">>" SPL_TPL_PROMPT "board_init_r()\n");
++	printf(">>" SPL_TPL_PROMPT "board_init_r()\n");
+ 
+ 	spl_set_bd();
+ 
+@@ -815,7 +816,10 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
+ 			       ret);
+ 	}
+ 
++	printf("Preparing to boot ...\n");
+ 	spl_board_prepare_for_boot();
++	printf("Jumping to image at 0x%lx...\n",
++	       spl_image.entry_point);
+ 	jump_to_image(&spl_image);
+ }
+ 
+diff --git a/common/spl/spl_bootrom.c b/common/spl/spl_bootrom.c
+index 0eefd39a519..e476cfcea28 100644
+--- a/common/spl/spl_bootrom.c
++++ b/common/spl/spl_bootrom.c
+@@ -9,6 +9,7 @@
+ __weak int board_return_to_bootrom(struct spl_image_info *spl_image,
+ 				   struct spl_boot_device *bootdev)
+ {
++	printf("weak implementation of board_return_to_bootrom called\n");
+ 	return 0;
+ }
+ 
+diff --git a/common/spl/spl_fit.c b/common/spl/spl_fit.c
+index 5ecf589412e..be2ab712674 100644
+--- a/common/spl/spl_fit.c
++++ b/common/spl/spl_fit.c
+@@ -748,22 +748,34 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
+ 	int index = 0;
+ 	int firmware_node;
+ 
++	printf("SPL: Loading from FIT at offset 0x%lx\n", offset);
++
+ 	ret = spl_simple_fit_read(&ctx, info, offset, fit);
+ 	if (ret < 0)
++	{
++		printf("%s: FIT read failed: %d\n", __func__, ret);
+ 		return ret;
++	}
+ 
+ 	/* skip further processing if requested to enable load-only use cases */
+ 	if (spl_load_simple_fit_skip_processing())
++	{
++		printf("SPL: Skipping FIT processing as requested\n");
+ 		return 0;
++	}
+ 
+ 	ctx.fit = spl_load_simple_fit_fix_load(ctx.fit);
+ 	if (ctx.fit == NULL) {
++		printf("%s: FIT fix load failed\n", __func__);
+ 		return -1;
+ 	}
+ 
+ 	ret = spl_simple_fit_parse(&ctx);
+ 	if (ret < 0)
+-		return ret;
++	{
++		printf("%s: FIT parse failed: %d\n", __func__, ret);
++		return ret;		
++	}
+ 
+ #if defined(CONFIG_IMX_TRUSTY_OS) && !defined(CONFIG_IMX_MATTER_TRUSTY)
+ 	int rbindex;
+@@ -784,6 +796,7 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
+ 	 *   - fall back 'kernel' (e.g. a Falcon-mode OS boot
+ 	 *   - fall back to using the first 'loadables' entry
+ 	 */
++	printf("SPL: Finding U-Boot in FIT\n");
+ 	if (node < 0)
+ 		node = spl_fit_get_image_node(&ctx, FIT_FIRMWARE_PROP, 0);
+ 
+@@ -791,7 +804,7 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
+ 		node = spl_fit_get_image_node(&ctx, FIT_KERNEL_PROP, 0);
+ 
+ 	if (node < 0) {
+-		debug("could not find firmware image, trying loadables...\n");
++		printf("could not find firmware image, trying loadables...\n");
+ 		node = spl_fit_get_image_node(&ctx, "loadables", 0);
+ 		/*
+ 		 * If we pick the U-Boot image from "loadables", start at
+@@ -800,25 +813,34 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
+ 		index = 1;
+ 	}
+ 	if (node < 0) {
+-		debug("%s: Cannot find u-boot image node: %d\n",
++		printf("%s: Cannot find u-boot image node: %d\n",
+ 		      __func__, node);
+ 		return -1;
+ 	}
+ 
++	printf("SPL: Loading U-Boot from FIT\n");
++
+ 	/* Load the image and set up the spl_image structure */
+ 	ret = load_simple_fit(info, offset, &ctx, node, spl_image);
+ 	if (ret)
++	{
++		printf("%s: can't load u-boot image: %d\n",
++		       __func__, ret);	
+ 		return ret;
++	}
+ 
++	printf("SPL: Loaded U-Boot from FIT\n");
+ 	/*
+ 	 * For backward compatibility, we treat the first node that is
+ 	 * as a U-Boot image, if no OS-type has been declared.
+ 	 */
+ 	if (!spl_fit_image_get_os(ctx.fit, node, &spl_image->os))
+-		debug("Image OS is %s\n", genimg_get_os_name(spl_image->os));
++		printf("Image OS is %s\n", genimg_get_os_name(spl_image->os));
+ 	else if (!IS_ENABLED(CONFIG_SPL_OS_BOOT))
+ 		spl_image->os = IH_OS_U_BOOT;
+ 
++	printf("SPL: U-Boot loaded from FIT at address 0x%lx\n",
++		       spl_image->load_addr);
+ 	/*
+ 	 * Booting a next-stage U-Boot may require us to append the FDT.
+ 	 * We allow this to fail, as the U-Boot image might embed its FDT.
+@@ -826,7 +848,11 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
+ 	if (os_takes_devicetree(spl_image->os)) {
+ 		ret = spl_fit_append_fdt(spl_image, info, offset, &ctx);
+ 		if (ret < 0 && spl_image->os != IH_OS_U_BOOT)
++		{
++			printf("%s: can't append FDT to U-Boot image: %d\n",
++			       __func__, ret);
+ 			return ret;
++		}
+ 	}
+ 
+ 	firmware_node = node;
+@@ -836,8 +862,11 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
+ 
+ 		node = spl_fit_get_image_node(&ctx, "loadables", index);
+ 		if (node < 0)
+-			break;
+-
++		{
++			printf("No more loadables found\n");
++			break;	
++		}
++		printf("SPL: Loading loadable index %d from FIT\n", index);
+ 		/*
+ 		 * if the firmware is also a loadable, skip it because
+ 		 * it already has been loaded. This is typically the case with
+@@ -858,7 +887,7 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
+ 			spl_fit_upload_fpga(&ctx, node, &image_info);
+ 
+ 		if (!spl_fit_image_get_os(ctx.fit, node, &os_type))
+-			debug("Loadable is %s\n", genimg_get_os_name(os_type));
++			printf("Loadable is %s\n", genimg_get_os_name(os_type));
+ 
+ 		if (os_takes_devicetree(os_type)) {
+ 			spl_fit_append_fdt(&image_info, info, offset, &ctx);
+@@ -889,7 +918,8 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
+ 		spl_image->entry_point = spl_image->load_addr;
+ 
+ 	spl_image->flags |= SPL_FIT_FOUND;
+-
++	printf("SPL: U-Boot entry point at 0x%lx\n",
++		       spl_image->entry_point);
+ 	return board_spl_fit_post_load(ctx.fit, spl_image);
+ }
+ 

@@ -1,0 +1,61 @@
+From 911624066992fe5b639f8a3ce1b604f57e3f9e9d Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Fri, 14 Nov 2025 12:01:08 -0600
+Subject: [PATCH] WIP: Fix dtb specification for U-Boot for 00377.
+
+---
+ arch/arm/dts/Makefile                      | 1 +
+ arch/arm/dts/imx8mp-cargt-00377-00365.dts  | 7 ++++---
+ configs/imx8mp-cargt-00377-00365_defconfig | 2 +-
+ 3 files changed, 6 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
+index 6b2df7a0428..75b123dd2f7 100644
+--- a/arch/arm/dts/Makefile
++++ b/arch/arm/dts/Makefile
+@@ -1180,6 +1180,7 @@ dtb-$(CONFIG_ARCH_IMX8M) += \
+ 	imx8mp-venice-gw7905-2x.dtb \
+ 	imx8mp-verdin-wifi-dev.dtb \
+ 	imx8mp-navqp.dtb \
++	imx8mp-cargt-00377-00365.dtb \
+ 	imx8mq-pico-pi.dtb \
+ 	imx8mq-kontron-pitx-imx8m.dtb \
+ 	imx8mq-librem5-r4.dtb
+diff --git a/arch/arm/dts/imx8mp-cargt-00377-00365.dts b/arch/arm/dts/imx8mp-cargt-00377-00365.dts
+index 7fbcbff3305..b2a7f599ed3 100644
+--- a/arch/arm/dts/imx8mp-cargt-00377-00365.dts
++++ b/arch/arm/dts/imx8mp-cargt-00377-00365.dts
+@@ -8,8 +8,9 @@
+ #include <dt-bindings/usb/pd.h>
+ #include "imx8mp-cargt-00377-osm-som.dts"
+  
+- / {
+-	model = "Cargt i.MX8MP 00377 OSM-L SOM on 00365 carrier board";
++
++/ {
++model = "Cargt i.MX8MP 00377 OSM-L SOM on 00365 carrier board";
+ 
+ 	cbtl04gp {
+ 		compatible = "nxp,cbtl04gp";
+@@ -33,7 +34,7 @@
+ 		gpio = <&gpio2 19 GPIO_ACTIVE_HIGH>;
+ 		enable-active-high;
+ 	};
+- };
++};
+ 
+ &i2c2 {
+ 	 #address-cells = <1>;
+diff --git a/configs/imx8mp-cargt-00377-00365_defconfig b/configs/imx8mp-cargt-00377-00365_defconfig
+index 5d1d101677a..88c528e3d56 100644
+--- a/configs/imx8mp-cargt-00377-00365_defconfig
++++ b/configs/imx8mp-cargt-00377-00365_defconfig
+@@ -34,7 +34,7 @@ CONFIG_OF_BOARD_FIXUP=y
+ CONFIG_OF_BOARD_SETUP=y
+ CONFIG_OF_SYSTEM_SETUP=y
+ CONFIG_BOOTCOMMAND="run distro_bootcmd;run bsp_bootcmd"
+-CONFIG_DEFAULT_FDT_FILE="boot/imx8mp-cargt-00377-00365.dtb"
++CONFIG_DEFAULT_FDT_FILE="imx8mp-cargt-00377-00365.dtb"
+ CONFIG_ARCH_MISC_INIT=y
+ CONFIG_BOARD_EARLY_INIT_F=y
+ CONFIG_BOARD_LATE_INIT=y

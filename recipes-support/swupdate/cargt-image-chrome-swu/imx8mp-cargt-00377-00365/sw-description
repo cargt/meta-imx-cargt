@@ -1,0 +1,27 @@
+software =
+{
+	version = "@@SW_VER_STRING@@";
+	
+	imx8mp-cargt-00377-00365 = {
+		hardware-compatibility: [ "1.0" ];
+
+		files: (
+			{
+				filename = "cargt-image-chrome-imx8mp-cargt-00377-00365.rootfs.tar.zst";
+				path = "/data/swupdate/update.tar.zst";
+				installed-directly = true;  
+				install-if-different = true;
+				properties: {
+						create-destination = "true";
+				}
+			}
+		);
+
+		scripts: (
+			{
+				filename = "update.sh";
+				type = "postinstall";
+			}
+		);
+	};
+}

@@ -1,0 +1,22 @@
+From 84aac938dda1d460ca152e92d56bb2fd4127f489 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Tue, 11 Nov 2025 13:33:16 -0600
+Subject: [PATCH] WIP: Do not include security definitions for 00377.
+
+---
+ arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi | 2 --
+ 1 file changed, 2 deletions(-)
+
+diff --git a/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi b/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi
+index 972f168ac04..1e423bc1ae3 100644
+--- a/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi
++++ b/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi
+@@ -2,8 +2,6 @@
+ /*
+  * Copyright 2025 NXP
+  */
+-#include "imx8mp-sec-def.h"
+-
+ #include "imx8mp-u-boot.dtsi"
+ 
+ / {

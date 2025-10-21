@@ -1,0 +1,37 @@
+From 3219dd8f5ac7cd3dca2c1b54410f29e14ed1de8b Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Tue, 11 Nov 2025 10:03:14 -0600
+Subject: [PATCH] Add TARGET_IMX8MP_00377 stanza to the imx8m Kconfig.
+
+---
+ arch/arm/mach-imx/imx8m/Kconfig | 12 +++++++++++-
+ 1 file changed, 11 insertions(+), 1 deletion(-)
+
+diff --git a/arch/arm/mach-imx/imx8m/Kconfig b/arch/arm/mach-imx/imx8m/Kconfig
+index 473cfa8e5e3..ec54a5407be 100644
+--- a/arch/arm/mach-imx/imx8m/Kconfig
++++ b/arch/arm/mach-imx/imx8m/Kconfig
+@@ -315,6 +315,16 @@ config TARGET_IMX8MP_EVK
+ 	select ARCH_MISC_INIT
+ 	select SPL_CRYPTO if SPL
+ 
++config TARGET_IMX8MP_00377
++	bool "imx8mp-00377"
++	select IMX8MP
++	select SUPPORT_SPL
++	select IMX8M_LPDDR4
++	select FSL_CAAM
++	select FSL_BLOB
++	select ARCH_MISC_INIT
++	select SPL_CRYPTO if SPL
++
+ config TARGET_IMX8MP_VENICE
+ 	bool "Support Gateworks Venice iMX8M Plus module"
+ 	select IMX8MP
+@@ -482,5 +492,5 @@ source "board/variscite/imx8mn_var_som/Kconfig"
+ source "board/toradex/verdin-imx8mm/Kconfig"
+ source "board/toradex/verdin-imx8mp/Kconfig"
+ source "board/voxelbotics/navqp/Kconfig"
+-
++source "board/cargt/imx8mp_00377/Kconfig"
+ endif
