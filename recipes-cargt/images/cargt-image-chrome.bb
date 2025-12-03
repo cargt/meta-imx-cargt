@@ -51,7 +51,6 @@ IMAGE_INSTALL += " \
     libiio-tests \
     tmux \
     mc \
-    vim \
     git \
     ${@bb.utils.contains('DISTRO_FEATURES', 'connman', 'connman-tools connman-tests connman-client', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'networkmanager', 'networkmanager networkmanager-nmcli', '', d)} \
