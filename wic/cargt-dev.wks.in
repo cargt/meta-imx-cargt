@@ -1,7 +1,7 @@
 part u-boot --source rawcopy --sourceparams="file=imx-boot" --ondisk mmcblk --no-table --align ${IMX_BOOT_SEEK}
 
-part / --source rootfs --ondisk mmcblk --fstype=ext4 --align 8192 --fixed-size 4096M
-part --ondisk mmcblk --fstype=ext4 --align 8192 --fixed-size 4096M
+part / --source rootfs --ondisk mmcblk --fstype=ext4 --align 8192 --fixed-size 6144M
+part --ondisk mmcblk --fstype=ext4 --align 8192 --fixed-size 6144M
 part --ondisk mmcblk --fstype=ext4 --label data --align 8192 --fixed-size 2048M
 
 bootloader --ptable msdos
