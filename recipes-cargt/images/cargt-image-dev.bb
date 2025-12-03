@@ -65,6 +65,7 @@ IMAGE_INSTALL += " \
     swupdate swupdate-progress swupdate-www \
     board-version \
     v4l-utils \
+    libdrm-tests xrandr \
 "
 
 CLINFO              ?= ""
