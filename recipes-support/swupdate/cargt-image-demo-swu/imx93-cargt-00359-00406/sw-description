@@ -1,0 +1,27 @@
+software =
+{
+	version = "@@SW_VER_STRING@@";
+	
+	imx93-cargt-00359-00406 = {
+		hardware-compatibility: [ "1.0" ];
+
+		files: (
+			{
+				filename = "cargt-image-demo-imx93-cargt-00359-00406.rootfs.tar.zst";
+				path = "/data/swupdate/update.tar.zst";
+				installed-directly = true;  
+				install-if-different = true;
+				properties: {
+						create-destination = "true";
+				}
+			}
+		);
+
+		scripts: (
+			{
+				filename = "update.sh";
+				type = "postinstall";
+			}
+		);
+	};
+}

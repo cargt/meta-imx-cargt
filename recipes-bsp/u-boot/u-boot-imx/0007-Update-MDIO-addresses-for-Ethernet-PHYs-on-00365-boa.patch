@@ -1,0 +1,55 @@
+From 8e8b2790f978976586ecede6428143da9fd6ffb1 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 11 Dec 2025 11:12:26 -0600
+Subject: [PATCH] Update MDIO addresses for Ethernet PHYs on 00365 boards to
+ match new strapping.
+
+---
+ arch/arm/dts/imx8mp-cargt-00377-00365.dts | 8 ++++----
+ arch/arm/dts/imx93-cargt-00363-00365.dts  | 4 ++--
+ 2 files changed, 6 insertions(+), 6 deletions(-)
+
+diff --git a/arch/arm/dts/imx8mp-cargt-00377-00365.dts b/arch/arm/dts/imx8mp-cargt-00377-00365.dts
+index 8b1387338e0..b7f9dba6f5b 100644
+--- a/arch/arm/dts/imx8mp-cargt-00377-00365.dts
++++ b/arch/arm/dts/imx8mp-cargt-00377-00365.dts
+@@ -199,9 +199,9 @@ model = "Cargt i.MX8MP 00377 OSM-L SOM on 00365 carrier board";
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 
+-		ethphy0: ethernet-phy@2 {
++		ethphy0: ethernet-phy@0 {
+ 			compatible = "ethernet-phy-ieee802.3-c22";
+-			reg = <2>;
++			reg = <0>;
+ 			eee-broken-1000t;
+ 			reset-gpios = <&pca9555_20 0 GPIO_ACTIVE_LOW>;
+ 			reset-assert-us = <10000>;
+@@ -287,9 +287,9 @@ model = "Cargt i.MX8MP 00377 OSM-L SOM on 00365 carrier board";
+ 		#address-cells = <1>;
+ 		#size-cells = <0>;
+ 
+-		ethphy1: ethernet-phy@1 {
++		ethphy1: ethernet-phy@0 {
+ 			compatible = "ethernet-phy-ieee802.3-c22";
+-			reg = <1>;
++			reg = <0>;
+ 			eee-broken-1000t;
+ 			reset-gpios = <&pca9555_20 1 GPIO_ACTIVE_LOW>;
+ 			reset-assert-us = <10000>;
+diff --git a/arch/arm/dts/imx93-cargt-00363-00365.dts b/arch/arm/dts/imx93-cargt-00363-00365.dts
+index 23b14146e41..6c8a0c56fd3 100644
+--- a/arch/arm/dts/imx93-cargt-00363-00365.dts
++++ b/arch/arm/dts/imx93-cargt-00363-00365.dts
+@@ -183,9 +183,9 @@
+ 		 #size-cells = <0>;
+ 		 clock-frequency = <5000000>;
+  
+-		 ethphy2: ethernet-phy@1 {
++		 ethphy2: ethernet-phy@0 {
+ 			 compatible = "ethernet-phy-ieee802.3-c22";
+-			 reg = <1>;
++			 reg = <0>;
+ 			 eee-broken-1000t;
+ 		 };
+ 	 };

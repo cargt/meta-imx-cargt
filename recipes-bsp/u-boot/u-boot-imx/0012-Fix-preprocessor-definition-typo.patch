@@ -1,0 +1,36 @@
+From a9bc39b04e1dee76de17ef4940277877c08d1e2e Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 11 Dec 2025 16:34:32 -0600
+Subject: [PATCH] Fix preprocessor definition typo.
+
+---
+ board/cargt/imx93_00324/spl-cargt.c | 2 +-
+ board/cargt/imx93_00359/spl-cargt.c | 2 +-
+ 2 files changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/board/cargt/imx93_00324/spl-cargt.c b/board/cargt/imx93_00324/spl-cargt.c
+index efc03c1caca..4f7c0b433d0 100644
+--- a/board/cargt/imx93_00324/spl-cargt.c
++++ b/board/cargt/imx93_00324/spl-cargt.c
+@@ -87,7 +87,7 @@ void spl_dram_init(void)
+ 	struct udevice *i2c_dev;
+ 	int addr, res;
+ 
+-#if IS_ENABLED(CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_EEPROM)
++#if IS_ENABLED(CONFIG_CARGT_IMX93_00324_LPDDR4X_TIMING_BY_EEPROM)
+ 	uint16_t dram_size_mbytes = 0;
+ 	printf("Reading Cargt EEPROM over I2C...\n");
+ 	cargt_eeprom_read(&eeprom);
+diff --git a/board/cargt/imx93_00359/spl-cargt.c b/board/cargt/imx93_00359/spl-cargt.c
+index 28fa501bc9f..79c3760aa56 100644
+--- a/board/cargt/imx93_00359/spl-cargt.c
++++ b/board/cargt/imx93_00359/spl-cargt.c
+@@ -87,7 +87,7 @@ void spl_dram_init(void)
+ 	struct udevice *i2c_dev;
+ 	int addr, res;
+ 
+-#if IS_ENABLED(CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_EEPROM)
++#if IS_ENABLED(CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_BY_EEPROM)
+ 	uint16_t dram_size_mbytes = 0;
+ 	printf("Reading Cargt EEPROM over I2C...\n");
+ 	cargt_eeprom_read(&eeprom);

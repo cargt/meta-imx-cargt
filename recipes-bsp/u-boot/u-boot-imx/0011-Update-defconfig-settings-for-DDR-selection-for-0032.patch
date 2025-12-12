@@ -1,0 +1,43 @@
+From 62a8a4dfcc25124021f31e3e8464e4378d873c62 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 11 Dec 2025 16:24:58 -0600
+Subject: [PATCH] Update defconfig settings for DDR selection for 00324 and
+ 00359.
+
+---
+ configs/imx93-cargt-00324-00326_defconfig | 7 ++++---
+ configs/imx93-cargt-00359-00406_defconfig | 7 ++++---
+ 2 files changed, 8 insertions(+), 6 deletions(-)
+
+diff --git a/configs/imx93-cargt-00324-00326_defconfig b/configs/imx93-cargt-00324-00326_defconfig
+index d0eeaeef337..a52aec5ca4d 100644
+--- a/configs/imx93-cargt-00324-00326_defconfig
++++ b/configs/imx93-cargt-00324-00326_defconfig
+@@ -213,6 +213,7 @@ CONFIG_SYS_EEPROM_SIZE=256
+ CONFIG_SYS_EEPROM_PAGE_WRITE_BITS=4
+ CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=100
+ 
+-#CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_BOARD_ID is not set
+-#CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_NAME is not set
+-CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_EEPROM=y
++# CONFIG_CARGT_IMX93_00324_LPDDR4X_TIMING_BY_BOARD_ID is not set
++# CONFIG_CARGT_IMX93_00324_LPDDR4X_TIMING_BY_NAME is not set
++# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME="cargt_lpddr4x_1gbyte_timing"
++CONFIG_CARGT_IMX93_00324_LPDDR4X_TIMING_BY_EEPROM=y
+\ No newline at end of file
+diff --git a/configs/imx93-cargt-00359-00406_defconfig b/configs/imx93-cargt-00359-00406_defconfig
+index d867e7ea573..ef64cb8eda6 100644
+--- a/configs/imx93-cargt-00359-00406_defconfig
++++ b/configs/imx93-cargt-00359-00406_defconfig
+@@ -213,6 +213,7 @@ CONFIG_SYS_EEPROM_SIZE=256
+ CONFIG_SYS_EEPROM_PAGE_WRITE_BITS=4
+ CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=100
+ 
+-# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_BOARD_ID is not set
+-# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_NAME is not set
+-CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_EEPROM=y
++# CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_BY_BOARD_ID is not set
++# CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_BY_NAME is not set
++# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME="cargt_lpddr4x_1gbyte_timing"
++CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_BY_EEPROM=y
+\ No newline at end of file

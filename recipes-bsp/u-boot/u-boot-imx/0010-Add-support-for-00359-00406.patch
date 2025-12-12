@@ -1,41 +1,44 @@
-From b772be91bf544a8fa98c0ef63b0719ad22f7549c Mon Sep 17 00:00:00 2001
+From 90ff47a1530efb7c62f4c453462452c71eed13c9 Mon Sep 17 00:00:00 2001
 From: Tim Carney <tim.carney@cargt.com>
-Date: Fri, 26 Sep 2025 15:47:04 -0500
-Subject: [PATCH] Add support for Cargt 00324-00326 SODIMM SOM on carrier.
+Date: Thu, 11 Dec 2025 11:22:10 -0600
+Subject: [PATCH] Add support for 00359-00406.
 
 ---
- .../dts/imx93-cargt-00324-00326-u-boot.dtsi   |  202 ++
- arch/arm/dts/imx93-cargt-00324-00326.dts      |  357 +++
- arch/arm/dts/imx93-cargt-00363-osm-som.dts    |    2 +-
- arch/arm/mach-imx/imx9/Kconfig                |    7 +
- board/cargt/imx93_00324/Kconfig               |   33 +
- board/cargt/imx93_00324/MAINTAINERS           |    6 +
- board/cargt/imx93_00324/Makefile              |   14 +
- .../imx93_00324/cargt_lpddr4x_1gbyte_timing.c | 1544 +++++++++++++
- .../imx93_00324/cargt_lpddr4x_2gbyte_timing.c | 2004 +++++++++++++++++
- board/cargt/imx93_00324/imx93_00324.c         |  272 +++
- board/cargt/imx93_00324/spl-cargt.c           |  359 +++
- configs/imx93-cargt-00324-00326_defconfig     |  212 ++
- include/configs/imx93_00324.h                 |  178 ++
- 13 files changed, 5189 insertions(+), 1 deletion(-)
- create mode 100644 arch/arm/dts/imx93-cargt-00324-00326-u-boot.dtsi
- create mode 100644 arch/arm/dts/imx93-cargt-00324-00326.dts
- create mode 100644 board/cargt/imx93_00324/Kconfig
- create mode 100644 board/cargt/imx93_00324/MAINTAINERS
- create mode 100644 board/cargt/imx93_00324/Makefile
- create mode 100644 board/cargt/imx93_00324/cargt_lpddr4x_1gbyte_timing.c
- create mode 100644 board/cargt/imx93_00324/cargt_lpddr4x_2gbyte_timing.c
- create mode 100644 board/cargt/imx93_00324/imx93_00324.c
- create mode 100644 board/cargt/imx93_00324/spl-cargt.c
- create mode 100644 configs/imx93-cargt-00324-00326_defconfig
- create mode 100644 include/configs/imx93_00324.h
+ .../dts/imx93-cargt-00359-00406-u-boot.dtsi   |  198 ++
+ arch/arm/dts/imx93-cargt-00359-00406.dts      |  264 +++
+ arch/arm/dts/imx93-cargt-00359.dts            |  285 +++
+ arch/arm/mach-imx/imx9/Kconfig                |    5 +
+ board/cargt/imx93_00359/Kconfig               |   41 +
+ board/cargt/imx93_00359/MAINTAINERS           |    6 +
+ board/cargt/imx93_00359/Makefile              |   15 +
+ .../imx93_00359/cargt_lpddr4x_1gbyte_timing.c | 1544 +++++++++++++
+ .../imx93_00359/cargt_lpddr4x_2gbyte_timing.c | 2004 +++++++++++++++++
+ board/cargt/imx93_00359/imx93_00359.c         |  272 +++
+ board/cargt/imx93_00359/spl-cargt.c           |  399 ++++
+ configs/imx93-cargt-00359-00406_defconfig     |  218 ++
+ include/configs/imx93_00324.h                 |   21 +-
+ include/configs/imx93_00359.h                 |  183 ++
+ include/configs/imx93_00363.h                 |   20 +-
+ 15 files changed, 5460 insertions(+), 15 deletions(-)
+ create mode 100644 arch/arm/dts/imx93-cargt-00359-00406-u-boot.dtsi
+ create mode 100644 arch/arm/dts/imx93-cargt-00359-00406.dts
+ create mode 100644 arch/arm/dts/imx93-cargt-00359.dts
+ create mode 100644 board/cargt/imx93_00359/Kconfig
+ create mode 100644 board/cargt/imx93_00359/MAINTAINERS
+ create mode 100644 board/cargt/imx93_00359/Makefile
+ create mode 100644 board/cargt/imx93_00359/cargt_lpddr4x_1gbyte_timing.c
+ create mode 100644 board/cargt/imx93_00359/cargt_lpddr4x_2gbyte_timing.c
+ create mode 100644 board/cargt/imx93_00359/imx93_00359.c
+ create mode 100644 board/cargt/imx93_00359/spl-cargt.c
+ create mode 100644 configs/imx93-cargt-00359-00406_defconfig
+ create mode 100644 include/configs/imx93_00359.h
 
-diff --git a/arch/arm/dts/imx93-cargt-00324-00326-u-boot.dtsi b/arch/arm/dts/imx93-cargt-00324-00326-u-boot.dtsi
+diff --git a/arch/arm/dts/imx93-cargt-00359-00406-u-boot.dtsi b/arch/arm/dts/imx93-cargt-00359-00406-u-boot.dtsi
 new file mode 100644
-index 00000000000..18a35e61357
+index 00000000000..579ac0e346f
 --- /dev/null
-+++ b/arch/arm/dts/imx93-cargt-00324-00326-u-boot.dtsi
-@@ -0,0 +1,202 @@
++++ b/arch/arm/dts/imx93-cargt-00359-00406-u-boot.dtsi
+@@ -0,0 +1,198 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright 2022 NXP
@@ -153,29 +156,25 @@ index 00000000000..18a35e61357
 +
 +&lpi2c1 {
 +	u-boot,dm-spl;
++	eeprom@50 {
++		u-boot,dm-spl;
++	};
 +};
 +
-+&lpi2c2 {
++&{/soc@0/bus@44000000/i2c@44340000/pmic@25} {
 +	u-boot,dm-spl;
 +};
 +
-+&lpi2c3 {
++&{/soc@0/bus@44000000/i2c@44340000/pmic@25/regulators} {
 +	u-boot,dm-spl;
 +};
 +
-+&{/soc@0/bus@44000000/i2c@44350000/pmic@25} {
-+	u-boot,dm-spl;
-+};
-+
-+&{/soc@0/bus@44000000/i2c@44350000/pmic@25/regulators} {
++/* Add an entry for the EEPROM at address 0x50 so U-Boot SPL can access it.*/
++&{/soc@0/bus@44000000/i2c@44340000/eeprom@50} {
 +	u-boot,dm-spl;
 +};
 +
 +&pinctrl_lpi2c1 {
-+	u-boot,dm-spl;
-+};
-+
-+&pinctrl_lpi2c2 {
 +	u-boot,dm-spl;
 +};
 +
@@ -238,12 +237,12 @@ index 00000000000..18a35e61357
 +	assigned-clock-parents = <&clk IMX93_CLK_SYS_PLL_PFD1>, <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>;
 +	assigned-clock-rates = <400000000>, <133333334>;
 +};
-diff --git a/arch/arm/dts/imx93-cargt-00324-00326.dts b/arch/arm/dts/imx93-cargt-00324-00326.dts
+diff --git a/arch/arm/dts/imx93-cargt-00359-00406.dts b/arch/arm/dts/imx93-cargt-00359-00406.dts
 new file mode 100644
-index 00000000000..d8a711e4abd
+index 00000000000..b01aee7f57a
 --- /dev/null
-+++ b/arch/arm/dts/imx93-cargt-00324-00326.dts
-@@ -0,0 +1,357 @@
++++ b/arch/arm/dts/imx93-cargt-00359-00406.dts
+@@ -0,0 +1,264 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright 2022 NXP
@@ -251,12 +250,11 @@ index 00000000000..d8a711e4abd
 +
 +/dts-v1/;
 +
-+#include "imx93.dtsi"
++#include "imx93-cargt-00359.dts"
 +
 +/ {
-+	model = "Cargt i.MX93 00324 SODIMM SOM on 00326 carrier board";
-+
-+	compatible = "cargt,imx93-00324", "fsl,imx93";
++	model = "Cargt i.MX93 00359 SOM with 00406 Carrier";
++	compatible = "cargt,imx93-00359", "fsl,imx93";
 +
 +	chosen {
 +		bootargs = "console=ttyLP0,115200";
@@ -279,11 +277,10 @@ index 00000000000..d8a711e4abd
 +};
 +
 +&eqos {
++	status = "okay";
 +	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_eqos>;
 +	phy-mode = "rgmii-id";
 +	phy-handle = <&ethphy1>;
-+	status = "okay";
 +
 +	mdio {
 +		compatible = "snps,dwmac-mdio";
@@ -300,12 +297,10 @@ index 00000000000..d8a711e4abd
 +};
 +
 +&fec {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_fec>;
++	status = "okay";
 +	phy-mode = "rgmii-id";
 +	phy-handle = <&ethphy2>;
 +	fsl,magic-packet;
-+	status = "okay";
 +
 +	mdio {
 +		#address-cells = <1>;
@@ -324,93 +319,6 @@ index 00000000000..d8a711e4abd
 +	status = "okay";
 +	assigned-clock-rates = <484000000>, <121000000>, <400000000>, <133333333>;
 +};
-+
-+
-+&lpi2c2 {
-+	#address-cells = <1>;
-+	#size-cells = <0>;
-+	clock-frequency = <400000>;
-+	pinctrl-names = "default", "sleep";
-+	pinctrl-0 = <&pinctrl_lpi2c2>;
-+	pinctrl-1 = <&pinctrl_lpi2c2>;
-+	status = "okay";
-+
-+	pmic@25 {
-+		compatible = "nxp,pca9451a";
-+		reg = <0x25>;
-+		//interrupt-parent = <&pcal6524>;
-+		//interrupts = <11 IRQ_TYPE_LEVEL_LOW>;
-+
-+		regulators {
-+			buck1: BUCK1 {
-+				regulator-name = "BUCK1";
-+				regulator-min-microvolt = <650000>;
-+				regulator-max-microvolt = <2237500>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+				regulator-ramp-delay = <3125>;
-+			};
-+
-+			buck2: BUCK2 {
-+				regulator-name = "BUCK2";
-+				regulator-min-microvolt = <600000>;
-+				regulator-max-microvolt = <2187500>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+				regulator-ramp-delay = <3125>;
-+			};
-+
-+			buck4: BUCK4{
-+				regulator-name = "BUCK4";
-+				regulator-min-microvolt = <600000>;
-+				regulator-max-microvolt = <3400000>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			buck5: BUCK5{
-+				regulator-name = "BUCK5";
-+				regulator-min-microvolt = <600000>;
-+				regulator-max-microvolt = <3400000>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			buck6: BUCK6 {
-+				regulator-name = "BUCK6";
-+				regulator-min-microvolt = <600000>;
-+				regulator-max-microvolt = <3400000>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			ldo1: LDO1 {
-+				regulator-name = "LDO1";
-+				regulator-min-microvolt = <1600000>;
-+				regulator-max-microvolt = <3300000>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			ldo4: LDO4 {
-+				regulator-name = "LDO4";
-+				regulator-min-microvolt = <800000>;
-+				regulator-max-microvolt = <3300000>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+
-+			ldo5: LDO5 {
-+				regulator-name = "LDO5";
-+				regulator-min-microvolt = <1800000>;
-+				regulator-max-microvolt = <3300000>;
-+				regulator-boot-on;
-+				regulator-always-on;
-+			};
-+		};
-+	};
-+};
-+
 +
 +
 +&lpuart1 { /* console */
@@ -459,11 +367,8 @@ index 00000000000..d8a711e4abd
 +	pinctrl-1 = <&pinctrl_usdhc2>, <&pinctrl_usdhc2_gpio>;
 +	pinctrl-2 = <&pinctrl_usdhc2>, <&pinctrl_usdhc2_gpio>;
 +	cd-gpios = <&gpio3 00 GPIO_ACTIVE_LOW>;
-+	//vmmc-supply = <&reg_usdhc2_vmmc>;
 +	bus-width = <4>;
 +	status = "okay";
-+	no-sdio;
-+	no-mmc;
 +};
 +
 +&usdhc3 {
@@ -587,13 +492,305 @@ index 00000000000..d8a711e4abd
 +
 +	pinctrl_usdhc2: usdhc2grp {
 +		fsl,pins = <
-+			MX93_PAD_SD2_CLK__USDHC2_CLK		0x15fe
-+			MX93_PAD_SD2_CMD__USDHC2_CMD		0x13fe
-+			MX93_PAD_SD2_DATA0__USDHC2_DATA0	0x13fe
-+			MX93_PAD_SD2_DATA1__USDHC2_DATA1	0x13fe
-+			MX93_PAD_SD2_DATA2__USDHC2_DATA2	0x13fe
-+			MX93_PAD_SD2_DATA3__USDHC2_DATA3	0x13fe
++			MX93_PAD_SD2_CLK__USDHC2_CLK			0x15fe
++			MX93_PAD_SD2_CMD__USDHC2_CMD			0x13fe
++			MX93_PAD_SD2_DATA0__USDHC2_DATA0		0x13fe
++			MX93_PAD_SD2_DATA1__USDHC2_DATA1		0x13fe
++			MX93_PAD_SD2_DATA2__USDHC2_DATA2		0x13fe
++			MX93_PAD_SD2_DATA3__USDHC2_DATA3		0x13fe
 +			MX93_PAD_SD2_VSELECT__USDHC2_VSELECT	0x51e
++		>;
++	};
++
++};
++
++&wdog3 {
++	status = "okay";
++};
+diff --git a/arch/arm/dts/imx93-cargt-00359.dts b/arch/arm/dts/imx93-cargt-00359.dts
+new file mode 100644
+index 00000000000..839f27d2cba
+--- /dev/null
++++ b/arch/arm/dts/imx93-cargt-00359.dts
+@@ -0,0 +1,285 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Copyright 2022 NXP
++ */
++
++/dts-v1/;
++
++#include "imx93.dtsi"
++
++/ {
++	model = "Cargt i.MX93 SOM 00359";
++	compatible = "cargt,imx93-00359", "fsl,imx93";
++
++	chosen {
++		bootargs = "console=ttyLP0,115200";
++		stdout-path = &lpuart1;
++	};
++
++	reserved-memory {
++		#address-cells = <2>;
++		#size-cells = <2>;
++		ranges;
++
++		linux,cma {
++			compatible = "shared-dma-pool";
++			reusable;
++			alloc-ranges = <0 0x80000000 0 0x40000000>;
++			size = <0 0x10000000>;
++			linux,cma-default;
++		};
++	};
++};
++
++&eqos {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_eqos>;
++	status = "disabled";
++};
++
++&fec {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_fec>;
++	status = "disabled";
++};
++
++&lpi2c1 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++	clock-frequency = <400000>;
++	pinctrl-names = "default", "sleep";
++	pinctrl-0 = <&pinctrl_lpi2c1>;
++	pinctrl-1 = <&pinctrl_lpi2c1>;
++	status = "okay";
++
++	eeprom@50 {
++		compatible = "atmel,24c02";
++		reg = <0x50>;
++		pagesize = <16>;		
++		status = "okay";
++	};
++
++	rtc@51 {
++		compatible = "microcrystal,rv3032";
++		reg = <0x51>;
++		interrupts = <6 IRQ_TYPE_LEVEL_LOW>;
++		interrupt-parent = <&gpio1>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_rtc>;
++		status = "okay";
++	};
++
++	pmic@25 {
++		compatible = "nxp,pca9451a";
++		reg = <0x25>;
++		//interrupt-parent = <&pcal6524>;
++		//interrupts = <11 IRQ_TYPE_LEVEL_LOW>;
++		status = "okay";
++
++		regulators {
++			buck1: BUCK1 {
++				regulator-name = "BUCK1";
++				regulator-min-microvolt = <650000>;
++				regulator-max-microvolt = <2237500>;
++				regulator-boot-on;
++				regulator-always-on;
++				regulator-ramp-delay = <3125>;
++			};
++
++			buck2: BUCK2 {
++				regulator-name = "BUCK2";
++				regulator-min-microvolt = <600000>;
++				regulator-max-microvolt = <2187500>;
++				regulator-boot-on;
++				regulator-always-on;
++				regulator-ramp-delay = <3125>;
++			};
++
++			buck4: BUCK4{
++				regulator-name = "BUCK4";
++				regulator-min-microvolt = <600000>;
++				regulator-max-microvolt = <3400000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			buck5: BUCK5{
++				regulator-name = "BUCK5";
++				regulator-min-microvolt = <600000>;
++				regulator-max-microvolt = <3400000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			buck6: BUCK6 {
++				regulator-name = "BUCK6";
++				regulator-min-microvolt = <600000>;
++				regulator-max-microvolt = <3400000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			ldo1: LDO1 {
++				regulator-name = "LDO1";
++				regulator-min-microvolt = <1600000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			ldo4: LDO4 {
++				regulator-name = "LDO4";
++				regulator-min-microvolt = <800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++
++			ldo5: LDO5 {
++				regulator-name = "LDO5";
++				regulator-min-microvolt = <1800000>;
++				regulator-max-microvolt = <3300000>;
++				regulator-boot-on;
++				regulator-always-on;
++			};
++		};
++	};
++};
++
++
++
++&lpuart1 { /* console */
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_uart1>;
++	status = "okay";
++};
++
++&usdhc1 {
++	pinctrl-names = "default", "state_100mhz", "state_200mhz";
++	pinctrl-0 = <&pinctrl_usdhc1>;
++	pinctrl-1 = <&pinctrl_usdhc1>;
++	pinctrl-2 = <&pinctrl_usdhc1>;
++	bus-width = <8>;
++	non-removable;
++	status = "okay";
++};
++
++&usdhc2 {
++	status = "disabled";
++};
++
++&usdhc3 {
++	status = "disabled";
++};
++
++
++
++&iomuxc {
++
++	pinctrl_lpi2c1: lpi2c1grp {
++		fsl,pins = <
++			MX93_PAD_I2C1_SCL__LPI2C1_SCL			0x40000b9e
++			MX93_PAD_I2C1_SDA__LPI2C1_SDA			0x40000b9e
++		>;
++	};
++
++	pinctrl_eqos: eqosgrp {
++		fsl,pins = <
++			MX93_PAD_ENET1_MDC__ENET_QOS_MDC			0x57e
++			MX93_PAD_ENET1_MDIO__ENET_QOS_MDIO			0x57e
++			MX93_PAD_ENET1_RD0__ENET_QOS_RGMII_RD0			0x57e
++			MX93_PAD_ENET1_RD1__ENET_QOS_RGMII_RD1			0x57e
++			MX93_PAD_ENET1_RD2__ENET_QOS_RGMII_RD2			0x57e
++			MX93_PAD_ENET1_RD3__ENET_QOS_RGMII_RD3			0x57e
++			MX93_PAD_ENET1_RXC__CCM_ENET_QOS_CLOCK_GENERATE_RX_CLK	0x5fe
++			MX93_PAD_ENET1_RX_CTL__ENET_QOS_RGMII_RX_CTL		0x57e
++			MX93_PAD_ENET1_TD0__ENET_QOS_RGMII_TD0			0x57e
++			MX93_PAD_ENET1_TD1__ENET_QOS_RGMII_TD1			0x57e
++			MX93_PAD_ENET1_TD2__ENET_QOS_RGMII_TD2			0x57e
++			MX93_PAD_ENET1_TD3__ENET_QOS_RGMII_TD3			0x57e
++			MX93_PAD_ENET1_TXC__CCM_ENET_QOS_CLOCK_GENERATE_TX_CLK	0x5fe
++			MX93_PAD_ENET1_TX_CTL__ENET_QOS_RGMII_TX_CTL		0x57e
++		>;
++	};
++
++	pinctrl_flexspi: flexspigrp {
++		fsl,pins = <
++			MX93_PAD_SD3_CMD__FLEXSPI1_A_SS0_B      0x42
++			MX93_PAD_SD3_CLK__FLEXSPI1_A_SCLK       0x42
++			MX93_PAD_SD3_DATA0__FLEXSPI1_A_DATA00   0x42
++			MX93_PAD_SD3_DATA1__FLEXSPI1_A_DATA01   0x42
++			MX93_PAD_SD3_DATA2__FLEXSPI1_A_DATA02   0x42
++			MX93_PAD_SD3_DATA3__FLEXSPI1_A_DATA03   0x42
++		>;
++	};
++
++	pinctrl_fec: fecgrp {
++		fsl,pins = <
++			MX93_PAD_ENET2_MDC__ENET1_MDC			0x57e
++			MX93_PAD_ENET2_MDIO__ENET1_MDIO			0x57e
++			MX93_PAD_ENET2_RD0__ENET1_RGMII_RD0		0x57e
++			MX93_PAD_ENET2_RD1__ENET1_RGMII_RD1		0x57e
++			MX93_PAD_ENET2_RD2__ENET1_RGMII_RD2		0x57e
++			MX93_PAD_ENET2_RD3__ENET1_RGMII_RD3		0x57e
++			MX93_PAD_ENET2_RXC__ENET1_RGMII_RXC		0x5fe
++			MX93_PAD_ENET2_RX_CTL__ENET1_RGMII_RX_CTL	0x57e
++			MX93_PAD_ENET2_TD0__ENET1_RGMII_TD0		0x57e
++			MX93_PAD_ENET2_TD1__ENET1_RGMII_TD1		0x57e
++			MX93_PAD_ENET2_TD2__ENET1_RGMII_TD2		0x57e
++			MX93_PAD_ENET2_TD3__ENET1_RGMII_TD3		0x57e
++			MX93_PAD_ENET2_TXC__ENET1_RGMII_TXC		0x5fe
++			MX93_PAD_ENET2_TX_CTL__ENET1_RGMII_TX_CTL	0x57e
++		>;
++	};
++
++	pinctrl_uart1: uart1grp {
++		fsl,pins = <
++			MX93_PAD_UART1_RXD__LPUART1_RX			0x31e
++			MX93_PAD_UART1_TXD__LPUART1_TX			0x31e
++
++			/* Piggyback the HW ID pins inside of the UART that
++			 * we use for the shell interface. We know this gets
++			 * loaded and these pads will not be initialized if 
++			 * we just add them to the iomux pinctl since the SPL
++			 * strips some of the DTS definitions. 
++			 */
++
++			MX93_PAD_CCM_CLKO1__GPIO3_IO26 	0x31e
++			MX93_PAD_CCM_CLKO2__GPIO3_IO27 	0x31e
++			MX93_PAD_CCM_CLKO3__GPIO4_IO28 	0x31e
++			MX93_PAD_CCM_CLKO4__GPIO4_IO29 	0x31e			
++		>;
++	};
++
++	pinctrl_usdhc1: usdhc1grp {
++		fsl,pins = <
++			MX93_PAD_SD1_CLK__USDHC1_CLK		0x15fe
++			MX93_PAD_SD1_CMD__USDHC1_CMD		0x13fe
++			MX93_PAD_SD1_DATA0__USDHC1_DATA0	0x13fe
++			MX93_PAD_SD1_DATA1__USDHC1_DATA1	0x13fe
++			MX93_PAD_SD1_DATA2__USDHC1_DATA2	0x13fe
++			MX93_PAD_SD1_DATA3__USDHC1_DATA3	0x13fe
++			MX93_PAD_SD1_DATA4__USDHC1_DATA4	0x13fe
++			MX93_PAD_SD1_DATA5__USDHC1_DATA5	0x13fe
++			MX93_PAD_SD1_DATA6__USDHC1_DATA6	0x13fe
++			MX93_PAD_SD1_DATA7__USDHC1_DATA7	0x13fe
++			MX93_PAD_SD1_STROBE__USDHC1_STROBE	0x15fe
++		>;
++	};
++
++	pinctrl_reg_usdhc2_vmmc: regusdhc2vmmcgrp {
++		fsl,pins = <
++			MX93_PAD_SD2_RESET_B__GPIO3_IO07	0x31e
++		>;
++	};
++
++	pinctrl_rtc: rtcgrp {
++		fsl,pins = <
++			MX93_PAD_UART2_RXD__GPIO1_IO06		0x31e
 +		>;
 +	};
 +};
@@ -601,108 +798,95 @@ index 00000000000..d8a711e4abd
 +&wdog3 {
 +	status = "okay";
 +};
-diff --git a/arch/arm/dts/imx93-cargt-00363-osm-som.dts b/arch/arm/dts/imx93-cargt-00363-osm-som.dts
-index 2b873053ac9..e2c53bb365d 100644
---- a/arch/arm/dts/imx93-cargt-00363-osm-som.dts
-+++ b/arch/arm/dts/imx93-cargt-00363-osm-som.dts
-@@ -15,7 +15,7 @@
-  
-  / {
- 	 model = "Cargt i.MX93 00363 OSM-L SOM";
--	 compatible = "fsl,imx93-11x11-evk", "fsl,imx93";
-+	 compatible = "cargt,imx93-00363", "fsl,imx93";
- 
- 	 chosen {
- 		bootargs = "console=ttyLP0,115200";
 diff --git a/arch/arm/mach-imx/imx9/Kconfig b/arch/arm/mach-imx/imx9/Kconfig
-index fe839f1e271..36001e5ec02 100644
+index ec044f3e074..198e9931ec2 100644
 --- a/arch/arm/mach-imx/imx9/Kconfig
 +++ b/arch/arm/mach-imx/imx9/Kconfig
-@@ -68,6 +68,12 @@ config TARGET_IMX93_9X9_QSB
+@@ -73,6 +73,11 @@ config TARGET_IMX93_00324
  	select IMX93
  	select IMX9_LPDDR4X
- 
-+config TARGET_IMX93_00324
-+	bool "imx93_00324"
+ 	
++config TARGET_IMX93_00359
++	bool "imx93_00359"
 +	select IMX93
 +	select IMX9_LPDDR4X
-+	select CARGT_IMX93_LPDDR4X_TIMING_BY_NAME
 +	
  config TARGET_IMX93_00363
  	bool "imx93_00363"
  	select IMX93
-@@ -96,6 +102,7 @@ source "board/variscite/imx93_var_som/Kconfig"
- source "board/freescale/imx93_qsb/Kconfig"
- source "board/freescale/imx95_evk/Kconfig"
- source "board/toradex/verdin-imx95/Kconfig"
-+source "board/cargt/imx93_00324/Kconfig"
- source "board/cargt/imx93_00363/Kconfig"
- endif
- 
-diff --git a/board/cargt/imx93_00324/Kconfig b/board/cargt/imx93_00324/Kconfig
+diff --git a/board/cargt/imx93_00359/Kconfig b/board/cargt/imx93_00359/Kconfig
 new file mode 100644
-index 00000000000..fdc1f71f3f9
+index 00000000000..9ac5a1ac281
 --- /dev/null
-+++ b/board/cargt/imx93_00324/Kconfig
-@@ -0,0 +1,33 @@
-+if TARGET_IMX93_00324
++++ b/board/cargt/imx93_00359/Kconfig
+@@ -0,0 +1,41 @@
++if TARGET_IMX93_00359
 +
 +config SYS_BOARD
-+	default "imx93_00324"
++	default "imx93_00359"
 +
 +config SYS_VENDOR
 +	default "cargt"
 +
 +config SYS_CONFIG_NAME
-+	default "imx93_00324"
++	default "imx93_00359"
 +
 +choice
-+	prompt "Select method to choose LPDDR4x timing"
-+	default CARGT_IMX93_LPDDR4X_TIMING_BY_NAME
++	prompt "Select method to choose LPDDR4x timing for TARGET_IMX93_00359"
++	default CARGT_IMX93_00359_LPDDR4X_TIMING_BY_NAME
 +
-+config CARGT_IMX93_LPDDR4X_TIMING_BY_NAME
-+	bool "Using CARGT_IMX93_LPDDR4X_TIMING_FILENAME for LPDDR4x Timing selection"
++config CARGT_IMX93_00359_LPDDR4X_TIMING_BY_NAME
++	bool "Using CARGT_IMX93_00359_LPDDR4X_TIMING_FILENAME for LPDDR4x Timing selection"
 +	help
 +	  Select the LPDDR4x timing based on specified filename
 +
-+config CARGT_IMX93_LPDDR4X_TIMING_BY_BOARD_ID
++config CARGT_IMX93_00359_LPDDR4X_TIMING_BY_BOARD_ID
 +	bool "Using Cargt HW Board ID for LPDDR4x Timing selection"
 +	help
 +	  Select the LPDDR4x timing based on Board ID
++
++config CARGT_IMX93_00359_LPDDR4X_TIMING_BY_EEPROM
++	bool "Using Cargt EEPROM contents for LPDDR4x Timing selection"
++	help
++	  Select the LPDDR4x timing based on contents of EEPROM on SOM
++
 +endchoice
 +
-+config CARGT_IMX93_LPDDR4X_TIMING_FILENAME
++config CARGT_IMX93_00359_LPDDR4X_TIMING_FILENAME
 +	string "Specify the LPDDR4x Timing Filename"
++    depends on CARGT_IMX93_00359_LPDDR4X_TIMING_BY_NAME
 +	default "cargt_lpddr4x_1gbyte_timing"
 +	help
-+	  Name of the timing file to use when CONFIG_CARGT_LPDDR4X_BY_NAME is used.
++	  Name of the timing file to use when CARGT_IMX93_00359_LPDDR4X_TIMING_BY_NAME is used.
++
 +
 +endif
-diff --git a/board/cargt/imx93_00324/MAINTAINERS b/board/cargt/imx93_00324/MAINTAINERS
+diff --git a/board/cargt/imx93_00359/MAINTAINERS b/board/cargt/imx93_00359/MAINTAINERS
 new file mode 100644
-index 00000000000..c8f90617e12
+index 00000000000..de16093354c
 --- /dev/null
-+++ b/board/cargt/imx93_00324/MAINTAINERS
++++ b/board/cargt/imx93_00359/MAINTAINERS
 @@ -0,0 +1,6 @@
-+i.MX93 CARGT 00324 SODIMM SOM
++i.MX93 CARGT 00359 SODIMM SOM
 +M:	Tim Carney <tim.carney@cargt.com>
 +S:	Maintained
-+F:	board/cargt/imx93_00324/
-+F:	include/configs/imx93_00324.h
-+F:	configs/imx93_cargt-00324-00326_defconfig
-diff --git a/board/cargt/imx93_00324/Makefile b/board/cargt/imx93_00324/Makefile
++F:	board/cargt/imx93_00359/
++F:	include/configs/imx93_00359.h
++F:	configs/imx93_cargt-00359-00406_defconfig
+diff --git a/board/cargt/imx93_00359/Makefile b/board/cargt/imx93_00359/Makefile
 new file mode 100644
-index 00000000000..cbb6ccddbff
+index 00000000000..6a92481398b
 --- /dev/null
-+++ b/board/cargt/imx93_00324/Makefile
-@@ -0,0 +1,14 @@
++++ b/board/cargt/imx93_00359/Makefile
+@@ -0,0 +1,15 @@
 +#
 +# Copyright 2022 NXP
 +#
 +# SPDX-License-Identifier:      GPL-2.0+
 +#
 +
-+obj-y += imx93_00324.o
++obj-y += imx93_00359.o
++obj-$(CONFIG_TARGET_IMX93_00359) += ../common/imx9_eeprom.o
 +
 +ifdef CONFIG_SPL_BUILD
 +obj-y += spl-cargt.o
@@ -711,11 +895,11 @@ index 00000000000..cbb6ccddbff
 +
 + 
 \ No newline at end of file
-diff --git a/board/cargt/imx93_00324/cargt_lpddr4x_1gbyte_timing.c b/board/cargt/imx93_00324/cargt_lpddr4x_1gbyte_timing.c
+diff --git a/board/cargt/imx93_00359/cargt_lpddr4x_1gbyte_timing.c b/board/cargt/imx93_00359/cargt_lpddr4x_1gbyte_timing.c
 new file mode 100644
 index 00000000000..1166240ad8c
 --- /dev/null
-+++ b/board/cargt/imx93_00324/cargt_lpddr4x_1gbyte_timing.c
++++ b/board/cargt/imx93_00359/cargt_lpddr4x_1gbyte_timing.c
 @@ -0,0 +1,1544 @@
 +/*
 + * Copyright 2024 NXP
@@ -2261,11 +2445,11 @@ index 00000000000..1166240ad8c
 +    .fsp_cfg_num = ARRAY_SIZE(ddr_dram_fsp_cfg),
 +};
 +
-diff --git a/board/cargt/imx93_00324/cargt_lpddr4x_2gbyte_timing.c b/board/cargt/imx93_00324/cargt_lpddr4x_2gbyte_timing.c
+diff --git a/board/cargt/imx93_00359/cargt_lpddr4x_2gbyte_timing.c b/board/cargt/imx93_00359/cargt_lpddr4x_2gbyte_timing.c
 new file mode 100644
 index 00000000000..5ef00cb7469
 --- /dev/null
-+++ b/board/cargt/imx93_00324/cargt_lpddr4x_2gbyte_timing.c
++++ b/board/cargt/imx93_00359/cargt_lpddr4x_2gbyte_timing.c
 @@ -0,0 +1,2004 @@
 +/*
 + * Copyright 2023 NXP
@@ -4271,11 +4455,11 @@ index 00000000000..5ef00cb7469
 +    .fsp_cfg = ddr_dram_fsp_cfg,
 +    .fsp_cfg_num = ARRAY_SIZE(ddr_dram_fsp_cfg),
 +};
-diff --git a/board/cargt/imx93_00324/imx93_00324.c b/board/cargt/imx93_00324/imx93_00324.c
+diff --git a/board/cargt/imx93_00359/imx93_00359.c b/board/cargt/imx93_00359/imx93_00359.c
 new file mode 100644
-index 00000000000..c496dd37668
+index 00000000000..6178e53473f
 --- /dev/null
-+++ b/board/cargt/imx93_00324/imx93_00324.c
++++ b/board/cargt/imx93_00359/imx93_00359.c
 @@ -0,0 +1,272 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
@@ -4535,7 +4719,7 @@ index 00000000000..c496dd37668
 +#endif
 +
 +#ifdef CONFIG_ENV_VARS_UBOOT_RUNTIME_CONFIG
-+	env_set("board_name", "00324");
++	env_set("board_name", "00359");
 +	env_set("board_rev", "iMX93");
 +#endif
 +	return 0;
@@ -4549,12 +4733,12 @@ index 00000000000..c496dd37668
 +}
 +#endif /*CONFIG_ANDROID_RECOVERY*/
 +#endif /*CONFIG_FSL_FASTBOOT*/
-diff --git a/board/cargt/imx93_00324/spl-cargt.c b/board/cargt/imx93_00324/spl-cargt.c
+diff --git a/board/cargt/imx93_00359/spl-cargt.c b/board/cargt/imx93_00359/spl-cargt.c
 new file mode 100644
-index 00000000000..85ea365af37
+index 00000000000..28fa501bc9f
 --- /dev/null
-+++ b/board/cargt/imx93_00324/spl-cargt.c
-@@ -0,0 +1,359 @@
++++ b/board/cargt/imx93_00359/spl-cargt.c
+@@ -0,0 +1,399 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright 2022 NXP
@@ -4581,6 +4765,7 @@ index 00000000000..85ea365af37
 +#include <asm/mach-imx/syscounter.h>
 +#include <asm/sections.h>
 +#include <dm/uclass.h>
++#include <ctype.h>
 +#include <dm/device.h>
 +#include <dm/uclass-internal.h>
 +#include <dm/device-internal.h>
@@ -4592,8 +4777,11 @@ index 00000000000..85ea365af37
 +#include <power/pca9450.h>
 +#include <power/pf0900.h>
 +#include <asm/arch/trdc.h>
++#include "../common/imx9_eeprom.h"
 +
 +DECLARE_GLOBAL_DATA_PTR;
++
++static struct cargt_eeprom eeprom = {0};
 +
 +int spl_board_boot_device(enum boot_device boot_dev_spl)
 +{
@@ -4615,13 +4803,15 @@ index 00000000000..85ea365af37
 +
 +void spl_board_init(void)
 +{
++	struct cargt_eeprom *ep = CARGT_EEPROM_DATA;
 +	int ret;
 +
 +	ret = ele_start_rng();
 +	if (ret)
 +		printf("Fail to start RNG: %d\n", ret);
 +
-+	puts("Normal Boot\n");
++	/* Copy EEPROM contents to DRAM */
++	memcpy(ep, &eeprom, sizeof(*ep));
 +}
 +
 +extern struct dram_timing_info dram_timing_1866mts;
@@ -4631,9 +4821,42 @@ index 00000000000..85ea365af37
 +{
 +	struct dram_timing_info *ptiming = &dram_timing;
 +	struct gpio_desc desc[4];
++	struct udevice *dev;
 +	int ret;
 +	uint8_t board_id = 0;
-+#if IS_ENABLED (CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_BOARD_ID)
++
++	struct udevice *i2c_dev;
++	int addr, res;
++
++#if IS_ENABLED(CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_EEPROM)
++	uint16_t dram_size_mbytes = 0;
++	printf("Reading Cargt EEPROM over I2C...\n");
++	cargt_eeprom_read(&eeprom);
++	printf("Cargt EEPROM read complete.\n");
++	printf("Cargt EEPROM contents at address: 0x%p\n", &eeprom);
++	cargt_eeprom_print_prod_info(&eeprom);	
++
++	/* Determine timing based on size */
++	dram_size_mbytes = cargt_eeprom_get_dram_size_mb(&eeprom);
++	switch(dram_size_mbytes)
++	{
++		case 2048:
++			ptiming = &cargt_lpddr4x_2gbyte_timing;
++			printf("\tLoading timing for Cargt 2Gbyte LPDDR4x\r\n");
++			break;
++		case 1024:
++			ptiming = &cargt_lpddr4x_1gbyte_timing;
++			printf("\tLoading timing for Cargt 1Gbyte LPDDR4x\r\n");
++			break;
++		default:
++			printf("Unsupported DRAM size %d MB in EEPROM, defaulting to 1Gbyte timing\r\n", dram_size_mbytes);
++			ptiming = &cargt_lpddr4x_1gbyte_timing;
++			printf("\tLoading timing for Cargt 1Gbyte LPDDR4x\r\n");
++			break;
++	}
++
++#endif /* CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_BY_EEPROM */
++#if IS_ENABLED (CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_BY_BOARD_ID)
 +/* Check HWID pins to determine which dram timing to load */
 +
 +/*
@@ -4707,9 +4930,10 @@ index 00000000000..85ea365af37
 +		printf("\tLoading timing for Cargt 1Gbyte LPDDR4x\r\n");
 +		break;
 +	}
-+#else /* CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_BOARD_ID */
-+#if IS_ENABLED(CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_NAME)
-+static char *cargt_lpddr4t_timing_string = CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME;
++#endif /* CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_BY_BOARD_ID */
++#if IS_ENABLED(CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_BY_NAME)
++#ifdef CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_FILENAME
++static char *cargt_lpddr4t_timing_string = CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_FILENAME;
 +#else
 +static char *cargt_lpddr4t_timing_string = "default";
 +#endif
@@ -4725,12 +4949,12 @@ index 00000000000..85ea365af37
 +		ptiming = &cargt_lpddr4x_1gbyte_timing;
 +		printf("\tLoading timing for Cargt 1Gbyte LPDDR4x\r\n");
 +	}
-+#endif /* CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_BOARD_ID */
++#endif /* CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_BY_NAME */
 +
 +	printf("DDR: %uMTS\n", ptiming->fsp_msg[0].drate);
 +	ddr_init(ptiming);
 +}
-+
++	
 +#if CONFIG_IS_ENABLED(DM_PMIC_PF0900)
 +int power_init_board(void)
 +{
@@ -4914,12 +5138,12 @@ index 00000000000..85ea365af37
 +	return 0;
 +}
 +#endif
-diff --git a/configs/imx93-cargt-00324-00326_defconfig b/configs/imx93-cargt-00324-00326_defconfig
+diff --git a/configs/imx93-cargt-00359-00406_defconfig b/configs/imx93-cargt-00359-00406_defconfig
 new file mode 100644
-index 00000000000..f9dd7fd3dae
+index 00000000000..d867e7ea573
 --- /dev/null
-+++ b/configs/imx93-cargt-00324-00326_defconfig
-@@ -0,0 +1,212 @@
++++ b/configs/imx93-cargt-00359-00406_defconfig
+@@ -0,0 +1,218 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_IMX9=y
 +CONFIG_TEXT_BASE=0x80200000
@@ -4932,10 +5156,10 @@ index 00000000000..f9dd7fd3dae
 +CONFIG_ENV_SIZE=0x4000
 +CONFIG_ENV_OFFSET=0x700000
 +CONFIG_DM_GPIO=y
-+CONFIG_DEFAULT_DEVICE_TREE="imx93-cargt-00324-00326"
++CONFIG_DEFAULT_DEVICE_TREE="imx93-cargt-00359-00406"
 +CONFIG_SPL_TEXT_BASE=0x2049A000
 +CONFIG_USB_TCPC=y
-+CONFIG_TARGET_IMX93_00324=y
++CONFIG_TARGET_IMX93_00359=y
 +CONFIG_OF_LIBFDT_OVERLAY=y
 +CONFIG_SYS_MONITOR_LEN=524288
 +CONFIG_SPL_SERIAL=y
@@ -4953,7 +5177,7 @@ index 00000000000..f9dd7fd3dae
 +CONFIG_DISTRO_DEFAULTS=y
 +CONFIG_OF_SYSTEM_SETUP=y
 +CONFIG_BOOTCOMMAND="run distro_bootcmd;run bsp_bootcmd"
-+CONFIG_DEFAULT_FDT_FILE="boot/imx93-cargt-00324-00326.dtb"
++CONFIG_DEFAULT_FDT_FILE="boot/imx93-cargt-00359-00406.dtb"
 +CONFIG_SYS_CBSIZE=2048
 +CONFIG_SYS_PBSIZE=2074
 +CONFIG_ARCH_MISC_INIT=y
@@ -5129,27 +5353,86 @@ index 00000000000..f9dd7fd3dae
 +CONFIG_SPL_DM_GPIO=y
 +CONFIG_SPL_DM_GPIO_LOOKUP_LABEL=y
 +
-+#CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_BOARD_ID is not set
-+CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_NAME=y
-+CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME="cargt_lpddr4x_2gbyte_timing"
++CONFIG_CMD_EEPROM=y
++CONFIG_SYS_I2C_EEPROM_BUS=0
++CONFIG_SYS_EEPROM_SIZE=256
++CONFIG_SYS_EEPROM_PAGE_WRITE_BITS=4
++CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=100
++
++# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_BOARD_ID is not set
++# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_NAME is not set
++CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_EEPROM=y
 diff --git a/include/configs/imx93_00324.h b/include/configs/imx93_00324.h
-new file mode 100644
-index 00000000000..8a94cfdfc80
---- /dev/null
+index 8a94cfdfc80..eca836a0ae2 100644
+--- a/include/configs/imx93_00324.h
 +++ b/include/configs/imx93_00324.h
-@@ -0,0 +1,178 @@
+@@ -11,6 +11,19 @@
+ #include <asm/arch/imx-regs.h>
+ #include "imx_env.h"
+ 
++/* Link Definitions */
++#define CFG_SYS_INIT_RAM_ADDR        	0x80000000
++#define CFG_SYS_INIT_RAM_SIZE        	0x200000
++
++#define CFG_SYS_SDRAM_BASE           	0x80000000
++#define PHYS_SDRAM                      0x80000000
++#define PHYS_SDRAM_SIZE					0x40000000 /* 1GB DDR */
++
++#define DEFAULT_SDRAM_SIZE_MB	(1024) 	/* 1GB Minimum DDR4, see get_dram_size */
++#define CARGT_EEPROM_DRAM_START (PHYS_SDRAM + ((DEFAULT_SDRAM_SIZE_MB * SZ_1M) >> 1))
++#define DEFAULT_SDRAM_SPEED_MTS	(0) 	/* Not supported for imx93_00324, see get_dram_speed */
++#define CARGT_EEPROM_I2C_NAME "i2c@44350000" /* lpi2c2 see imx93.dtsi */
++
+ #define CFG_SYS_UBOOT_BASE	\
+ 	(QSPI0_AMBA_BASE + CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR * 512)
+ 
+@@ -159,14 +172,6 @@
+ 		   "fi; " \
+ 	   "fi;"
+ 
+-/* Link Definitions */
+-
+-#define CFG_SYS_INIT_RAM_ADDR        	0x80000000
+-#define CFG_SYS_INIT_RAM_SIZE        	0x200000
+-
+-#define CFG_SYS_SDRAM_BASE           	0x80000000
+-#define PHYS_SDRAM                      0x80000000
+-#define PHYS_SDRAM_SIZE					0x40000000 /* 1GB DDR */
+ 
+ /* Using ULP WDOG for reset */
+ #define WDOG_BASE_ADDR          WDG3_BASE_ADDR
+diff --git a/include/configs/imx93_00359.h b/include/configs/imx93_00359.h
+new file mode 100644
+index 00000000000..cd812eb09b1
+--- /dev/null
++++ b/include/configs/imx93_00359.h
+@@ -0,0 +1,183 @@
 +/* SPDX-License-Identifier: GPL-2.0+ */
 +/*
 + * Copyright 2022 NXP
 + */
 +
-+#ifndef __IMX93_00324_H
-+#define __IMX93_00324_H
++#ifndef __IMX93_00359_H
++#define __IMX93_00359_H
 +
 +#include <linux/sizes.h>
 +#include <linux/stringify.h>
 +#include <asm/arch/imx-regs.h>
 +#include "imx_env.h"
++
++/* Link Definitions */
++#define CFG_SYS_INIT_RAM_ADDR        	0x80000000
++#define CFG_SYS_INIT_RAM_SIZE        	0x200000
++
++#define CFG_SYS_SDRAM_BASE           	0x80000000
++#define PHYS_SDRAM                      0x80000000
++#define PHYS_SDRAM_SIZE					0x40000000 /* 1GB DDR */
++
++
++#define DEFAULT_SDRAM_SIZE_MB	(1024) 	/* 1GB Minimum DDR4, see get_dram_size */
++#define CARGT_EEPROM_DRAM_START (PHYS_SDRAM + ((DEFAULT_SDRAM_SIZE_MB * SZ_1M) >> 1))
++#define DEFAULT_SDRAM_SPEED_MTS	(0) 	/* Not supported for imx93_00359, see get_dram_speed */
++#define CARGT_EEPROM_I2C_NAME "i2c@44340000" /* lpi2c1 see imx93.dtsi */
 +
 +#define CFG_SYS_UBOOT_BASE	\
 +	(QSPI0_AMBA_BASE + CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR * 512)
@@ -5171,7 +5454,7 @@ index 00000000000..8a94cfdfc80
 +#define BOOTENV
 +#endif
 +
-+#define JH_ROOT_DTB    "imx93-00324.dtb"
++#define JH_ROOT_DTB    "imx93-00359.dtb"
 +
 +#define JAILHOUSE_ENV \
 +	"jh_root_dtb=" JH_ROOT_DTB "\0" \
@@ -5299,15 +5582,6 @@ index 00000000000..8a94cfdfc80
 +		   "fi; " \
 +	   "fi;"
 +
-+/* Link Definitions */
-+
-+#define CFG_SYS_INIT_RAM_ADDR        	0x80000000
-+#define CFG_SYS_INIT_RAM_SIZE        	0x200000
-+
-+#define CFG_SYS_SDRAM_BASE           	0x80000000
-+#define PHYS_SDRAM                      0x80000000
-+#define PHYS_SDRAM_SIZE					0x40000000 /* 1GB DDR */
-+
 +/* Using ULP WDOG for reset */
 +#define WDOG_BASE_ADDR          WDG3_BASE_ADDR
 +
@@ -5315,4 +5589,42 @@ index 00000000000..8a94cfdfc80
 +#define PHY_ANEG_TIMEOUT 20000
 +#endif
 +
-+#endif /* __IMX93_00324_H */
++#endif /* __IMX93_00359_H */
+diff --git a/include/configs/imx93_00363.h b/include/configs/imx93_00363.h
+index 8e8e3fd46c5..247ef450056 100644
+--- a/include/configs/imx93_00363.h
++++ b/include/configs/imx93_00363.h
+@@ -11,6 +11,19 @@
+ #include <asm/arch/imx-regs.h>
+ #include "imx_env.h"
+ 
++/* Link Definitions */
++#define CFG_SYS_INIT_RAM_ADDR        	0x80000000
++#define CFG_SYS_INIT_RAM_SIZE        	0x200000
++
++#define CFG_SYS_SDRAM_BASE           	0x80000000
++#define PHYS_SDRAM                      0x80000000
++#define PHYS_SDRAM_SIZE					0x40000000 /* 1GB DDR */
++
++#define DEFAULT_SDRAM_SIZE_MB	(1024) 			/* 1GB Minimum DDR4, see get_dram_size */
++#define CARGT_EEPROM_DRAM_START (PHYS_SDRAM + ((DEFAULT_SDRAM_SIZE_MB * SZ_1M) >> 1))
++#define DEFAULT_SDRAM_SPEED_MTS	(0) 			/* Not yet supported for imx93_00363, see get_dram_speed */
++#define CARGT_EEPROM_I2C_NAME "i2c@44340000" 	/* lpi2c1 see imx93.dtsi */
++
+ #define CFG_SYS_UBOOT_BASE	\
+ 	(QSPI0_AMBA_BASE + CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR * 512)
+ 
+@@ -161,13 +174,6 @@
+ 
+ /* Link Definitions */
+ 
+-#define CFG_SYS_INIT_RAM_ADDR        	0x80000000
+-#define CFG_SYS_INIT_RAM_SIZE        	0x200000
+-
+-#define CFG_SYS_SDRAM_BASE           	0x80000000
+-#define PHYS_SDRAM                      0x80000000
+-#define PHYS_SDRAM_SIZE					0x40000000 /* 1GB DDR */
+-
+ /* Using ULP WDOG for reset */
+ #define WDOG_BASE_ADDR          WDG3_BASE_ADDR
+ 

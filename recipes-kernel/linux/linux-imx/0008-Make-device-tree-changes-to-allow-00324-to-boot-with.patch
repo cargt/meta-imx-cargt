@@ -1,0 +1,60 @@
+From 65b23c4d4b65fd9edfaa702c3f89902f56a17a37 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Fri, 12 Dec 2025 15:35:52 -0600
+Subject: [PATCH] Make device tree changes to allow 00324 to boot with 1GB of
+ LPDDR4x.
+
+---
+ .../boot/dts/freescale/imx93-cargt-00324.dtsi | 22 ++++---------------
+ 1 file changed, 4 insertions(+), 18 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx93-cargt-00324.dtsi b/arch/arm64/boot/dts/freescale/imx93-cargt-00324.dtsi
+index c9a85d0ba17f..c4cd59d35953 100644
+--- a/arch/arm64/boot/dts/freescale/imx93-cargt-00324.dtsi
++++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00324.dtsi
+@@ -26,17 +26,11 @@ reserved-memory {
+ 		linux,cma {
+ 			compatible = "shared-dma-pool";
+ 			reusable;
+-			alloc-ranges = <0 0x80000000 0 0x40000000>;
+-			size = <0 0x10000000>;
++			alloc-ranges = <0 0xb0000000 0 0x30000000>;
++			size = <0 0xc000000>;
+ 			linux,cma-default;
+ 		};
+ 
+-		ethosu_mem: ethosu_region@C0000000 {
+-			compatible = "shared-dma-pool";
+-			reusable;
+-			reg = <0x0 0xC0000000 0x0 0x10000000>;
+-		};
+-
+ 		vdev0vring0: vdev0vring0@a4000000 {
+ 			reg = <0 0xa4000000 0 0x8000>;
+ 			no-map;
+@@ -57,8 +51,8 @@ vdev1vring1: vdev1vring1@a4018000 {
+ 			no-map;
+ 		};
+ 
+-		rsc_table: rsc-table@2021f000 {
+-			reg = <0 0x2021f000 0 0x1000>;
++		rsc_table: rsc-table@2021e000 {
++			reg = <0 0x2021e000 0 0x1000>;
+ 			no-map;
+ 		};
+ 
+@@ -75,14 +69,6 @@ ele_reserved: ele-reserved@a4120000 {
+ 		};
+ 	};
+ 
+-
+-	ethosu {
+-		compatible = "arm,ethosu";
+-		fsl,cm33-proc = <&cm33>;
+-		memory-region = <&ethosu_mem>;
+-		power-domains = <&mlmix>;
+-	};
+-
+ 	reg_vref_1v8: regulator-adc-vref {
+ 		compatible = "regulator-fixed";
+ 		regulator-name = "vref_1v8";

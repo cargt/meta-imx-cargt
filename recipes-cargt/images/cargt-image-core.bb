@@ -8,12 +8,12 @@ IMAGE_FEATURES += " \
     tools-profile \
     tools-sdk \
     package-management \
-    splash \
     nfs-server \
     tools-debug \
     ssh-server-openssh \
     hwcodecs \
     ${@bb.utils.contains('DISTRO_FEATURES', 'wayland', 'weston','', d)} \
+    empty-root-password serial-autologin-root \
 "
 
 SDKIMAGE_FEATURES:append = " \
@@ -42,6 +42,8 @@ IMAGE_INSTALL += " \
     libiio-tests \
     ${@bb.utils.contains('DISTRO_FEATURES', 'connman', 'connman-tools connman-tests connman-client', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'networkmanager', 'networkmanager networkmanager-nmcli', '', d)} \
+    swupdate swupdate-progress swupdate-www \
+    board-version \
 "
 
 CLINFO              ?= ""
