@@ -7,14 +7,18 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0004-Add-device-tree-files-for-00324-00326.patch \
             file://0005-Move-ili9881c-panel-initialization-from-the-prepare-.patch \ 
             file://0006-Add-device-tree-files-for-00377.patch \
+            file://0007-Add-support-for-00359-00406.patch \
+            file://0008-Make-device-tree-changes-to-allow-00324-to-boot-with.patch \
             "
 
 SRC_URI += "file://cargt_router_kernel_config_mods.cfg \
             file://cargt_00324_kernel_config_mods.cfg \
             file://cargt_00326_kernel_config_mods.cfg \
+            file://cargt_00359_kernel_config_mods.cfg \
             file://cargt_00363_kernel_config_mods.cfg \
             file://cargt_00365_kernel_config_mods.cfg \
             file://cargt_00377_kernel_config_mods.cfg \
+            file://cargt_00406_kernel_config_mods.cfg \
             file://cargt_t1l_kernel_config_mods.cfg \
             file://cargt_st7789t3_kernel_config_mods.cfg \
             "
@@ -22,9 +26,11 @@ SRC_URI += "file://cargt_router_kernel_config_mods.cfg \
 DELTA_KERNEL_DEFCONFIG += "${@bb.utils.contains('MACHINE_FEATURES', 'cargt-router', 'cargt_router_kernel_config_mods.cfg','', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00324', 'cargt_00324_kernel_config_mods.cfg','', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00326', 'cargt_00326_kernel_config_mods.cfg','', d)} \
+            ${@bb.utils.contains('MACHINE_FEATURES', '00359', 'cargt_00359_kernel_config_mods.cfg','', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00363', 'cargt_00363_kernel_config_mods.cfg','', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00365', 'cargt_00365_kernel_config_mods.cfg','', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00377', 'cargt_00377_kernel_config_mods.cfg','', d)} \
+            ${@bb.utils.contains('MACHINE_FEATURES', '00406', 'cargt_00406_kernel_config_mods.cfg','', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', 't1l', 'cargt_t1l_kernel_config_mods.cfg','', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', 'ST7789T3', 'cargt_st7789t3_kernel_config_mods.cfg','', d)} \
             "

@@ -4,8 +4,9 @@ require conf/machine/include/arm/armv8-2a/tune-cortexa55.inc
 MACHINE_FEATURES += "pci wifi bluetooth"
 MACHINE_FEATURES:append:use-nxp-bsp = " optee jailhouse iw612"
 
-IMX_DEFAULT_BOOTLOADER:use-nxp-bsp = "u-boot-cargt"
+IMX_DEFAULT_BOOTLOADER:use-nxp-bsp = "u-boot-imx"
 IMX_DEFAULT_BOOTLOADER:use-mainline-bsp = "u-boot-fslc"
+
 
 LOADADDR = ""
 UBOOT_SUFFIX = "bin"
