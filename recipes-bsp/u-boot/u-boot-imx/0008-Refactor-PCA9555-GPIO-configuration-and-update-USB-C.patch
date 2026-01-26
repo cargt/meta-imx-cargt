@@ -1,0 +1,86 @@
+From e449f4f963507ff28d796fe2eb273c3410282ec8 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 22 Jan 2026 15:03:51 -0600
+Subject: [PATCH] Refactor PCA9555 GPIO configuration and update USB-C
+ connector settings for improved functionality
+
+---
+ arch/arm/dts/imx8mp-cargt-00377-00365.dts | 43 ++++++++++++++++++-----
+ 1 file changed, 34 insertions(+), 9 deletions(-)
+
+diff --git a/arch/arm/dts/imx8mp-cargt-00377-00365.dts b/arch/arm/dts/imx8mp-cargt-00377-00365.dts
+index b7f9dba6f5b..6cfa536778f 100644
+--- a/arch/arm/dts/imx8mp-cargt-00377-00365.dts
++++ b/arch/arm/dts/imx8mp-cargt-00377-00365.dts
+@@ -45,12 +45,18 @@ model = "Cargt i.MX8MP 00377 OSM-L SOM on 00365 carrier board";
+ 	 pinctrl-1 = <&pinctrl_i2c2>;
+ 	 status = "okay";
+  
+-	 pca9555_20: pca9555@20 {
+-		 compatible = "nxp,pca9555";
+-		 gpio-controller;
+-		 #gpio-cells = <2>;
+-		 reg = <0x20>;
+-	 };
++	pca9555_20: pca9555@20 {
++		compatible = "nxp,pca9555";
++		reg = <0x20>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		status = "okay";
++		gpio-line-names =
++			"pca9555_20-0",	"pca9555_20-1",	"pca9555_20-2",	"pca9555_20-3", 	// 0-3
++			"pca9555_20-4",	"pca9555_20-5",	"pca9555_20-6",	"pca9555_20-7",		// 4-7
++			"pca9555_20-8",	"pca9555_20-9",	"pca9555_20-10","pca9555_20-11", 	// 8-11
++			"pca9555_20-12","pca9555_20-13","pca9555_20-14","pca9555_20-15"; 	// 12-15
++	};	 
+  
+ 	 ptn5110_51: tcpc@51 {
+ 		 compatible = "nxp,ptn5110";
+@@ -62,7 +68,7 @@ model = "Cargt i.MX8MP 00377 OSM-L SOM on 00365 carrier board";
+ 		 status = "okay";
+  
+ 		 port {
+-			 typec1_dr_sw: endpoint {
++			 typec_dr_sw: endpoint {
+ 				 remote-endpoint = <&usb3_0_drd_sw>;
+ 			 };
+ 		 };
+@@ -89,7 +95,13 @@ model = "Cargt i.MX8MP 00377 OSM-L SOM on 00365 carrier board";
+ 		 interrupt-parent = <&gpio4>;
+ 		 interrupts = <30 IRQ_TYPE_LEVEL_LOW>;			
+ 		 status = "okay";
+-
++		
++		port {
++			typec1_dr_sw: endpoint {
++				remote-endpoint = <&usb3_0_drd_sw>;
++			};
++		};
++		
+ 		usb_con: connector {
+ 			compatible = "usb-c-connector";
+ 			label = "USB-C";
+@@ -167,8 +179,21 @@ model = "Cargt i.MX8MP 00377 OSM-L SOM on 00365 carrier board";
+ };
+ 
+ &usb_dwc3_1 {
+-	dr_mode = "peripheral";
++	dr_mode = "otg";
++	hnp-disable;
++	srp-disable;
++	adp-disable;
++	usb-role-switch;
++	role-switch-default-mode = "none";
++	snps,dis-u1-entry-quirk;
++	snps,dis-u2-entry-quirk;
+ 	status = "okay";
++
++	port {
++		usb3_1_drd_sw: endpoint {
++			remote-endpoint = <&typec_dr_sw>;
++		};
++	};	
+ };
+ 
+ &usdhc2 {

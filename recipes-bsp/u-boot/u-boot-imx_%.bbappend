@@ -6,7 +6,7 @@ SRC_URI += "file://0002-Add-support-for-imx93_00363.patch \
             file://0005-Autosave-env-when-defaults-are-set.patch \
             file://0006-Add-support-for-00377-00365.patch \
             file://0007-Update-MDIO-addresses-for-Ethernet-PHYs-on-00365-boa.patch \
-            file://0008-Add-updates-for-00377-00365-support.patch \
+            file://0008-Refactor-PCA9555-GPIO-configuration-and-update-USB-C.patch \
             file://0009-Add-support-for-loading-DDR-timing-from-EEPROM-for-C.patch \
             file://0010-Add-support-for-00359-00406.patch \
             file://0011-Update-defconfig-settings-for-DDR-selection-for-0032.patch \
