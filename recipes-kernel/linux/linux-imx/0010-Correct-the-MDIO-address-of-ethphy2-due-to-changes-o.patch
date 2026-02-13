@@ -1,0 +1,26 @@
+From adbadd5f1a330dcff0cb6ac3a704ae9714a4d9a9 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 11 Dec 2025 08:55:25 -0600
+Subject: [PATCH] Correct the MDIO address of ethphy2 due to changes on the
+ latest version of 00365.
+
+---
+ arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365.dts | 4 ++--
+ 1 file changed, 2 insertions(+), 2 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365.dts b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365.dts
+index 6c8c8cd6ed96..802f253bfa9d 100644
+--- a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365.dts
++++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365.dts
+@@ -171,9 +171,9 @@ mdio {
+ 		#size-cells = <0>;
+ 		clock-frequency = <5000000>;
+ 
+-		ethphy2: ethernet-phy@1 {
++		ethphy2: ethernet-phy@0 {
+ 			compatible = "ethernet-phy-ieee802.3-c22";
+-			reg = <1>;
++			reg = <0>;
+ 			eee-broken-1000t;
+ 		};
+ 	};

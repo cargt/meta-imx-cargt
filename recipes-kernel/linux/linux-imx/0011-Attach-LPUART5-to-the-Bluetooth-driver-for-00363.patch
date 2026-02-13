@@ -1,0 +1,24 @@
+From f0e3b438dcc453c5d52b8300d06d6f43ad89f107 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 11 Dec 2025 08:55:57 -0600
+Subject: [PATCH] Attach LPUART5 to the Bluetooth driver for 00363.
+
+---
+ arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts | 4 ++++
+ 1 file changed, 4 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts
+index cf15c4fe9f4b..aa13d4b4b96c 100644
+--- a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts
++++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts
+@@ -271,6 +271,10 @@ &lpuart5 { /* bluetooth */
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_uart5>;
+ 	status = "okay";
++
++	bluetooth {
++			compatible = "nxp,88w8997-bt";
++		};
+  };
+ 
+ &media_blk_ctrl {
