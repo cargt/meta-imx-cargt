@@ -5,10 +5,13 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0002-Add-support-for-Globaltech-GTG-panels.patch \
             file://0003-Add-support-for-Epson-RX8111-RTC.patch \
             file://0004-Add-device-tree-files-for-00324-00326.patch \
-            file://0005-Move-ili9881c-panel-initialization-from-the-prepare-.patch \ 
+            file://0005-Move-ili9881c-panel-initialization-from-the-prepare-.patch \
             file://0006-Add-device-tree-files-for-00377.patch \
             file://0007-Add-support-for-00359-00406.patch \
             file://0008-Make-device-tree-changes-to-allow-00324-to-boot-with.patch \
+            file://0009-Remove-restriction-for-1.8V-only-SD-Card-support-tha.patch \
+            file://0010-Correct-the-MDIO-address-of-ethphy2-due-to-changes-o.patch \
+            file://0011-Attach-LPUART5-to-the-Bluetooth-driver-for-00363.patch \
             "
 
 SRC_URI += "file://cargt_router_kernel_config_mods.cfg \
