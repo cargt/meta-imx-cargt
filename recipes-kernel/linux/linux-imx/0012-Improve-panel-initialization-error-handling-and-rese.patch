@@ -1,0 +1,53 @@
+From 5acd100767c34a0c646bfb8321d6b53e9eb854ec Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Fri, 13 Feb 2026 15:26:47 -0600
+Subject: [PATCH] Improve panel initialization error handling and reset logic
+ in ili9881c driver.
+
+---
+ drivers/gpu/drm/panel/panel-ilitek-ili9881c.c | 17 +++++++----------
+ 1 file changed, 7 insertions(+), 10 deletions(-)
+
+diff --git a/drivers/gpu/drm/panel/panel-ilitek-ili9881c.c b/drivers/gpu/drm/panel/panel-ilitek-ili9881c.c
+index 60c1b3b86a4b..941626fcaa77 100644
+--- a/drivers/gpu/drm/panel/panel-ilitek-ili9881c.c
++++ b/drivers/gpu/drm/panel/panel-ilitek-ili9881c.c
+@@ -1075,6 +1075,7 @@ static int ili9881c_send_cmd_data(struct ili9881c *ctx, u8 cmd, u8 data)
+ static int ili9881c_prepare(struct drm_panel *panel)
+ {
+ 	struct ili9881c *ctx = panel_to_ili9881c(panel);
++	int i;
+ 	int ret;
+ 
+ 	/* Power the panel */
+@@ -1094,15 +1095,6 @@ static int ili9881c_prepare(struct drm_panel *panel)
+ 	gpiod_set_value_cansleep(ctx->reset, 0);
+ 	msleep(100);
+ 
+-	return 0;
+-}
+-
+-static int ili9881c_enable(struct drm_panel *panel)
+-{
+-	struct ili9881c *ctx = panel_to_ili9881c(panel);
+-	unsigned int i;
+-	int ret;
+-
+ 	for (i = 0; i < ctx->desc->init_length; i++) {
+ 		const struct ili9881c_instr *instr = &ctx->desc->init[i];
+ 
+@@ -1134,8 +1126,13 @@ static int ili9881c_enable(struct drm_panel *panel)
+ 	if (ret) {
+ 		printk(KERN_ERR "ili9881c_enable: exit_sleep_mode failed: %d\n", ret);
+ 		return ret;
+-	}
++		}
++	return 0;
++}
+ 
++static int ili9881c_enable(struct drm_panel *panel)
++{
++	struct ili9881c *ctx = panel_to_ili9881c(panel);
+ 
+ 	msleep(120);
+ 
