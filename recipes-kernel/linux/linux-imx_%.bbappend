@@ -12,6 +12,7 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0009-Remove-restriction-for-1.8V-only-SD-Card-support-tha.patch \
             file://0010-Correct-the-MDIO-address-of-ethphy2-due-to-changes-o.patch \
             file://0011-Attach-LPUART5-to-the-Bluetooth-driver-for-00363.patch \
+            file://0012-Improve-panel-initialization-error-handling-and-rese.patch \
             "
 
 SRC_URI += "file://cargt_router_kernel_config_mods.cfg \
