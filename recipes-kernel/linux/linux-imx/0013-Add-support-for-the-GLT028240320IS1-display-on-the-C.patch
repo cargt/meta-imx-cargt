@@ -38,7 +38,7 @@ index 000000000000..54378cf3d94a
 +
 +description:
 +  This binding is for display panels using a Sitronix ST7789T3
-+  controller in SPI mode. It is based on the Sitronix ST7735R 
++  controller in SPI mode. It is based on the Sitronix ST7735R
 +  Display Panel driver from David Lechner <david@lechnology.com>
 +
 +
@@ -111,7 +111,7 @@ index f7077bfffd3f..d56edd4660ab 100644
 -				imx93-cargt-00363-00365-glt1011280800is1.dtb
 +				imx93-cargt-00363-00365-glt1011280800is1.dtb \
 +				imx93-cargt-00363-00365-glt028240320is1.dtb
- 
+
  dtb-$(CONFIG_ARCH_MXC) += imx91-9x9-qsb.dtb \
  			  imx91-9x9-qsb-can1.dtb \
 diff --git a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dts b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dts
@@ -138,7 +138,7 @@ new file mode 100644
 index 000000000000..0fc49a49fe49
 --- /dev/null
 +++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dtsi
-@@ -0,0 +1,89 @@
+@@ -0,0 +1,88 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright 2022 NXP
@@ -204,7 +204,7 @@ index 000000000000..0fc49a49fe49
 +};
 +
 +&iomuxc {
-+   	pinctrl_lpspi8: lpspi8grp {
++	pinctrl_lpspi8: lpspi8grp {
 +		fsl,pins = <
 +			MX93_PAD_GPIO_IO12__GPIO2_IO12      0x3fe
 +			MX93_PAD_GPIO_IO13__LPSPI8_SIN      0x3fe
@@ -227,7 +227,6 @@ index 000000000000..0fc49a49fe49
 +		>;
 +	};
 +};
-+ 
 \ No newline at end of file
 diff --git a/drivers/gpu/drm/tiny/Kconfig b/drivers/gpu/drm/tiny/Kconfig
 index f6889f649bc1..fbfbd6151f77 100644
@@ -235,7 +234,7 @@ index f6889f649bc1..fbfbd6151f77 100644
 +++ b/drivers/gpu/drm/tiny/Kconfig
 @@ -212,3 +212,17 @@ config TINYDRM_ST7735R
  	  * Okaya RH128128T 1.44" 128x128 TFT
- 
+
  	  If M is selected the module will be called st7735r.
 +
 +config TINYDRM_ST7789T3
@@ -408,10 +407,10 @@ index 000000000000..b2728fc49757
 +	mipi_dbi_command(dbi, ST7789_CMD_FRCTRL1, 0x01, 0x2c, 0x2d, 0x01, 0x2c, 0x2d);
 +	mipi_dbi_command(dbi, ST7789_CMD_LCMCTRL, 0xa2, 0x02, 0x84);
 +	mipi_dbi_command(dbi, ST7789_CMD_IDSET, 0xc5);
-+	mipi_dbi_command(dbi, ST7789_CMD_VDVVRHEN, 0x01);   //9.2.12 VDVVRHEN (C2h): VDV and VRH Command Enable 
-+	mipi_dbi_command(dbi, ST7789_CMD_VRHS, 0x10);   //9.2.13 VRHS (C3h): VRH Set 
-+	mipi_dbi_command(dbi, ST7789_CMD_VDVSET, 0x20);   //9.2.14 VDVS (C4h): VDV Set 
-+	mipi_dbi_command(dbi, ST7789_CMD_FRCTR2, 0x0F);   //9.2.16 FRCTRL2 (C6h): Frame Rate Control in Normal Mode 
++	mipi_dbi_command(dbi, ST7789_CMD_VDVVRHEN, 0x01);   //9.2.12 VDVVRHEN (C2h): VDV and VRH Command Enable
++	mipi_dbi_command(dbi, ST7789_CMD_VRHS, 0x10);   //9.2.13 VRHS (C3h): VRH Set
++	mipi_dbi_command(dbi, ST7789_CMD_VRHS, 0x10);   //9.2.13 VRHS (C3h): VRH Sett
++	mipi_dbi_command(dbi, ST7789_CMD_FRCTR2, 0x0F);   //9.2.16 FRCTRL2 (C6h): Frame Rate Control in Normal Mode
 +	mipi_dbi_command(dbi, ST7789_CMD_PWCTRL1, 0xA4, 0xA1);   //9.2.21 PWCTRL1 (D0h): Power Control 1
 +	mipi_dbi_command(dbi, ST7789_CMD_VCMOFSET, 0x0e); //0xc5
 +	mipi_dbi_command(dbi, MIPI_DCS_EXIT_INVERT_MODE); //ST7789_CMD_INVOFF
@@ -436,9 +435,9 @@ index 000000000000..b2728fc49757
 +
 +	mipi_dbi_command(dbi, MIPI_DCS_SET_ADDRESS_MODE, addr_mode); //ST7789_CMD_MADCTL
 +	mipi_dbi_command(dbi, MIPI_DCS_SET_PIXEL_FORMAT, MIPI_DCS_PIXEL_FMT_16BIT); //ST7789_CMD_COLMOD
-+	mipi_dbi_command(dbi, ST7789_CMD_PVGAMCTRL, 0xD0, 0x07, 0x0E, 0x0B, 0x0A, 0x14, 0x38, 0x33, 0x4F, 0x37, 0x16, 0x16, 0x2A, 0x2E); //9.2.24 PVGAMCTRL (E0h): Positive Voltage Gamma Control 
-+	mipi_dbi_command(dbi, ST7789_CMD_NVGAMCTRL, 0xD0, 0x0B, 0x10, 0x08, 0x08, 0x06, 0x35, 0x54, 0x4D, 0x0A, 0x14, 0x14, 0x2C, 0x2F); //9.2.25 NVGAMCTRL (E1h): Negative Voltage Gamma Control 
-+	mipi_dbi_command(dbi, ST7789_CMD_EQCTRL, 0x11, 0x11, 0x03); //9.2.31 EQCTRL (E9h): Equalize time control 
++	mipi_dbi_command(dbi, ST7789_CMD_PVGAMCTRL, 0xD0, 0x07, 0x0E, 0x0B, 0x0A, 0x14, 0x38, 0x33, 0x4F, 0x37, 0x16, 0x16, 0x2A, 0x2E); //9.2.24 PVGAMCTRL (E0h): Positive Voltage Gamma Control
++	mipi_dbi_command(dbi, ST7789_CMD_NVGAMCTRL, 0xD0, 0x0B, 0x10, 0x08, 0x08, 0x06, 0x35, 0x54, 0x4D, 0x0A, 0x14, 0x14, 0x2C, 0x2F); //9.2.25 NVGAMCTRL (E1h): Negative Voltage Gamma Control
++	mipi_dbi_command(dbi, ST7789_CMD_EQCTRL, 0x11, 0x11, 0x03); //9.2.31 EQCTRL (E9h): Equalize time control
 +
 +	if (priv->cfg->disp_inversion)
 +	{
@@ -552,7 +551,7 @@ index 000000000000..b2728fc49757
 +				rotation);
 +	if (ret)
 +		return ret;
-+	
++
 +	drm_mode_config_reset(drm);
 +
 +	ret = drm_dev_register(drm, 0);
