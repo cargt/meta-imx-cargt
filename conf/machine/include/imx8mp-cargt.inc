@@ -76,3 +76,6 @@ TEE_LOAD_ADDR = "0x56000000"
 
 # Add additional firmware
 MACHINE_FIRMWARE:append = " linux-firmware-ath10k"
+
+# ISP support for imx8mp camera
+MACHINE_EXTRA_RRECOMMENDS:append = " isp-imx kernel-module-isp-vvcam"
