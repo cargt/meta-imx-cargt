@@ -96,7 +96,7 @@ index 000000000000..54378cf3d94a
 +            };
 +    };
 +
-+...
+
 diff --git a/arch/arm64/boot/dts/freescale/Makefile b/arch/arm64/boot/dts/freescale/Makefile
 index f7077bfffd3f..d56edd4660ab 100644
 --- a/arch/arm64/boot/dts/freescale/Makefile
