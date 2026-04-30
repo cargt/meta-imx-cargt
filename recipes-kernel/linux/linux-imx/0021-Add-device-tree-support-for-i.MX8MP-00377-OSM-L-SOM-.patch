@@ -1,0 +1,145 @@
+From 564089759c5d389f4ef16510c4f6d46d615380dc Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Mon, 27 Apr 2026 12:56:25 -0500
+Subject: [PATCH] Add device tree support for i.MX8MP 00377 OSM-L SOM with PCIe
+
+Co-authored-by: Copilot <copilot@github.com>
+---
+ .../freescale/imx8mp-cargt-00377-00365.dts    | 68 +++++++++++++++++--
+ ...om.dts => imx8mp-cargt-00377-osm-som.dtsi} |  8 +--
+ 2 files changed, 67 insertions(+), 9 deletions(-)
+ rename arch/arm64/boot/dts/freescale/{imx8mp-cargt-00377-osm-som.dts => imx8mp-cargt-00377-osm-som.dtsi} (99%)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365.dts b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365.dts
+index 27e63996dea2..e0342a497af1 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365.dts
+@@ -6,10 +6,16 @@
+ /dts-v1/;
+ 
+ #include <dt-bindings/usb/pd.h>
+-#include "imx8mp-cargt-00377-osm-som.dts"
+- / {
++#include <dt-bindings/phy/phy-imx8-pcie.h>
++#include "imx8mp-cargt-00377-osm-som.dtsi"
++
++/ {
+ 	model = "Cargt i.MX8MP 00377 OSM-L SOM on 00365 carrier board";
+ 
++	chosen {
++		bootargs = "clk_ignore_unused";
++	};
++
+ 	cbtl04gp {
+ 		compatible = "nxp,cbtl04gp";
+ 		switch-gpios = <&pca9555_20 10 GPIO_ACTIVE_LOW>;
+@@ -32,6 +38,19 @@ reg_usdhc2_vmmc: regulator-usdhc2 {
+ 		gpio = <&gpio2 19 GPIO_ACTIVE_HIGH>;
+ 		enable-active-high;
+ 	};
++
++	reg_pcie_3v3: regulator-pcie {
++		compatible = "regulator-fixed";
++		regulator-name = "PCIE_3V3";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&pca9555_20 9 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		regulator-always-on;
++		regulator-boot-on;
++		startup-delay-us = <1000>;
++		status = "okay";
++	};
+ };
+ 
+ &i2c2 {
+@@ -354,6 +373,39 @@ &hdmiphy {
+ 	status = "okay";
+ };
+ 
++/* PCIe PHY configuration for passive NVMe M.2 adapter.
++ * Uses hsio_blk_ctrl as the reference clock source for proper OUTPUT pad impedance.
++ */
++&pcie_phy {
++	clocks = <&hsio_blk_ctrl>;
++	clock-names = "ref";
++	fsl,clkreq-unsupported;
++	fsl,refclk-pad-mode = <IMX8_PCIE_REFCLK_PAD_OUTPUT>;
++	status = "okay";
++};
++
++&pcie {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_pcie>;
++	reset-gpio = <&gpio1 12 GPIO_ACTIVE_LOW>;
++	wake-gpios = <&gpio1 14 GPIO_ACTIVE_LOW>;
++	alert-gpios = <&gpio5 2 GPIO_ACTIVE_LOW>;
++	clkreq-gpio = <&gpio1 5 GPIO_ACTIVE_LOW>;
++	vpcie-supply = <&reg_pcie_3v3>;
++	ext_osc = <0>;
++	fsl,max-link-speed = <1>;
++	clocks = <&clk IMX8MP_CLK_HSIO_ROOT>,
++		 <&clk IMX8MP_CLK_PCIE_AUX>,
++		 <&clk IMX8MP_CLK_HSIO_AXI>,
++		 <&clk IMX8MP_CLK_PCIE_ROOT>;
++	clock-names = "pcie", "pcie_aux", "pcie_phy", "pcie_bus";
++	assigned-clocks = <&clk IMX8MP_CLK_HSIO_AXI>,
++			  <&clk IMX8MP_CLK_PCIE_AUX>;
++	assigned-clock-rates = <500000000>, <10000000>;
++	assigned-clock-parents = <&clk IMX8MP_SYS_PLL2_500M>,
++				 <&clk IMX8MP_SYS_PLL2_50M>;
++	status = "okay";
++};
+ 
+ &iomuxc {
+ 	pinctrl-names = "default";
+@@ -469,6 +521,15 @@ MX8MP_IOMUXC_SAI5_RXD3__CAN2_TX		0x154
+ 		>;
+ 	};
+ 
++	pinctrl_pcie: pciegrp {
++		fsl,pins = <
++			MX8MP_IOMUXC_GPIO1_IO05__GPIO1_IO05		0x60
++			MX8MP_IOMUXC_GPIO1_IO12__GPIO1_IO12		0x10
++			MX8MP_IOMUXC_GPIO1_IO14__GPIO1_IO14		0x10
++			MX8MP_IOMUXC_SAI3_MCLK__GPIO5_IO02		0x1c4
++		>;
++	};
++
+ 	pinctrl_fec: fecgrp {
+ 		fsl,pins = <
+ 			MX8MP_IOMUXC_SAI1_RXD2__ENET1_MDC			0x2
+@@ -488,5 +549,4 @@ MX8MP_IOMUXC_SAI1_TXD5__ENET1_RGMII_TXC		0x16
+ 			MX8MP_IOMUXC_SAI1_RXD0__GPIO4_IO02			0x10
+ 		>;
+ 	};
+- };
+- 
+\ No newline at end of file
++};
+diff --git a/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-osm-som.dts b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-osm-som.dtsi
+similarity index 99%
+rename from arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-osm-som.dts
+rename to arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-osm-som.dtsi
+index 1fca53b6119d..7c74f8c23652 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-osm-som.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-osm-som.dtsi
+@@ -3,12 +3,10 @@
+  * Copyright 2022 NXP
+  */
+ 
+- /dts-v1/;
++#include <dt-bindings/usb/pd.h>
++#include "imx8mp.dtsi"
+ 
+- #include <dt-bindings/usb/pd.h>
+- #include "imx8mp.dtsi"
+-
+- &iomuxc {
++&iomuxc {
+ 	pinctrl-names = "default";
+ 
+ 	pinctrl_i2c1: i2c1grp {
+-- 
+2.34.1
+
