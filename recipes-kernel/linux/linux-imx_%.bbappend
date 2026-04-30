@@ -14,6 +14,12 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0011-Attach-LPUART5-to-the-Bluetooth-driver-for-00363.patch \
             file://0012-Improve-panel-initialization-error-handling-and-rese.patch \
             file://0013-Add-support-for-the-GLT028240320IS1-display-on-the-C.patch \
+            file://0019-Add-RTS-CTS-support-for-Bluetooth-UART-on-00363.patch \
+            file://0020-Add-FlexCAN-support-and-update-UART-RTS-CTS-configur.patch \
+            file://0021-Add-device-tree-support-for-i.MX8MP-00377-OSM-L-SOM-.patch \
+            file://0022-Reorganize-device-tree-source-file-for-the-Cargt-i.M.patch \
+            file://0023-Add-device-tree-support-for-OS08A20-camera-and-enabl.patch \
+            file://0024-Add-HDMI-support-for-Cargt-i.MX8MP-00377-OSM-L-SOM-o.patch \
             "
 
 SRC_URI += "file://cargt_router_kernel_config_mods.cfg \
