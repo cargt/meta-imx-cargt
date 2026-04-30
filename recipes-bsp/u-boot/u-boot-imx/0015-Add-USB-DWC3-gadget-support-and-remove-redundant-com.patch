@@ -1,0 +1,45 @@
+From cb9b5a74ffdf0b61256bc80a79933913ea1ddf1a Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Fri, 27 Feb 2026 10:49:12 -0600
+Subject: [PATCH] Add USB DWC3 gadget support and remove redundant compatible
+ entries
+
+---
+ arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi | 2 --
+ configs/imx8mp-cargt-00377-00365_defconfig        | 1 +
+ 2 files changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi b/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi
+index a794aeb2f6e..92d084b637b 100644
+--- a/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi
++++ b/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi
+@@ -166,14 +166,12 @@
+ };
+ 
+ &usb_dwc3_0 {
+-	compatible = "fsl,imx8mq-dwc3", "snps,dwc3";
+ 	assigned-clocks = <&clk IMX8MP_CLK_HSIO_AXI>;
+ 	assigned-clock-parents = <&clk IMX8MP_SYS_PLL1_800M>;
+ 	assigned-clock-rates = <400000000>;
+ };
+ 
+ &usb_dwc3_1 {
+-	compatible = "fsl,imx8mq-dwc3", "snps,dwc3";
+ 	assigned-clocks = <&clk IMX8MP_CLK_HSIO_AXI>;
+ 	assigned-clock-parents = <&clk IMX8MP_SYS_PLL1_800M>;
+ 	assigned-clock-rates = <400000000>;
+diff --git a/configs/imx8mp-cargt-00377-00365_defconfig b/configs/imx8mp-cargt-00377-00365_defconfig
+index ad32c1469e3..d6d954eaf48 100644
+--- a/configs/imx8mp-cargt-00377-00365_defconfig
++++ b/configs/imx8mp-cargt-00377-00365_defconfig
+@@ -113,6 +113,7 @@ CONFIG_DFU_RAM=y
+ CONFIG_USB_PORT_AUTO=y
+ CONFIG_USB_FUNCTION_FASTBOOT=y
+ CONFIG_UDP_FUNCTION_FASTBOOT=y
++CONFIG_USB_DWC3_GADGET=y
+ CONFIG_FASTBOOT_BUF_ADDR=0x42800000
+ CONFIG_FASTBOOT_BUF_SIZE=0x40000000
+ CONFIG_FASTBOOT_FLASH=y
+-- 
+2.34.1
+

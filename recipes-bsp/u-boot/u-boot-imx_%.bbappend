@@ -11,6 +11,9 @@ SRC_URI += "file://0002-Add-support-for-imx93_00363.patch \
             file://0010-Add-support-for-00359-00406.patch \
             file://0011-Update-defconfig-settings-for-DDR-selection-for-0032.patch \
             file://0012-Fix-preprocessor-definition-typo.patch \
+            file://0013-Add-Cargt-EEPROM-support-for-LPDDR4-timing-configura.patch \
+            file://0014-Update-USB-role-switch-mode-and-add-USB-port-auto-co.patch \
+            file://0015-Add-USB-DWC3-gadget-support-and-remove-redundant-com.patch \
             "
 
 SRC_URI:remove = "file://0001-Add-Olimex-iMX8MP-SOM-EVB-IND.patch"

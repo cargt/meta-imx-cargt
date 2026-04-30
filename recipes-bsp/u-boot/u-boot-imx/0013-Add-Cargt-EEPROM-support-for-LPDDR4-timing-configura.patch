@@ -1,0 +1,403 @@
+From e3e5a4497b8ac99e495c8a3211c6721fa036623d Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 19 Feb 2026 16:47:46 -0600
+Subject: [PATCH] Add Cargt EEPROM support for LPDDR4 timing configuration on
+ i.MX8MP boards
+
+---
+ .../common/{imx9_eeprom.c => cargt_eeprom.c}  |  9 +++-
+ .../common/{imx9_eeprom.h => cargt_eeprom.h}  | 13 +++--
+ board/cargt/imx8mp_00377/Kconfig              | 23 ++++++++
+ board/cargt/imx8mp_00377/Makefile             | 10 ++++
+ board/cargt/imx8mp_00377/lpddr4_timing_ndm.c  | 20 +++----
+ board/cargt/imx8mp_00377/spl.c                | 52 ++++++++++++++++++-
+ board/cargt/imx93_00324/Makefile              |  2 +-
+ board/cargt/imx93_00324/spl-cargt.c           |  2 +-
+ board/cargt/imx93_00363/Makefile              |  2 +-
+ board/cargt/imx93_00363/spl-cargt.c           |  2 +-
+ configs/imx8mp-cargt-00377-00365_defconfig    |  1 +
+ include/configs/imx8mp_00377.h                |  6 +++
+ 12 files changed, 122 insertions(+), 20 deletions(-)
+ rename board/cargt/common/{imx9_eeprom.c => cargt_eeprom.c} (96%)
+ rename board/cargt/common/{imx9_eeprom.h => cargt_eeprom.h} (90%)
+
+diff --git a/board/cargt/common/imx9_eeprom.c b/board/cargt/common/cargt_eeprom.c
+similarity index 96%
+rename from board/cargt/common/imx9_eeprom.c
+rename to board/cargt/common/cargt_eeprom.c
+index f26723d4584..d7c426a9399 100644
+--- a/board/cargt/common/imx9_eeprom.c
++++ b/board/cargt/common/cargt_eeprom.c
+@@ -9,9 +9,16 @@
+ #include <asm/io.h>
+ #include <cpu_func.h>
+ #include <u-boot/crc.h>
++
++#ifdef CONFIG_ARCH_IMX9
+ #include <asm/arch-imx9/ddr.h>
++#endif
++
++#ifdef CONFIG_ARCH_IMX8M
++#include <asm/arch/ddr.h>
++#endif
+ 
+-#include "imx9_eeprom.h"
++#include "cargt_eeprom.h"
+ 
+ static int cargt_eeprom_get_dev(struct udevice **devp)
+ {
+diff --git a/board/cargt/common/imx9_eeprom.h b/board/cargt/common/cargt_eeprom.h
+similarity index 90%
+rename from board/cargt/common/imx9_eeprom.h
+rename to board/cargt/common/cargt_eeprom.h
+index 6d95faf14d9..2b2858d08a5 100644
+--- a/board/cargt/common/imx9_eeprom.h
++++ b/board/cargt/common/cargt_eeprom.h
+@@ -4,13 +4,17 @@
+  *
+  */
+ 
+-#ifndef _MX9_CARGT_EEPROM_H_
+-#define _MX9_CARGT_EEPROM_H_
++#ifndef _CARGT_EEPROM_H_
++#define _CARGT_EEPROM_H_
+ 
+ #ifdef CONFIG_ARCH_IMX9
+ #include <asm/arch-imx9/ddr.h>
+ #endif
+ 
++#ifdef CONFIG_ARCH_IMX8M
++#include <asm/arch/ddr.h>
++#endif
++
+ #define CARGT_EEPROM_MAGIC	0x43524754 /* == HEX("CRGT") */
+ 
+ #define CARGT_EEPROM_I2C_ADDR	0x50
+@@ -67,6 +71,7 @@ int cargt_eeprom_get_dram_speed(struct cargt_eeprom *ep, phys_size_t *speed);
+ void cargt_eeprom_print_prod_info(struct cargt_eeprom *e);
+ int cargt_eeprom_is_valid(struct cargt_eeprom *ep);
+ int cargt_eeprom_get_cpn_string(struct cargt_eeprom *ep, char *cpn_buf, size_t buf_size);
++uint16_t cargt_eeprom_get_dram_size_mb(struct cargt_eeprom *ep);
++uint16_t cargt_eeprom_get_dram_speed_mts(struct cargt_eeprom *ep);
+ 
+-
+-#endif /* _MX9_CARGT_EEPROM_H_ */
++#endif /* _CARGT_EEPROM_H_ */
+diff --git a/board/cargt/imx8mp_00377/Kconfig b/board/cargt/imx8mp_00377/Kconfig
+index 01a1474bfb6..ca9a5dc8902 100644
+--- a/board/cargt/imx8mp_00377/Kconfig
++++ b/board/cargt/imx8mp_00377/Kconfig
+@@ -12,4 +12,27 @@ config SYS_CONFIG_NAME
+ config IMX_CONFIG
+ 	default "board/cargt/imx8mp_00377/imximage-8mp-lpddr4.cfg"
+ 
++choice
++	prompt "Select method to choose LPDDR4 timing for TARGET_IMX8MP_00377"
++	default CARGT_IMX8MP_00377_LPDDR4_TIMING_BY_EEPROM
++
++config CARGT_IMX8MP_00377_LPDDR4_TIMING_BY_NAME
++	bool "Using CARGT_IMX8MP_00377_LPDDR4_TIMING_FILENAME for LPDDR4 Timing selection"
++	help
++	  Select the LPDDR4 timing based on specified filename
++
++config CARGT_IMX8MP_00377_LPDDR4_TIMING_BY_EEPROM
++	bool "Using Cargt EEPROM contents for LPDDR4 Timing selection"
++	help
++	  Select the LPDDR4 timing based on contents of EEPROM on SOM
++
++endchoice
++
++config CARGT_IMX8MP_00377_LPDDR4_TIMING_FILENAME
++	string "Specify the LPDDR4 Timing Filename"
++	depends on CARGT_IMX8MP_00377_LPDDR4_TIMING_BY_NAME
++	default "lpddr4_timing"
++	help
++	  Name of the timing file to use when CARGT_IMX8MP_00377_LPDDR4_TIMING_BY_NAME is used.
++
+ endif
+diff --git a/board/cargt/imx8mp_00377/Makefile b/board/cargt/imx8mp_00377/Makefile
+index cc4d917800e..ed027d18003 100644
+--- a/board/cargt/imx8mp_00377/Makefile
++++ b/board/cargt/imx8mp_00377/Makefile
+@@ -5,12 +5,22 @@
+ #
+ 
+ obj-y += imx8mp_00377.o
++obj-$(CONFIG_TARGET_IMX8MP_00377) += ../common/cargt_eeprom.o
+ 
+ ifdef CONFIG_SPL_BUILD
+ obj-y += spl.o
++
++ifdef CONFIG_CARGT_IMX8MP_00377_LPDDR4_TIMING_BY_EEPROM
++# When EEPROM timing selection is enabled, build both timing files
++# so we can switch between them based on EEPROM content
++obj-$(CONFIG_IMX8M_LPDDR4) += lpddr4_timing.o lpddr4_timing_ndm.o
++else
++# Use CONFIG_IMX8M_LPDDR4_FREQ0_3200MTS to choose single timing file
+ ifdef CONFIG_IMX8M_LPDDR4_FREQ0_3200MTS
+ obj-y += lpddr4_timing_ndm.o
+ else
+ obj-$(CONFIG_IMX8M_LPDDR4) += lpddr4_timing.o
+ endif
+ endif
++
++endif
+diff --git a/board/cargt/imx8mp_00377/lpddr4_timing_ndm.c b/board/cargt/imx8mp_00377/lpddr4_timing_ndm.c
+index e17a412da3e..2de3513bd4d 100644
+--- a/board/cargt/imx8mp_00377/lpddr4_timing_ndm.c
++++ b/board/cargt/imx8mp_00377/lpddr4_timing_ndm.c
+@@ -11,7 +11,7 @@
+ #include <asm/arch/ddr.h>
+ 
+ /* Initialize DDRC registers */
+-struct dram_cfg_param ddr_ddrc_cfg[] = {
++static struct dram_cfg_param ddr_ddrc_cfg[] = {
+ 	{0x3d400304, 0x1},
+ 	{0x3d400030, 0x1},
+ 	{0x3d400000, 0xa3080020},
+@@ -125,7 +125,7 @@ struct dram_cfg_param ddr_ddrc_cfg[] = {
+ };
+ 
+ /* PHY Initialize Configuration */
+-struct dram_cfg_param ddr_ddrphy_cfg[] = {
++static struct dram_cfg_param ddr_ddrphy_cfg[] = {
+ 	{0x100a0, 0x0},
+ 	{0x100a1, 0x1},
+ 	{0x100a2, 0x2},
+@@ -334,7 +334,7 @@ struct dram_cfg_param ddr_ddrphy_cfg[] = {
+ };
+ 
+ /* PHY trained csr */
+-struct dram_cfg_param ddr_ddrphy_trained_csr[] = {
++static struct dram_cfg_param ddr_ddrphy_trained_csr[] = {
+ 	{0x1005f, 0x0},
+ 	{0x1015f, 0x0},
+ 	{0x1105f, 0x0},
+@@ -1694,7 +1694,7 @@ struct dram_cfg_param ddr_ddrphy_trained_csr[] = {
+ };
+ 
+ /* P0 message block parameter for training firmware */
+-struct dram_cfg_param ddr_fsp0_cfg[] = {
++static struct dram_cfg_param ddr_fsp0_cfg[] = {
+ 	{0xd0000, 0x0},
+ 	{0x54003, 0xc80},
+ 	{0x54004, 0x2},
+@@ -1733,7 +1733,7 @@ struct dram_cfg_param ddr_fsp0_cfg[] = {
+ };
+ 
+ /* P1 message block parameter for training firmware */
+-struct dram_cfg_param ddr_fsp1_cfg[] = {
++static struct dram_cfg_param ddr_fsp1_cfg[] = {
+ 	{0xd0000, 0x0},
+ 	{0x54002, 0x101},
+ 	{0x54003, 0x190},
+@@ -1773,7 +1773,7 @@ struct dram_cfg_param ddr_fsp1_cfg[] = {
+ };
+ 
+ /* P2 message block parameter for training firmware */
+-struct dram_cfg_param ddr_fsp2_cfg[] = {
++static struct dram_cfg_param ddr_fsp2_cfg[] = {
+ 	{0xd0000, 0x0},
+ 	{0x54002, 0x102},
+ 	{0x54003, 0x64},
+@@ -1813,7 +1813,7 @@ struct dram_cfg_param ddr_fsp2_cfg[] = {
+ };
+ 
+ /* P0 2D message block parameter for training firmware */
+-struct dram_cfg_param ddr_fsp0_2d_cfg[] = {
++static struct dram_cfg_param ddr_fsp0_2d_cfg[] = {
+ 	{0xd0000, 0x0},
+ 	{0x54003, 0xc80},
+ 	{0x54004, 0x2},
+@@ -1853,7 +1853,7 @@ struct dram_cfg_param ddr_fsp0_2d_cfg[] = {
+ };
+ 
+ /* DRAM PHY init engine image */
+-struct dram_cfg_param ddr_phy_pie[] = {
++static struct dram_cfg_param ddr_phy_pie[] = {
+ 	{0xd0000, 0x0},
+ 	{0x90000, 0x10},
+ 	{0x90001, 0x400},
+@@ -2437,7 +2437,7 @@ struct dram_cfg_param ddr_phy_pie[] = {
+ 	{0xd0000, 0x1},
+ };
+ 
+-struct dram_fsp_msg ddr_dram_fsp_msg[] = {
++static struct dram_fsp_msg ddr_dram_fsp_msg[] = {
+ 	{
+ 		/* P0 3200mts 1D */
+ 		.drate = 3200,
+@@ -2469,7 +2469,7 @@ struct dram_fsp_msg ddr_dram_fsp_msg[] = {
+ };
+ 
+ /* ddr timing config params */
+-struct dram_timing_info dram_timing = {
++struct dram_timing_info dram_timing_ndm = {
+ 	.ddrc_cfg = ddr_ddrc_cfg,
+ 	.ddrc_cfg_num = ARRAY_SIZE(ddr_ddrc_cfg),
+ 	.ddrphy_cfg = ddr_ddrphy_cfg,
+diff --git a/board/cargt/imx8mp_00377/spl.c b/board/cargt/imx8mp_00377/spl.c
+index 95015d51643..b089d8d539c 100644
+--- a/board/cargt/imx8mp_00377/spl.c
++++ b/board/cargt/imx8mp_00377/spl.c
+@@ -28,9 +28,12 @@
+ #include <mmc.h>
+ #include <asm/arch/ddr.h>
+ #include <asm/sections.h>
++#include "../common/cargt_eeprom.h"
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+ 
++static struct cargt_eeprom eeprom = {0};
++
+ int spl_board_boot_device(enum boot_device boot_dev_spl)
+ {
+ #ifdef CONFIG_SPL_BOOTROM_SUPPORT
+@@ -57,15 +60,62 @@ int spl_board_boot_device(enum boot_device boot_dev_spl)
+ #endif
+ }
+ 
++extern struct dram_timing_info dram_timing;
++extern struct dram_timing_info dram_timing_ndm;
++
+ void spl_dram_init(void)
+ {
+-	ddr_init(&dram_timing);
++	struct dram_timing_info *ptiming = &dram_timing;
++
++#if IS_ENABLED(CONFIG_CARGT_IMX8MP_00377_LPDDR4_TIMING_BY_EEPROM)
++	uint16_t dram_speed_mts = 0;
++	uint16_t dram_size_mb = 0;
++
++	printf("Reading Cargt EEPROM over I2C...\n");
++	cargt_eeprom_read(&eeprom);
++	printf("Cargt EEPROM read complete.\n");
++	cargt_eeprom_print_prod_info(&eeprom);
++
++	/* Determine timing based on speed */
++	dram_speed_mts = cargt_eeprom_get_dram_speed_mts(&eeprom);
++	dram_size_mb = cargt_eeprom_get_dram_size_mb(&eeprom);
++
++	switch (dram_speed_mts) {
++	case 3200:
++		ptiming = &dram_timing_ndm;
++		printf("\tLoading timing for 3200 MTS LPDDR4 (%d MB)\n", dram_size_mb);
++		break;
++	case 4000:
++		ptiming = &dram_timing;
++		printf("\tLoading timing for 4000 MTS LPDDR4 (%d MB)\n", dram_size_mb);
++		break;
++	default:
++		printf("Warning: Unsupported DRAM speed %d MTS in EEPROM, defaulting to 4000 MTS\n",
++		       dram_speed_mts);
++		ptiming = &dram_timing;
++		printf("\tLoading timing for 4000 MTS LPDDR4 (%d MB)\n", dram_size_mb);
++		break;
++	}
++
++	/* Warn if size doesn't match expected 4GB */
++	if (dram_size_mb != 4096 && dram_size_mb != 0) {
++		printf("Warning: Unexpected DRAM size %d MB in EEPROM (expected 4096 MB)\n",
++		       dram_size_mb);
++	}
++#endif /* CONFIG_CARGT_IMX8MP_00377_LPDDR4_TIMING_BY_EEPROM */
++
++	ddr_init(ptiming);
+ }
+ 
+ void spl_board_init(void)
+ {
++	struct cargt_eeprom *ep = CARGT_EEPROM_DATA;
++
+ 	arch_misc_init();
+ 
++	/* Copy EEPROM contents to DRAM */
++	memcpy(ep, &eeprom, sizeof(*ep));
++
+ 	/*
+ 	 * Set GIC clock to 500Mhz for OD VDD_SOC. Kernel driver does
+ 	 * not allow to change it. Should set the clock after PMIC
+diff --git a/board/cargt/imx93_00324/Makefile b/board/cargt/imx93_00324/Makefile
+index aae79ef3108..a1ddfe0da91 100644
+--- a/board/cargt/imx93_00324/Makefile
++++ b/board/cargt/imx93_00324/Makefile
+@@ -5,7 +5,7 @@
+ #
+ 
+ obj-y += imx93_00324.o
+-obj-$(CONFIG_TARGET_IMX93_00324) += ../common/imx9_eeprom.o
++obj-$(CONFIG_TARGET_IMX93_00324) += ../common/cargt_eeprom.o
+ 
+ ifdef CONFIG_SPL_BUILD
+ obj-y += spl-cargt.o
+diff --git a/board/cargt/imx93_00324/spl-cargt.c b/board/cargt/imx93_00324/spl-cargt.c
+index 4f7c0b433d0..a379b019fe5 100644
+--- a/board/cargt/imx93_00324/spl-cargt.c
++++ b/board/cargt/imx93_00324/spl-cargt.c
+@@ -36,7 +36,7 @@
+ #include <power/pca9450.h>
+ #include <power/pf0900.h>
+ #include <asm/arch/trdc.h>
+-#include "../common/imx9_eeprom.h"
++#include "../common/cargt_eeprom.h"
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+diff --git a/board/cargt/imx93_00363/Makefile b/board/cargt/imx93_00363/Makefile
+index e28f86189d3..9076a82f8eb 100644
+--- a/board/cargt/imx93_00363/Makefile
++++ b/board/cargt/imx93_00363/Makefile
+@@ -5,7 +5,7 @@
+ #
+ 
+ obj-y += imx93_00363.o
+-obj-$(CONFIG_TARGET_IMX93_00363) += ../common/imx9_eeprom.o
++obj-$(CONFIG_TARGET_IMX93_00363) += ../common/cargt_eeprom.o
+ 
+ ifdef CONFIG_SPL_BUILD
+ obj-y += spl-cargt.o
+diff --git a/board/cargt/imx93_00363/spl-cargt.c b/board/cargt/imx93_00363/spl-cargt.c
+index 1dc174c20d6..10acc192adb 100644
+--- a/board/cargt/imx93_00363/spl-cargt.c
++++ b/board/cargt/imx93_00363/spl-cargt.c
+@@ -36,7 +36,7 @@
+ #include <power/pca9450.h>
+ #include <power/pf0900.h>
+ #include <asm/arch/trdc.h>
+-#include "../common/imx9_eeprom.h"
++#include "../common/cargt_eeprom.h"
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+diff --git a/configs/imx8mp-cargt-00377-00365_defconfig b/configs/imx8mp-cargt-00377-00365_defconfig
+index 5d1d101677a..34ceee8d6ef 100644
+--- a/configs/imx8mp-cargt-00377-00365_defconfig
++++ b/configs/imx8mp-cargt-00377-00365_defconfig
+@@ -16,6 +16,7 @@ CONFIG_DM_GPIO=y
+ CONFIG_SPL_TEXT_BASE=0x920000
+ CONFIG_USB_TCPC=y
+ CONFIG_TARGET_IMX8MP_00377=y
++CONFIG_CARGT_IMX8MP_00377_LPDDR4_TIMING_BY_EEPROM=y
+ CONFIG_SPL_SERIAL=y
+ CONFIG_SPL_DRIVERS_MISC=y
+ CONFIG_SPL_STACK=0x96dff0
+diff --git a/include/configs/imx8mp_00377.h b/include/configs/imx8mp_00377.h
+index 7d5109524c3..cba05930f24 100644
+--- a/include/configs/imx8mp_00377.h
++++ b/include/configs/imx8mp_00377.h
+@@ -169,6 +169,12 @@
+ #define PHYS_SDRAM_2			0xC0000000
+ #define PHYS_SDRAM_2_SIZE		0x80000000	/* 2 GB */
+ 
++/* EEPROM Configuration for SOM */
++#define DEFAULT_SDRAM_SIZE_MB	(4096)	/* 4GB default for imx8mp_00377 */
++#define CARGT_EEPROM_DRAM_START	(PHYS_SDRAM + ((unsigned long)(DEFAULT_SDRAM_SIZE_MB) * SZ_1M / 2))
++#define DEFAULT_SDRAM_SPEED_MTS	(4000)	/* 4000 MTS default */
++#define CARGT_EEPROM_I2C_NAME	"i2c@30a20000"	/* i2c1 */
++
+ #define CFG_MXC_UART_BASE		UART4_BASE_ADDR
+ 
+ #define CFG_SYS_FSL_USDHC_NUM	2
+-- 
+2.34.1
+
