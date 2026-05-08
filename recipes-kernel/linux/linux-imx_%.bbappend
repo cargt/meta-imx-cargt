@@ -20,6 +20,7 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0022-Reorganize-device-tree-source-file-for-the-Cargt-i.M.patch \
             file://0023-Add-device-tree-support-for-OS08A20-camera-and-enabl.patch \
             file://0024-Add-HDMI-support-for-Cargt-i.MX8MP-00377-OSM-L-SOM-o.patch \
+            file://0025-Limit-the-maximum-frequency-for-the-SD-Card-to-104-M.patch \
             "
 
 SRC_URI += "file://cargt_router_kernel_config_mods.cfg \
