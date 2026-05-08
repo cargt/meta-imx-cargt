@@ -1,0 +1,95 @@
+From 746df0415903c8404e2699a00215b687c3e89fd9 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Wed, 22 Apr 2026 15:59:18 -0500
+Subject: [PATCH] Add FlexCAN support and update UART RTS/CTS configuration for
+ 00377-00365.
+
+---
+ .../freescale/imx8mp-cargt-00377-00365.dts    | 26 +++++++++++++++++++
+ .../freescale/imx8mp-cargt-00377-osm-som.dts  | 12 +++------
+ 2 files changed, 30 insertions(+), 8 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365.dts b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365.dts
+index ff2baaa7c32b..27e63996dea2 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365.dts
+@@ -127,6 +127,18 @@ typec_con_ss: endpoint {
+ 	};
+ };
+ 
++&flexcan1 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_flexcan1>;
++	status = "okay";
++};
++
++&flexcan2 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_flexcan2>;
++	status = "okay";
++};
++
+ &uart2 {
+  	/* These pins are needed for ETH and USB interrupts
+ 	 * on the 00365 carrier board, so disable UART2
+@@ -443,6 +455,20 @@ MX8MP_IOMUXC_SAI2_RXC__GPIO4_IO22							0x10
+ 		>;
+ 	};
+ 
++	pinctrl_flexcan1: flexcan1grp {
++		fsl,pins = <
++			MX8MP_IOMUXC_SAI5_RXD1__CAN1_TX		0x154
++			MX8MP_IOMUXC_SAI5_RXD2__CAN1_RX		0x154
++		>;
++	};
++
++	pinctrl_flexcan2: flexcan2grp {
++		fsl,pins = <
++			MX8MP_IOMUXC_SAI5_MCLK__CAN2_RX		0x154
++			MX8MP_IOMUXC_SAI5_RXD3__CAN2_TX		0x154
++		>;
++	};
++
+ 	pinctrl_fec: fecgrp {
+ 		fsl,pins = <
+ 			MX8MP_IOMUXC_SAI1_RXD2__ENET1_MDC			0x2
+diff --git a/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-osm-som.dts b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-osm-som.dts
+index 94dfc95900bb..1fca53b6119d 100644
+--- a/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-osm-som.dts
++++ b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-osm-som.dts
+@@ -28,8 +28,8 @@ pinctrl_uart1: uart1grp {
+ 		fsl,pins = <
+ 			MX8MP_IOMUXC_UART1_RXD__UART1_DCE_RX	0x140
+ 			MX8MP_IOMUXC_UART1_TXD__UART1_DCE_TX	0x140
+-			MX8MP_IOMUXC_UART3_TXD__UART1_DTE_CTS	0x140
+-			MX8MP_IOMUXC_UART3_TXD__UART1_DCE_RTS	0x140
++			MX8MP_IOMUXC_UART3_TXD__UART1_DCE_RTS	0x140 
++		    MX8MP_IOMUXC_UART3_RXD__UART1_DCE_CTS	0x140 
+ 		>;
+ 	};
+ 
+@@ -419,19 +419,15 @@ &uart1 {
+ 	/* Bluetooth IW612 */
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_uart1>;
+-	fsl,uart-has-rtscts;
++	uart-has-rtscts;
+ 	status = "okay";
+-
+-	bluetooth {
+-		compatible = "nxp,88w8987-bt";
+-	};
+ };
+ 
+ &uart2 {
+ 	/* OSM UART_A */
+ 	pinctrl-names = "default";
+ 	pinctrl-0 = <&pinctrl_uart2>;
+-	fsl,uart-has-rtscts;
++	uart-has-rtscts;
+ 	status = "okay";
+ };
+ 
+-- 
+2.34.1
+
