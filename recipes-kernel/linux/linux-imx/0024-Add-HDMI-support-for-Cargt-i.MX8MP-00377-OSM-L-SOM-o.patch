@@ -1,0 +1,62 @@
+From a70d28c2a0151726d4355f877e674a6134f70ad6 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 30 Apr 2026 09:28:11 -0500
+Subject: [PATCH] Add HDMI support for Cargt i.MX8MP 00377 OSM-L SOM on 00365
+ carrier board
+
+---
+ arch/arm64/boot/dts/freescale/Makefile           |  1 +
+ .../freescale/imx8mp-cargt-00377-00365-hdmi.dts  | 16 ++++++++++++++++
+ .../freescale/imx8mp-cargt-00377-00365-hdmi.dtsi |  3 +++
+ 3 files changed, 20 insertions(+)
+ create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-hdmi.dts
+ create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-hdmi.dtsi
+
+diff --git a/arch/arm64/boot/dts/freescale/Makefile b/arch/arm64/boot/dts/freescale/Makefile
+index 1a6584d3c1fb..87238f68aa8b 100644
+--- a/arch/arm64/boot/dts/freescale/Makefile
++++ b/arch/arm64/boot/dts/freescale/Makefile
+@@ -209,6 +209,7 @@ dtb-$(CONFIG_ARCH_MXC) += imx8mp-evk-revb4-rpmsg.dtb
+ dtb-$(CONFIG_ARCH_MXC) += imx8mp-evk-revb4-rpmsg-lpv.dtb
+ 
+ dtb-$(CONFIG_ARCH_MXC) += imx8mp-cargt-00377-00365.dtb \
++				imx8mp-cargt-00377-00365-hdmi.dtb \
+ 				imx8mp-cargt-00377-00365-glt0557201280is1.dtb \
+ 				imx8mp-cargt-00377-00365-glt1011280800is1.dtb 
+ 
+diff --git a/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-hdmi.dts b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-hdmi.dts
+new file mode 100644
+index 000000000000..dc7df8ab0de7
+--- /dev/null
++++ b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-hdmi.dts
+@@ -0,0 +1,16 @@
++// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
++/*
++ * Copyright 2022 NXP
++ */
++
++/dts-v1/;
++
++#include <dt-bindings/usb/pd.h>
++#include <dt-bindings/phy/phy-imx8-pcie.h>
++#include "imx8mp-cargt-00377-00365.dtsi"
++#include "imx8mp-cargt-00377-00365-hdmi.dtsi"
++#include "imx8mp-cargt-00377-00365-os08a20.dtsi"
++
++/ {
++	model = "Cargt i.MX8MP 00377 OSM-L SOM on 00365 carrier board with HDMI output";
++};
+\ No newline at end of file
+diff --git a/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-hdmi.dtsi b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-hdmi.dtsi
+new file mode 100644
+index 000000000000..1ae253717936
+--- /dev/null
++++ b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-hdmi.dtsi
+@@ -0,0 +1,3 @@
++&lcdif3 {
++	status = "okay";
++};
+\ No newline at end of file
+-- 
+2.34.1
+
