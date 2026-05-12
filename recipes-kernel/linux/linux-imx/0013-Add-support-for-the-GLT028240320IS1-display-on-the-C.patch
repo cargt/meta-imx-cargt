@@ -96,26 +96,24 @@ index 000000000000..54378cf3d94a
 +            };
 +    };
 +
-
++...
 diff --git a/arch/arm64/boot/dts/freescale/Makefile b/arch/arm64/boot/dts/freescale/Makefile
 index f7077bfffd3f..d56edd4660ab 100644
 --- a/arch/arm64/boot/dts/freescale/Makefile
 +++ b/arch/arm64/boot/dts/freescale/Makefile
 @@ -446,10 +446,11 @@ dtb-$(CONFIG_ARCH_MXC) += imx93-tqma9352-mba93xxla.dtb
  dtb-$(CONFIG_ARCH_MXC) += imx93-cargt-00324-00326.dtb \
-				imx93-cargt-00324-00326-glt0701024600is2.dtb \
-				imx93-cargt-00324-00326-glt1011280800is1.dtb \
-				imx93-cargt-00359-00406.dtb \
-				imx93-cargt-00363-00365.dtb \
-				imx93-cargt-00363-00365-glt0557201280is1.dtb \
-				imx93-cargt-00363-00365-glt0701024600is2.dtb \
-				imx93-cargt-00363-00365-glt050800480ih1.dtb \
+ 				imx93-cargt-00324-00326-glt0701024600is2.dtb \
+ 				imx93-cargt-00324-00326-glt1011280800is1.dtb \
+ 				imx93-cargt-00359-00406.dtb \
+ 				imx93-cargt-00363-00365.dtb \
+ 				imx93-cargt-00363-00365-glt0557201280is1.dtb \
 -				imx93-cargt-00363-00365-glt1011280800is1.dtb
 +				imx93-cargt-00363-00365-glt1011280800is1.dtb \
 +				imx93-cargt-00363-00365-glt028240320is1.dtb
 
  dtb-$(CONFIG_ARCH_MXC) += imx91-9x9-qsb.dtb \
-			  imx91-9x9-qsb-can1.dtb \
+ 			  imx91-9x9-qsb-can1.dtb \
 diff --git a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dts b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dts
 new file mode 100644
 index 000000000000..cfa35a53cae6
@@ -409,10 +407,10 @@ index 000000000000..b2728fc49757
 +	mipi_dbi_command(dbi, ST7789_CMD_FRCTRL1, 0x01, 0x2c, 0x2d, 0x01, 0x2c, 0x2d);
 +	mipi_dbi_command(dbi, ST7789_CMD_LCMCTRL, 0xa2, 0x02, 0x84);
 +	mipi_dbi_command(dbi, ST7789_CMD_IDSET, 0xc5);
-+	mipi_dbi_command(dbi, ST7789_CMD_VDVVRHEN, 0x01);   //9.2.12 VDVVRHEN (C2h): VDV and VRH Command Enable 
-+	mipi_dbi_command(dbi, ST7789_CMD_VRHS, 0x10);   //9.2.13 VRHS (C3h): VRH Set 
-+	mipi_dbi_command(dbi, ST7789_CMD_VRHS, 0x10);   //9.2.13 VRHS (C3h): VRH Sett 
-+	mipi_dbi_command(dbi, ST7789_CMD_FRCTR2, 0x0F);   //9.2.16 FRCTRL2 (C6h): Frame Rate Control in Normal Mode 
++	mipi_dbi_command(dbi, ST7789_CMD_VDVVRHEN, 0x01);   //9.2.12 VDVVRHEN (C2h): VDV and VRH Command Enable
++	mipi_dbi_command(dbi, ST7789_CMD_VRHS, 0x10);   //9.2.13 VRHS (C3h): VRH Set
++	mipi_dbi_command(dbi, ST7789_CMD_VRHS, 0x10);   //9.2.13 VRHS (C3h): VRH Sett
++	mipi_dbi_command(dbi, ST7789_CMD_FRCTR2, 0x0F);   //9.2.16 FRCTRL2 (C6h): Frame Rate Control in Normal Mode
 +	mipi_dbi_command(dbi, ST7789_CMD_PWCTRL1, 0xA4, 0xA1);   //9.2.21 PWCTRL1 (D0h): Power Control 1
 +	mipi_dbi_command(dbi, ST7789_CMD_VCMOFSET, 0x0e); //0xc5
 +	mipi_dbi_command(dbi, MIPI_DCS_EXIT_INVERT_MODE); //ST7789_CMD_INVOFF
