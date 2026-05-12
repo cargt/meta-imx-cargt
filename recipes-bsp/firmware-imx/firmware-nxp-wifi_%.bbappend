@@ -53,8 +53,6 @@ FILES:${PN}-nxpiw612-sdio += " \
     ${nonarch_base_libdir}/firmware/nxp/uartuart_n61x_v1.bin.se \
 "
 
-PACKAGES += "${PN}-nxpiw610-sdio"
-
 RDEPENDS:${PN}-all-sdio = " \
     ${PN}-nxp8801-sdio \
     ${PN}-nxp8987-sdio \
