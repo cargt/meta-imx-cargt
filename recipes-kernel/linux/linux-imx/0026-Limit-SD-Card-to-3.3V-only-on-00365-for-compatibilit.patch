@@ -1,0 +1,24 @@
+From f7aac7fc07c7730c7d3e2c7c823f7c21b46d7080 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Tue, 12 May 2026 15:03:08 -0500
+Subject: [PATCH] Limit SD Card to 3.3V only on 00365 for compatibility.
+
+---
+ arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365.dts | 1 +
+ 1 file changed, 1 insertion(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365.dts b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365.dts
+index 31e511f4ae89..9ca99fbc23d5 100644
+--- a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365.dts
++++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365.dts
+@@ -227,6 +227,7 @@ &usdhc2 {
+ 	 no-sdio;
+ 	 no-mmc;
+ 	 max-frequency = <104000000>; /* 104MHz is the max frequency for 00365 */
++	 no-1-8-v;
+ };
+ 
+ &adc1 {
+-- 
+2.34.1
+
