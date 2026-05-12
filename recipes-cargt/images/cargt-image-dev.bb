@@ -66,8 +66,6 @@ IMAGE_INSTALL += " \
     board-version \
     v4l-utils \
     libdrm-tests xrandr \
-    cargt-python-nm-mqtt \
-    gtk-gui-demo \
 "
 
 CLINFO              ?= ""
