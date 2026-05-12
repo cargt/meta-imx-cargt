@@ -42,12 +42,17 @@ FILES:${PN}-nxp9098-sdio = " \
     ${nonarch_base_libdir}/firmware/nxp/sd*9098* \
 "
 
-FILES:${PN}-nxpiw610-sdio += " \
+# IW610 support (always available - firmware installed via oe_runmake)
+FILES:${PN}-nxpiw610-sdio = " \
     ${nonarch_base_libdir}/firmware/nxp/sd_iw610.bin.se \
     ${nonarch_base_libdir}/firmware/nxp/sduart_iw610.bin.se \
     ${nonarch_base_libdir}/firmware/nxp/uart_iw610_bt.bin.se \
     ${nonarch_base_libdir}/firmware/nxp/uartspi_iw610.bin.se \
 "
+
+# Only add package if FRDM layers not present (avoid duplicates)
+# If FRDM present, it defines the package
+PACKAGES += "${@'${PN}-nxpiw610-sdio' if 'meta-imx-frdm' not in '${BBLAYERS}' else ''}"
 
 FILES:${PN}-nxpiw612-sdio += " \
     ${nonarch_base_libdir}/firmware/nxp/uartuart_n61x_v1.bin.se \
