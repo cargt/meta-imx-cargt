@@ -1,0 +1,24 @@
+From 25066b637bff8785153f6dfabd44fbc60a4b597e Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 21 May 2026 09:10:09 -0500
+Subject: [PATCH] Limit SD Card access to 104 MHz and 3.3V.
+
+---
+ arch/arm/dts/imx93-cargt-00363-00365.dts | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm/dts/imx93-cargt-00363-00365.dts b/arch/arm/dts/imx93-cargt-00363-00365.dts
+index 6c8a0c56fd3..533139b9d3c 100644
+--- a/arch/arm/dts/imx93-cargt-00363-00365.dts
++++ b/arch/arm/dts/imx93-cargt-00363-00365.dts
+@@ -238,6 +238,8 @@
+ 	  status = "okay";
+ 	  no-sdio;
+ 	  no-mmc;
++	 max-frequency = <104000000>; /* 104MHz is the max frequency for 00365 */
++	 no-1-8-v;
+  };
+  
+  &adc1 {
+-- 
+2.34.1
