@@ -8,7 +8,7 @@ KERNEL_DEVICETREE = " \
     freescale/${KERNEL_DEVICETREE_BASENAME}.dtb \
 "
 
-IMX_DEFAULT_BOOTLOADER:use-nxp-bsp = "u-boot-cargt"
+IMX_DEFAULT_BOOTLOADER:use-nxp-bsp = "u-boot-imx"
 IMX_DEFAULT_BOOTLOADER:use-mainline-bsp = "u-boot-fslc"
 
 LOADADDR = ""
