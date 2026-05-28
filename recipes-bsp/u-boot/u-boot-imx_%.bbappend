@@ -1,10 +1,14 @@
-do_configure:prepend() {
-    if [ -n "${UBOOT_CONFIG}" ]; then
-        uboot_cfg="${UBOOT_MACHINE# }"
-        KCONFIG_CONFIG_ROOTDIR="${B}/${uboot_cfg}"
-        export KCONFIG_CONFIG_ROOTDIR
-    fi
+# uboot-config.bbclass computes KCONFIG_CONFIG_ROOTDIR before externalsrc updates B.
+# Re-apply it here at the end of parsing using a lazy ${B} path so devtool builds
+# look in ${WORKDIR}/u-boot-imx-*/<defconfig> instead of ${WORKDIR}/build/<defconfig>.
+python () {
+    um = (d.getVar('UBOOT_MACHINE') or '').strip()
+    if um:
+        import os
+        d.setVar('KCONFIG_CONFIG_ROOTDIR', os.path.join('${B}', um))
+}
 
+do_configure:prepend() {
     if [ -f "${S}/.config" ]; then
         cp "${S}/.config" "${B}/.config"
     fi
@@ -26,7 +30,9 @@ SRC_URI += "file://0002-Add-support-for-imx93_00363.patch \
             file://0013-Add-Cargt-EEPROM-support-for-LPDDR4-timing-configura.patch \
             file://0014-Update-USB-role-switch-mode-and-add-USB-port-auto-co.patch \
             file://0015-Add-USB-DWC3-gadget-support-and-remove-redundant-com.patch \
-            file://0016-Add-common-LPDDR4X-timing-support-and-update-configurations.patch \            
+            file://0016-Add-common-LPDDR4X-timing-support-and-update-configurations.patch \
+            file://0017-Limit-SD-Card-access-to-104-MHz-and-3.3V.patch \
+            file://0018-board-cargt-add-i.MX-91-00363-OSM-L-SOM-board-suppo.patch \
             "
 
 SRC_URI:remove = "file://0001-Add-Olimex-iMX8MP-SOM-EVB-IND.patch"
