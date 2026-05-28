@@ -48,4 +48,9 @@ PACKAGECONFIG:append:pn-systemd = " unmanaged-network"
 PACKAGECONFIG:append:mx93-nxp-bsp:pn-qtbase = " gles2"
 PACKAGECONFIG:remove:mx93-nxp-bsp:pn-qtbase = "no-opengl linuxfb"
 
+# i.MX 91 has no GPU or display — strip wayland/opengl/vulkan from this headless SoC
+DISTRO_FEATURES:remove:mx91-nxp-bsp = "wayland opengl vulkan"
+PACKAGECONFIG:remove:mx91-nxp-bsp:pn-qtbase = "gles2"
+PACKAGECONFIG:append:mx91-nxp-bsp:pn-qtbase = " no-opengl linuxfb"
+
 PACKAGECONFIG:append:pn-networkmanager = " modemmanager ppp"
