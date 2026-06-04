@@ -19,8 +19,10 @@ EULA=$EULA DISTRO=$DISTRO MACHINE=$MACHINE . ./imx-setup-release.sh $@
 
 echo "# layers for Cargt i.MX" >> conf/bblayers.conf
 echo "BBLAYERS += \"\${BSPDIR}/sources/meta-browser/meta-chromium\"" >> conf/bblayers.conf
+echo "BBLAYERS += \"\${BSPDIR}/sources/meta-imx-frdm/meta-imx-bsp\"" >> conf/bblayers.conf
 echo "BBLAYERS += \"\${BSPDIR}/sources/meta-imx-cargt\"" >> conf/bblayers.conf
 echo "BBLAYERS += \"\${BSPDIR}/sources/meta-swupdate\"" >> conf/bblayers.conf
+echo "BBLAYERS += \"\${BSPDIR}/sources/meta-imx-frdm/meta-imx-sdk\"" >> conf/bblayers.conf
 
 echo ""
 echo "Cargt i.MX setup complete and it can generate Yocto images now."
