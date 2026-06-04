@@ -23,10 +23,8 @@ SDKIMAGE_FEATURES:append = " \
 
 CORE_IMAGE_EXTRA_INSTALL += " \
     packagegroup-core-full-cmdline \
-    packagegroup-fsl-tools-gpu \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'gpu', 'packagegroup-fsl-tools-gpu packagegroup-fsl-gstreamer1.0 packagegroup-fsl-gstreamer1.0-full', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11 wayland', 'weston-xwayland xterm', '', d)} \
-    packagegroup-fsl-gstreamer1.0 \
-    packagegroup-fsl-gstreamer1.0-full \
     chromium-ozone-wayland \
 "
 
