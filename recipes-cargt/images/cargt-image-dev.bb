@@ -22,8 +22,7 @@ SDKIMAGE_FEATURES:append = " \
 "
 
 CORE_IMAGE_EXTRA_INSTALL += " \
-    packagegroup-fsl-gstreamer1.0 \
-    packagegroup-fsl-gstreamer1.0-full \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'gpu', 'packagegroup-fsl-gstreamer1.0 packagegroup-fsl-gstreamer1.0-full', '', d)} \
 "
 
 IMAGE_INSTALL += " \
