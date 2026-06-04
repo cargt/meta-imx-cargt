@@ -32,6 +32,12 @@ SRC_URI += "file://0002-Add-support-for-imx93_00363.patch \
             file://0015-Add-USB-DWC3-gadget-support-and-remove-redundant-com.patch \
             file://0016-Add-common-LPDDR4X-timing-support-and-update-configurations.patch \
             file://0017-Limit-SD-Card-access-to-104-MHz-and-3.3V.patch \
+            file://0018-cargt-EEPROM-v2-dram_rank-support-and-generated-rank.patch \
+            file://0019-ddr-imx-add-training-diagnostics-PMU-messages-DDRPHY.patch \
+            file://0020-tools-add-LPDDR4X-timing-validation-scripts.patch \
+            file://0021-cargt-imx93_00363-512MB-timing-variants-rank-2-overr.patch \
+            file://0022-cargt-imx93_00363-LPDDR4X-shared-timing-infra-all-va.patch \
+            file://0023-board-cargt-add-i.MX-91-00363-OSM-L-SOM-board-suppor.patch \
             "
 
 SRC_URI:remove = "file://0001-Add-Olimex-iMX8MP-SOM-EVB-IND.patch"
