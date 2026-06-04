@@ -1,0 +1,26 @@
+From c415f3bac4db17aa5b6a477cc58c218a7a466ec5 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 4 Jun 2026 12:46:30 -0500
+Subject: [PATCH 29/29] arm64: dts: imx93-cargt-00363-osm-som: Configure
+ Bluetooth UART parameters
+
+---
+ arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts | 2 ++
+ 1 file changed, 2 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts
+index f2e4b6e1c29d..c09ce2b12803 100644
+--- a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts
++++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts
+@@ -275,6 +275,8 @@ &lpuart5 { /* bluetooth */
+ 
+ 	bluetooth {
+ 			compatible = "nxp,88w8997-bt";
++        	fw-init-baudrate = <3000000>;
++        	max-speed = <3000000>;
+ 		};
+  };
+ 
+-- 
+2.34.1
+

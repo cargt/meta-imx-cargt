@@ -22,6 +22,9 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0024-Add-HDMI-support-for-Cargt-i.MX8MP-00377-OSM-L-SOM-o.patch \
             file://0025-Limit-the-maximum-frequency-for-the-SD-Card-to-104-M.patch \
             file://0026-Limit-SD-Card-to-3.3V-only-on-00365-for-compatibilit.patch \
+            file://0027-arm64-dts-imx91-Add-CARGT-00363-OSM-L-SOM-and-00365-.patch \
+            file://0028-arm64-dts-imx91-Update-shared-DMA-pool-configuration.patch \
+            file://0029-arm64-dts-imx93-cargt-00363-osm-som-Configure-Blueto.patch \
             "
 
 SRC_URI += "file://cargt_router_kernel_config_mods.cfg \
