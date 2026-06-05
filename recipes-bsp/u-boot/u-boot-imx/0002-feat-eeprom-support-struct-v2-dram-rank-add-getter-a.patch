@@ -1,0 +1,56 @@
+From 7c32eace97f57aec6ec8ec94701e88a97d56cde8 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Fri, 22 May 2026 12:38:26 -0500
+Subject: [PATCH] feat(eeprom): support struct v2 dram rank; add getter and
+ printing
+
+---
+ board/cargt/common/cargt_eeprom.c | 16 ++++++++++++++++
+ board/cargt/common/cargt_eeprom.h |  1 +
+ 2 files changed, 17 insertions(+)
+
+diff --git a/board/cargt/common/cargt_eeprom.c b/board/cargt/common/cargt_eeprom.c
+index d7c426a9399..5a622995be8 100644
+--- a/board/cargt/common/cargt_eeprom.c
++++ b/board/cargt/common/cargt_eeprom.c
+@@ -110,6 +110,19 @@ int cargt_eeprom_get_cpn_string(struct cargt_eeprom *ep, char *cpn_buf, size_t b
+ 	return 0;
+ }
+ 
++uint8_t cargt_eeprom_get_dram_rank(struct cargt_eeprom *ep)
++{
++	/* Default to rank 1 when EEPROM is missing or older version */
++	if (!cargt_eeprom_is_valid(ep))
++		return 1;
++
++	/* struct_ver >= 2: reserved[0] holds dram_rank; fall back to 1 */
++	if (ep->struct_ver >= 2)
++		return ep->reserved[0] ? ep->reserved[0] : 1;
++
++	return 1;
++}
++
+ void cargt_eeprom_print_prod_info(struct cargt_eeprom *ep)
+ {
+ 	flush_dcache_all();
+@@ -122,6 +135,9 @@ void cargt_eeprom_print_prod_info(struct cargt_eeprom *ep)
+ 	printf("\tProduction date: %s\n", ep->date);
+ 	printf("\tSerial number: 0x%08x\n", be32_to_cpu(ep->serial));
+ 	printf("\tEEPROM struct version: 0x%x\n", ep->struct_ver);
++	/* Print DRAM rank when available in struct version 2 */
++	if (ep->struct_ver >= 2)
++		printf("\tDRAM rank: %u\n", cargt_eeprom_get_dram_rank(ep));
+ 	printf("\tDRAM size: %d MB\n", __be16_to_cpu(ep->dramsize_mbytes));
+ 	printf("\tDRAM speed: %d MT/s\n", __be16_to_cpu(ep->dramspeed_mts));
+ }
+diff --git a/board/cargt/common/cargt_eeprom.h b/board/cargt/common/cargt_eeprom.h
+index 2b2858d08a5..e1b7ecc48c3 100644
+--- a/board/cargt/common/cargt_eeprom.h
++++ b/board/cargt/common/cargt_eeprom.h
+@@ -73,5 +73,6 @@ int cargt_eeprom_is_valid(struct cargt_eeprom *ep);
+ int cargt_eeprom_get_cpn_string(struct cargt_eeprom *ep, char *cpn_buf, size_t buf_size);
+ uint16_t cargt_eeprom_get_dram_size_mb(struct cargt_eeprom *ep);
+ uint16_t cargt_eeprom_get_dram_speed_mts(struct cargt_eeprom *ep);
++uint8_t cargt_eeprom_get_dram_rank(struct cargt_eeprom *ep);
+ 
+ #endif /* _CARGT_EEPROM_H_ */

@@ -1,0 +1,57 @@
+From 2869291cb4e24875a6b631447d71afe2db821fa5 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Tue, 26 May 2026 13:22:56 -0500
+Subject: [PATCH] board/cargt: organize generated timing refs; cap trained-CSR
+ to 128; runtime rank2 patches and diagnostics
+
+---
+ ...00_rank1_generated.c => lpddr4x_1gbyte_3200_rank1_generated.c} | 0
+ ...33_rank1_generated.c => lpddr4x_1gbyte_3733_rank1_generated.c} | 0
+ ...00_rank1_generated.c => lpddr4x_2gbyte_3200_rank1_generated.c} | 0
+ ...00_rank2_generated.c => lpddr4x_2gbyte_3200_rank2_generated.c} | 0
+ ...33_rank1_generated.c => lpddr4x_2gbyte_3733_rank1_generated.c} | 0
+ ...33_rank2_generated.c => lpddr4x_2gbyte_3733_rank2_generated.c} | 0
+ ..._rank1_generated.c => lpddr4x_512mbyte_3200_rank1_generated.c} | 0
+ ..._rank1_generated.c => lpddr4x_512mbyte_3733_rank1_generated.c} | 0
+ 8 files changed, 0 insertions(+), 0 deletions(-)
+ rename board/cargt/imx93_00363/generated_timings_for_reference/{lpddr4x_1g_3200_rank1_generated.c => lpddr4x_1gbyte_3200_rank1_generated.c} (100%)
+ rename board/cargt/imx93_00363/generated_timings_for_reference/{lpddr4x_1g_3733_rank1_generated.c => lpddr4x_1gbyte_3733_rank1_generated.c} (100%)
+ rename board/cargt/imx93_00363/generated_timings_for_reference/{lpddr4x_2g_3200_rank1_generated.c => lpddr4x_2gbyte_3200_rank1_generated.c} (100%)
+ rename board/cargt/imx93_00363/generated_timings_for_reference/{lpddr4x_2g_3200_rank2_generated.c => lpddr4x_2gbyte_3200_rank2_generated.c} (100%)
+ rename board/cargt/imx93_00363/generated_timings_for_reference/{lpddr4x_2g_3733_rank1_generated.c => lpddr4x_2gbyte_3733_rank1_generated.c} (100%)
+ rename board/cargt/imx93_00363/generated_timings_for_reference/{lpddr4x_2g_3733_rank2_generated.c => lpddr4x_2gbyte_3733_rank2_generated.c} (100%)
+ rename board/cargt/imx93_00363/generated_timings_for_reference/{lpddr4x_512mb_3200_rank1_generated.c => lpddr4x_512mbyte_3200_rank1_generated.c} (100%)
+ rename board/cargt/imx93_00363/generated_timings_for_reference/{lpddr4x_512mb_3733_rank1_generated.c => lpddr4x_512mbyte_3733_rank1_generated.c} (100%)
+
+diff --git a/board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_1g_3200_rank1_generated.c b/board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_1gbyte_3200_rank1_generated.c
+similarity index 100%
+rename from board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_1g_3200_rank1_generated.c
+rename to board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_1gbyte_3200_rank1_generated.c
+diff --git a/board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_1g_3733_rank1_generated.c b/board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_1gbyte_3733_rank1_generated.c
+similarity index 100%
+rename from board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_1g_3733_rank1_generated.c
+rename to board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_1gbyte_3733_rank1_generated.c
+diff --git a/board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_2g_3200_rank1_generated.c b/board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_2gbyte_3200_rank1_generated.c
+similarity index 100%
+rename from board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_2g_3200_rank1_generated.c
+rename to board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_2gbyte_3200_rank1_generated.c
+diff --git a/board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_2g_3200_rank2_generated.c b/board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_2gbyte_3200_rank2_generated.c
+similarity index 100%
+rename from board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_2g_3200_rank2_generated.c
+rename to board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_2gbyte_3200_rank2_generated.c
+diff --git a/board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_2g_3733_rank1_generated.c b/board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_2gbyte_3733_rank1_generated.c
+similarity index 100%
+rename from board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_2g_3733_rank1_generated.c
+rename to board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_2gbyte_3733_rank1_generated.c
+diff --git a/board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_2g_3733_rank2_generated.c b/board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_2gbyte_3733_rank2_generated.c
+similarity index 100%
+rename from board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_2g_3733_rank2_generated.c
+rename to board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_2gbyte_3733_rank2_generated.c
+diff --git a/board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_512mb_3200_rank1_generated.c b/board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_512mbyte_3200_rank1_generated.c
+similarity index 100%
+rename from board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_512mb_3200_rank1_generated.c
+rename to board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_512mbyte_3200_rank1_generated.c
+diff --git a/board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_512mb_3733_rank1_generated.c b/board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_512mbyte_3733_rank1_generated.c
+similarity index 100%
+rename from board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_512mb_3733_rank1_generated.c
+rename to board/cargt/imx93_00363/generated_timings_for_reference/lpddr4x_512mbyte_3733_rank1_generated.c

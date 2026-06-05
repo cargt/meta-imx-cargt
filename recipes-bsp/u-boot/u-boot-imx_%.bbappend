@@ -38,6 +38,7 @@ SRC_URI += "file://0002-Add-support-for-imx93_00363.patch \
             file://0021-cargt-imx93_00363-512MB-timing-variants-rank-2-overr.patch \
             file://0022-cargt-imx93_00363-LPDDR4X-shared-timing-infra-all-va.patch \
             file://0023-board-cargt-add-i.MX-91-00363-OSM-L-SOM-board-suppor.patch \
+            file://0027-imx93-cargt-Share-LPDDR4X-timing-files-across-all-i.patch \
             "
 
 SRC_URI:remove = "file://0001-Add-Olimex-iMX8MP-SOM-EVB-IND.patch"

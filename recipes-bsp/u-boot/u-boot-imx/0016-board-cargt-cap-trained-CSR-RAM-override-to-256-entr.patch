@@ -1,0 +1,60 @@
+From 6970504834bc5ff5b4ddb48e760855cb758bde0a Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Tue, 26 May 2026 13:00:05 -0500
+Subject: [PATCH] board/cargt: cap trained-CSR RAM override to 256 entries;
+ truncate safely to avoid SPL .bss overflow
+
+---
+ board/cargt/imx93_00363/spl-cargt.c | 22 +++++++++++++++-------
+ 1 file changed, 15 insertions(+), 7 deletions(-)
+
+diff --git a/board/cargt/imx93_00363/spl-cargt.c b/board/cargt/imx93_00363/spl-cargt.c
+index 6c79bb035fc..61186d2086c 100644
+--- a/board/cargt/imx93_00363/spl-cargt.c
++++ b/board/cargt/imx93_00363/spl-cargt.c
+@@ -226,10 +226,11 @@ static void patch_fsp_msg_for_rank(struct dram_timing_info *timing, uint8_t rank
+  */
+ static void patch_ddrphy_trained_csr_for_rank(struct dram_timing_info *timing, uint8_t rank)
+ {
+-	/* allow reasonably large trained CSR lists but cap for SPL */
+-	#define MAX_DDRPHY_TRAINED_CSR 1024
++	/* allow reasonably large trained CSR lists but cap for SPL to save .bss */
++	#define MAX_DDRPHY_TRAINED_CSR 256
+ 	static struct dram_cfg_param ddrphy_trained_csr_override[MAX_DDRPHY_TRAINED_CSR];
+ 	int i;
++	unsigned int copy_count;
+ 
+ 	if (!timing)
+ 		return;
+@@ -237,11 +238,17 @@ static void patch_ddrphy_trained_csr_for_rank(struct dram_timing_info *timing, u
+ 	if (timing->ddrphy_trained_csr_num == 0 || !timing->ddrphy_trained_csr)
+ 		return;
+ 
+-	if (timing->ddrphy_trained_csr_num > MAX_DDRPHY_TRAINED_CSR)
+-		return;
++	/* Truncate gracefully if the authored table is larger than our cap */
++	copy_count = timing->ddrphy_trained_csr_num;
++	if (copy_count > MAX_DDRPHY_TRAINED_CSR) {
++		printf("Warning: trained CSR entries (%u) exceed cap (%d); truncating to %d\n",
++			   timing->ddrphy_trained_csr_num, MAX_DDRPHY_TRAINED_CSR,
++			   MAX_DDRPHY_TRAINED_CSR);
++		copy_count = MAX_DDRPHY_TRAINED_CSR;
++	}
+ 
+-	/* copy the whole trained CSR table into RAM */
+-	for (i = 0; i < timing->ddrphy_trained_csr_num; i++)
++	/* copy the (possibly truncated) trained CSR table into RAM */
++	for (i = 0; i < (int)copy_count; i++)
+ 		ddrphy_trained_csr_override[i] = timing->ddrphy_trained_csr[i];
+ 
+ 	/*
+@@ -251,7 +258,8 @@ static void patch_ddrphy_trained_csr_for_rank(struct dram_timing_info *timing, u
+ 	 */
+ 
+ 	timing->ddrphy_trained_csr = ddrphy_trained_csr_override;
+-	/* timing->ddrphy_trained_csr_num unchanged */
++	/* Update the count to match the overridden array */
++	timing->ddrphy_trained_csr_num = copy_count;
+ }
+ void spl_dram_init(void)
+ {

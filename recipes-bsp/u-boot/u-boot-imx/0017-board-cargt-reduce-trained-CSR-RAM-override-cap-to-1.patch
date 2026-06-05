@@ -1,0 +1,23 @@
+From 3cca69649c1b88e07e236661d2a8d4736a4853a8 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Tue, 26 May 2026 13:14:40 -0500
+Subject: [PATCH] board/cargt: reduce trained-CSR RAM override cap to 128 to
+ increase SPL headroom
+
+---
+ board/cargt/imx93_00363/spl-cargt.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/board/cargt/imx93_00363/spl-cargt.c b/board/cargt/imx93_00363/spl-cargt.c
+index 61186d2086c..c439e459a96 100644
+--- a/board/cargt/imx93_00363/spl-cargt.c
++++ b/board/cargt/imx93_00363/spl-cargt.c
+@@ -227,7 +227,7 @@ static void patch_fsp_msg_for_rank(struct dram_timing_info *timing, uint8_t rank
+ static void patch_ddrphy_trained_csr_for_rank(struct dram_timing_info *timing, uint8_t rank)
+ {
+ 	/* allow reasonably large trained CSR lists but cap for SPL to save .bss */
+-	#define MAX_DDRPHY_TRAINED_CSR 256
++	#define MAX_DDRPHY_TRAINED_CSR 128
+ 	static struct dram_cfg_param ddrphy_trained_csr_override[MAX_DDRPHY_TRAINED_CSR];
+ 	int i;
+ 	unsigned int copy_count;
