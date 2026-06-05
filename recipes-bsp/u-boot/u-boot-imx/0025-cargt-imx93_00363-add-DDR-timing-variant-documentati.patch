@@ -1,0 +1,222 @@
+From 1053a2d3b569f8850ced5bbb2dfb81a8b839c80c Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 28 May 2026 12:06:37 -0500
+Subject: [PATCH] cargt/imx93_00363: add DDR timing variant documentation
+
+Document all supported LPDDR4X variants (size, speed, rank), the source
+files that implement them, hardware verification status, and design notes
+covering the shared-array structure, blank-EEPROM failsafe behaviour, and
+512MB validation limitations.
+---
+ board/cargt/imx93_00363/README.ddr-timing | 202 ++++++++++++++++++++++
+ 1 file changed, 202 insertions(+)
+ create mode 100644 board/cargt/imx93_00363/README.ddr-timing
+
+diff --git a/board/cargt/imx93_00363/README.ddr-timing b/board/cargt/imx93_00363/README.ddr-timing
+new file mode 100644
+index 00000000000..4f6391f3ca4
+--- /dev/null
++++ b/board/cargt/imx93_00363/README.ddr-timing
+@@ -0,0 +1,202 @@
++LPDDR4X DDR Timing Selection — Cargt i.MX93 00363 SOM
++======================================================
++
++Overview
++--------
++The SPL reads a Cargt EEPROM on lpi2c1 (i2c@44340000) to determine the
++installed LPDDR4X part parameters, then selects the matching pre-generated
++timing structure before calling ddr_init().
++
++Three Kconfig options control which selection method is compiled in:
++
++  CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_EEPROM   (production default)
++  CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_BOARD_ID (GPIO-based)
++  CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_NAME     (filename override)
++
++
++Supported Variants
++------------------
++Each combination of (size, speed, rank) has its own timing file:
++
++  Size    Speed       Rank   Source file                              Status
++  ------  ----------  -----  ---------------------------------------  ----------------------------
++  512 MB  3200 MT/s   1      cargt_lpddr4x_512mb_3200mts_timing.c    DDR training verified (1)
++  512 MB  3733 MT/s   1      cargt_lpddr4x_512mb_3733mts_timing.c    Structurally correct (1)
++  1 GB    3200 MT/s   1      cargt_lpddr4x_1gbyte_3200mts_timing.c   Full boot verified
++  1 GB    3733 MT/s   1      cargt_lpddr4x_1gbyte_3733mts_timing.c   Full boot verified
++  2 GB    3200 MT/s   1      cargt_lpddr4x_2gbyte_3200mts_timing.c   Full boot verified (2)
++  2 GB    3733 MT/s   1      cargt_lpddr4x_2gbyte_3733mts_timing.c   Full boot verified (2)
++  2 GB    3200 MT/s   2      cargt_lpddr4x_2gbyte_3200mts_timing.c   Full boot verified
++  2 GB    3733 MT/s   2      cargt_lpddr4x_2gbyte_3733mts_timing.c   Full boot verified
++
++Note 1: 512 MB variants cannot be fully validated on the imx93-cargt-00363-00365
++machine because that machine requires >=1 GB DDR (CARGT_EEPROM_DRAM_START would
++fall outside the 512 MB DDRC window, and the PHY training parameters were
++generated for a specific 512 MB die).  Both variants need a true 512 MB part for
++full boot confirmation.  512 MB support is planned for the headless / i.MX91
++machine variant.
++
++Note 2: The 2 GB timing files each contain two `dram_timing_info` structs: the
++main rank2 struct (cargt_lpddr4x_2gbyte_3xxx mts_timing) and a rank1 variant
++(cargt_lpddr4x_2gbyte_3xxxmts_rank1_timing).  The rank1 struct shares the
++expensive static ddrphy_cfg and phy_pie arrays with the rank2 struct to keep SPL
++SRAM usage within budget; only the DDRC cfg, per-FSP DDRC timing registers and
++PHY message blocks differ (rank1: CS1 disabled, MR11 ODT=0x46 vs 0x26).
++
++
++SPL Boot Flow (EEPROM mode)
++---------------------------
++ROM → SPL entry
++  1. ddr_init() is NOT yet called
++  2. PMIC configured, I2C bus ready
++  3. cargt_eeprom_read()  — reads 256-byte EEPROM at i2c@44340000 / 0x50
++  4. cargt_eeprom_get_dram_size_mb()   → dram_size_mbytes
++     cargt_eeprom_get_dram_speed_mts() → dram_speed_mts
++     cargt_eeprom_get_dram_rank()       → dram_rank
++  5. Minimum RAM check (if CONFIG_CARGT_IMX93_00363_MIN_SDRAM_SIZE_MB > 0):
++       if dram_size_mbytes < minimum → override to failsafe 1GB/3200/rank1
++       and print a WARNING (does NOT hang; board stays bootable)
++  6. select_dram_timing(speed, size, rank) → struct dram_timing_info *
++  7. rank-2 patch: if rank==2 && size>1024, adjust DDRC CS1 BNDS
++  8. ddr_init(ptiming)
++  9. gd->bd->bi_dram[0].size = dram_size_mbytes * SZ_1M
++ 10. SPL continues → loads imx-boot container from eMMC / USB SDP
++
++
++Minimum RAM Enforcement
++-----------------------
++Defined in board/cargt/imx93_00363/Kconfig:
++
++  config CARGT_IMX93_00363_MIN_SDRAM_SIZE_MB
++      int "Minimum required SDRAM size in MB (0 = no minimum)"
++      default 0
++
++Machine defconfigs set this to reflect their DTS reserved-memory layout:
++
++  imx93-cargt-00363-00365_defconfig    : CONFIG_CARGT_IMX93_00363_MIN_SDRAM_SIZE_MB=1024
++  imx93-cargt-00363-osm-som_defconfig  : CONFIG_CARGT_IMX93_00363_MIN_SDRAM_SIZE_MB=1024
++
++A headless or 512 MB machine should leave the default (0) or set it to 512.
++
++Failsafe: on an out-of-range EEPROM value the SPL falls back to 1 GB /
++3200 MT/s / rank1 rather than halting, allowing the board to boot and the
++EEPROM to be corrected in U-Boot proper.
++
++
++File Layout
++-----------
++board/cargt/imx93_00363/
++  cargt_lpddr4x_<size>_<speed>mts_timing.c   One file per variant (see table)
++  cargt_lpddr4x_timing_shared.c/.h            Shared FSP1/FSP2 message blocks
++                                               and ddr_phy_pie[] (not used by
++                                               current variants — each file uses
++                                               a local PIE via include/)
++  cargt_lpddr4x_fsp0_cfg_shared.c             Shared FSP0 1D message block
++                                               (legacy; current variant files
++                                               declare their own local copy)
++  cargt_lpddr4x_3200mts_csr.c/.h             Trained CSR array + count macro
++  cargt_lpddr4x_3733mts_csr.c/.h               for 3200 MT/s and 3733 MT/s
++  spl-cargt.c                                 EEPROM read, timing dispatch,
++                                               rank-2 patch, ddr_init call
++  include/
++    ddrc_cfg_<variant>_elements.inc           DDRC controller registers
++    ddrphy_cfg_<variant>_elements.inc         PHY initialisation registers
++    dram_fsp_cfg_<variant>_elements.inc       Per-FSP DDRC timing (dram_fsp_cfg)
++    fsp0_cfg_<variant>_elements.inc           P0 1D training message block
++    fsp1_cfg_<variant>_elements.inc           P1 1D training message block
++    fsp2_cfg_<variant>_elements.inc           P2 1D training message block
++    fsp0_2d_cfg_<variant>_elements.inc        P0 2D training message block
++    phy_pie_<variant>_elements.inc            PHY init engine (PIE) program
++  generated_timings_for_reference/
++    lpddr4x_<variant>_generated.c            Original DDR Tool output; source
++                                               of truth for all inc file data
++
++
++Timing File Structure
++---------------------
++Each cargt_lpddr4x_*_timing.c follows this pattern:
++
++  #include "cargt_lpddr4x_timing_shared.h"
++  #include "cargt_lpddr4x_<speed>mts_csr.h"
++
++  static struct dram_cfg_param ddr_ddrc_cfg[]          = { #include "include/ddrc_cfg_<v>.inc"       };
++  static struct dram_cfg_param ddr_fsp0_cfg_<v>[]      = { #include "include/fsp0_cfg_<v>.inc"      };
++  static struct dram_cfg_param ddr_fsp1_cfg_<v>[]      = { #include "include/fsp1_cfg_<v>.inc"      };
++  static struct dram_cfg_param ddr_fsp2_cfg_<v>[]      = { #include "include/fsp2_cfg_<v>.inc"      };
++  static struct dram_cfg_param ddr_fsp0_2d_cfg_<v>[]   = { #include "include/fsp0_2d_cfg_<v>.inc"   };
++  static struct dram_cfg_param ddr_phy_pie_<v>[]       = { #include "include/phy_pie_<v>.inc"       };
++  static struct dram_cfg_param ddr_ddrphy_cfg[]        = { #include "include/ddrphy_cfg_<v>.inc"    };
++  static struct dram_fsp_cfg  ddr_dram_fsp_cfg[]       = { #include "include/dram_fsp_cfg_<v>.inc"  };
++
++  struct dram_timing_info cargt_lpddr4x_<variant>_timing = {
++      .ddrc_cfg_num           = ARRAY_SIZE(ddr_ddrc_cfg),
++      .ddrphy_trained_csr     = ddr_lpddr4x_<speed>mts_trained_csr,
++      .ddrphy_trained_csr_num = DDR_LPDDR4X_<SPEED>MTS_TRAINED_CSR_NUM,
++      .ddrphy_pie             = ddr_phy_pie_<v>,
++      .ddrphy_pie_num         = ARRAY_SIZE(ddr_phy_pie_<v>),
++      ...
++  };
++
++Rules:
++  - All local arrays use ARRAY_SIZE() for their counts.
++  - DDR_FSP1_CFG_NUM / DDR_FSP2_CFG_NUM are used only if shared extern arrays
++    are referenced (avoid — prefer local arrays with ARRAY_SIZE).
++  - FSP0 array names must be unique per variant (e.g. ddr_fsp0_cfg_1g_3733)
++    to avoid clashing with the extern ddr_fsp0_cfg[] declared in
++    cargt_lpddr4x_timing_shared.h.
++  - The PHY PIE has exactly 559 entries for all currently supported variants.
++  - The PIE inc file must NOT contain the closing "};" line of the array.
++
++
++Expected Array Sizes (from DDR Tool v4.0.0_8.8-, PHY FW2022.01)
++-----------------------------------------------------------------
++  Array               Entries   Notes
++  ------------------  -------   ------------------------------------------
++  ddr_ddrc_cfg        19        All current variants
++  ddr_ddrphy_cfg      131       All current variants
++  ddr_fsp0_cfg        33        All current variants
++  ddr_fsp1_cfg        34        All current variants
++  ddr_fsp2_cfg        34        All current variants
++  ddr_fsp0_2d_cfg     34        All current variants
++  ddr_phy_pie         559       All current variants
++  ddr_dram_fsp_cfg    3 blocks  One per FSP (P0/P1/P2)
++  trained_csr         88        From cargt_lpddr4x_{3200,3733}mts_csr.h
++
++
++ODT / MR11 Reference
++--------------------
++MR11 controls on-die termination and differs by rank topology:
++
++  Rank1 variants (512MB, 1GB):   MR11 = 0x46  in ddr_dram_fsp_cfg
++  Rank2 variants (2GB rank2):    MR11 = 0x26  in ddr_dram_fsp_cfg
++
++Using a rank2 part with rank1 timing (or vice versa) will produce marginal
++or failed DDR operation due to mismatched ODT impedance and PHY training
++parameters.  Always test each variant with the matching physical die.
++
++
++Adding a New Timing Variant
++---------------------------
++1. Run the NXP DDR Tool against the target part to produce a generated .c file.
++   Place it in generated_timings_for_reference/.
++
++2. Use the Python extraction pattern (see scripts or prior art in this session)
++   to split the generated file into inc files under include/:
++     ddrc_cfg, ddrphy_cfg, dram_fsp_cfg, fsp0_cfg, fsp1_cfg, fsp2_cfg,
++     fsp0_2d_cfg, phy_pie
++
++3. Verify each inc file against the generated reference (diff on normalised
++   {0x...} lines).  Pay particular attention to ddrphy_cfg — a single wrong
++   register value (e.g. 0x20008) will cause silent DDR training failure.
++
++4. Create cargt_lpddr4x_<size>_<speed>mts_timing.c following the structure
++   described above.  Use variant-specific names for all static arrays.
++
++5. Add an extern declaration and a case to select_dram_timing() in spl-cargt.c.
++
++6. If rank2: verify that the DDRC addr map registers (0x4e300080/84, 0x4e300110)
++   are set for dual-rank, and that the rank-2 patch in spl-cargt.c covers the
++   new variant if needed.
++
++7. Rebuild and test with the matching physical part.  Do not validate rank1
++   timing with rank2 hardware or vice versa.

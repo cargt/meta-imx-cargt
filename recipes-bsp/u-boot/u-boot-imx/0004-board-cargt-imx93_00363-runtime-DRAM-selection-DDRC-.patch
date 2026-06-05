@@ -1,0 +1,249 @@
+From c989d107b028eeb1d1fe1f8bbef3994e50a087f0 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Tue, 26 May 2026 09:54:29 -0500
+Subject: [PATCH] board/cargt(imx93_00363): runtime DRAM selection; DDRC and
+ FSP rank-2 overrides in SPL
+
+---
+ board/cargt/imx93_00363/Kconfig     |   1 +
+ board/cargt/imx93_00363/Makefile    |   2 +
+ board/cargt/imx93_00363/spl-cargt.c | 178 ++++++++++++++++++++++------
+ 3 files changed, 148 insertions(+), 33 deletions(-)
+
+diff --git a/board/cargt/imx93_00363/Kconfig b/board/cargt/imx93_00363/Kconfig
+index 994257ad450..f70f5b612d0 100644
+--- a/board/cargt/imx93_00363/Kconfig
++++ b/board/cargt/imx93_00363/Kconfig
+@@ -38,4 +38,5 @@ config CARGT_IMX93_00363_LPDDR4X_TIMING_FILENAME
+ 	  Name of the timing file to use when CARGT_IMX93_00363_LPDDR4X_TIMING_BY_NAME is used.
+ 
+ 
++
+ endif
+diff --git a/board/cargt/imx93_00363/Makefile b/board/cargt/imx93_00363/Makefile
+index 6371018a7c2..c761fe8ccc7 100644
+--- a/board/cargt/imx93_00363/Makefile
++++ b/board/cargt/imx93_00363/Makefile
+@@ -12,6 +12,8 @@ obj-y += spl-cargt.o
+ obj-y += cargt_lpddr4x_common.o
+ obj-y += cargt_lpddr4x_1gbyte_3200mts_timing.o cargt_lpddr4x_2gbyte_3200mts_timing.o
+ obj-y += cargt_lpddr4x_1gbyte_3733mts_timing.o cargt_lpddr4x_2gbyte_3733mts_timing.o
++
++ 
+ obj-y += cargt_lpddr4x_3200mts_csr.o cargt_lpddr4x_3733mts_csr.o
+ endif
+ 
+diff --git a/board/cargt/imx93_00363/spl-cargt.c b/board/cargt/imx93_00363/spl-cargt.c
+index ca339344c4a..109c6dafd30 100644
+--- a/board/cargt/imx93_00363/spl-cargt.c
++++ b/board/cargt/imx93_00363/spl-cargt.c
+@@ -36,7 +36,7 @@
+ #include <power/pca9450.h>
+ #include <power/pf0900.h>
+ #include <asm/arch/trdc.h>
+-#include "../common/imx9_eeprom.h"
++#include "../common/cargt_eeprom.h"
+ 
+ DECLARE_GLOBAL_DATA_PTR;
+ 
+@@ -78,6 +78,128 @@ extern struct dram_timing_info cargt_lpddr4x_1gbyte_3733mts_timing;
+ extern struct dram_timing_info cargt_lpddr4x_2gbyte_3733mts_timing;
+ extern struct dram_timing_info cargt_lpddr4x_1gbyte_3200mts_timing;
+ extern struct dram_timing_info cargt_lpddr4x_2gbyte_3200mts_timing;
++
++/*
++ * Select a board-provided `dram_timing_info` based on requested
++ * speed (MT/s), size (MB) and rank. Generated timing files are
++ * kept as offline references and are not compiled into SPL.
++ */
++static struct dram_timing_info *select_dram_timing(uint16_t speed_mts,
++												  uint16_t size_mbytes,
++												  uint8_t rank)
++{
++	/* Prefer 3200 MT/s as the default speed */
++	if (speed_mts == 3200) {
++		if (size_mbytes == 2048)
++			return &cargt_lpddr4x_2gbyte_3200mts_timing;
++		/* default and 1GB cases */
++		return &cargt_lpddr4x_1gbyte_3200mts_timing;
++	}
++
++	if (speed_mts == 3733) {
++		if (size_mbytes == 2048)
++			return &cargt_lpddr4x_2gbyte_3733mts_timing;
++		return &cargt_lpddr4x_1gbyte_3733mts_timing;
++	}
++
++	/* Fallback: prefer 3200 variants */
++	if (size_mbytes == 2048)
++		return &cargt_lpddr4x_2gbyte_3200mts_timing;
++
++	return &cargt_lpddr4x_1gbyte_3200mts_timing;
++}
++
++/*
++ * Apply small DDRC register overrides for rank variations.
++ * We build an in-memory copy of the selected `ddrc_cfg` and
++ * tweak entries that differ for rank==2, then point the
++ * `dram_timing_info` at the override array so subsequent
++ * `ddr_init()` programs the correct values.
++ */
++static void patch_ddrc_cfg_for_rank(struct dram_timing_info *timing, uint8_t rank)
++{
++	/* Keep this small to avoid SPL .bss growth; typical ddrc lists are < 64 */
++	static struct dram_cfg_param ddrc_override[64];
++	int i;
++
++	if (!timing || rank != 2)
++		return;
++
++	if (timing->ddrc_cfg_num > 64)
++		return;
++
++	/* copy original entries */
++	for (i = 0; i < timing->ddrc_cfg_num; i++)
++		ddrc_override[i] = timing->ddrc_cfg[i];
++
++	/* Apply known rank-2 overrides observed in generated files for
++	 * 2G@3200: change a few DDRC registers to enable two ranks.
++	 * These address/value pairs were derived from the generated
++	 * timing artifacts (lpddr4x_2g_3200_rank2_generated.c).
++	 */
++	for (i = 0; i < timing->ddrc_cfg_num; i++) {
++		if (ddrc_override[i].reg == 0x4e300110)
++			ddrc_override[i].val = 0x44104001;
++		else if (ddrc_override[i].reg == 0x4e300080)
++			ddrc_override[i].val = 0x80000412;
++		else if (ddrc_override[i].reg == 0x4e300084)
++			ddrc_override[i].val = 0x80000412;
++	}
++
++	/* point timing at our override table */
++	timing->ddrc_cfg = ddrc_override;
++	/* keep the original count */
++	/* timing->ddrc_cfg_num remains unchanged */
++}
++/*
++ * Apply small overrides to FSP training message blocks for rank variations.
++ * We copy each message block to RAM, tweak the few DDRPHY APB entries that
++ * differ for rank==2 (derived from generated rank2 artifacts) and then
++ * repoint the timing->fsp_msg[].fsp_cfg to the RAM copy.
++ */
++static void patch_fsp_msg_for_rank(struct dram_timing_info *timing, uint8_t rank)
++{
++	/* 4 message blocks, each up to 64 entries is sufficient for our timings */
++	static struct dram_cfg_param fsp_override[4][64];
++	int i, j;
++
++	if (!timing || rank != 2)
++		return;
++
++	if (!timing->fsp_msg || timing->fsp_msg_num > 4)
++		return;
++
++	/* For each configured FSP message, make a RAM copy and patch known regs */
++	for (i = 0; i < timing->fsp_msg_num; i++) {
++		struct dram_fsp_msg *msg = &timing->fsp_msg[i];
++		unsigned int cnt = msg->fsp_cfg_num;
++
++		if (!msg->fsp_cfg || cnt == 0 || cnt > 64)
++			continue;
++
++		/* copy original entries */
++		for (j = 0; j < (int)cnt; j++)
++			fsp_override[i][j] = msg->fsp_cfg[j];
++
++		/* Apply known rank-2 overrides observed in generated files */
++		for (j = 0; j < (int)cnt; j++) {
++			if (fsp_override[i][j].reg == 0x54012)
++				fsp_override[i][j].val = 0x310;
++			else if (fsp_override[i][j].reg == 0x5401b)
++				fsp_override[i][j].val = 0x1126;
++			else if (fsp_override[i][j].reg == 0x54021)
++				fsp_override[i][j].val = 0x1126;
++			else if (fsp_override[i][j].reg == 0x54034)
++				fsp_override[i][j].val = 0x2600;
++			else if (fsp_override[i][j].reg == 0x5403a)
++				fsp_override[i][j].val = 0x2600;
++		}
++
++		/* point the message at our override table */
++		msg->fsp_cfg = fsp_override[i];
++		/* fsp_cfg_num remains the same */
++	}
++}
+ void spl_dram_init(void)
+ {
+ 	struct dram_timing_info *ptiming = &cargt_lpddr4x_1gbyte_3200mts_timing;
+@@ -89,9 +211,19 @@ void spl_dram_init(void)
+ 	struct udevice *i2c_dev;
+ 	int addr, res;
+ 
++	/* Avoid -Wunused-variable when certain CONFIG options exclude uses */
++	(void)desc;
++	(void)dev;
++	(void)ret;
++	(void)board_id;
++	(void)i2c_dev;
++	(void)addr;
++	(void)res;
++
+ #if IS_ENABLED(CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_EEPROM)
+ 	uint16_t dram_size_mbytes = 0;
+ 	uint16_t dram_speed_mts = 0;
++	uint8_t dram_rank = 1;
+ 	printf("Reading Cargt EEPROM over I2C...\n");
+ 	cargt_eeprom_read(&eeprom);
+ 	printf("Cargt EEPROM read complete.\n");
+@@ -101,39 +233,19 @@ void spl_dram_init(void)
+ 	/* Determine timing based on size and speed */
+ 	dram_size_mbytes = cargt_eeprom_get_dram_size_mb(&eeprom);
+ 	dram_speed_mts = cargt_eeprom_get_dram_speed_mts(&eeprom);
++	dram_rank = cargt_eeprom_get_dram_rank(&eeprom);
+ 	
+-	/* Select timing based on speed first, then size */
+-	if (dram_speed_mts == 3200)
+-	{
+-		switch(dram_size_mbytes)
+-		{
+-			case 2048:
+-				ptiming = &cargt_lpddr4x_2gbyte_3200mts_timing;
+-				printf("\tLoading timing for Cargt 2Gbyte LPDDR4x @ 3200 MT/s\r\n");
+-				break;
+-			case 1024:
+-			default:
+-				ptiming = &cargt_lpddr4x_1gbyte_3200mts_timing;
+-				printf("\tLoading timing for Cargt 1Gbyte LPDDR4x @ 3200 MT/s\r\n");
+-				break;
+-		}
+-	}
+-	else
+-	{
+-		/* Default to 3733 MT/s for unsupported or missing speed */
+-		switch(dram_size_mbytes)
+-		{
+-			case 2048:
+-				ptiming = &cargt_lpddr4x_2gbyte_3733mts_timing;
+-				printf("\tLoading timing for Cargt 2Gbyte LPDDR4x @ 3733 MT/s\r\n");
+-				break;
+-			case 1024:
+-			default:
+-				ptiming = &cargt_lpddr4x_1gbyte_3733mts_timing;
+-				printf("\tLoading timing for Cargt 1Gbyte LPDDR4x @ 3733 MT/s\r\n");
+-				break;
+-		}
+-	}
++	/* Select a board-provided timing using a centralized helper. */
++	ptiming = select_dram_timing(dram_speed_mts, dram_size_mbytes, dram_rank);
++
++	/* Apply rank-specific DDRC overrides when needed */
++	patch_ddrc_cfg_for_rank(ptiming, dram_rank);
++	/* Apply rank-specific FSP message overrides when needed */
++	patch_fsp_msg_for_rank(ptiming, dram_rank);
++	printf("\tSelected board timing: %uMB @ %u MT/s (rank %u)\r\n",
++		   dram_size_mbytes, dram_speed_mts, dram_rank);
++
++	/* No generated-wrapper override: keep board-provided timings only. */
+ 
+ #endif /* CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_EEPROM */
+ #if IS_ENABLED (CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_BOARD_ID)

@@ -1,0 +1,136 @@
+From fbb2eef72a4e77341d388dfb2bec38a6502e1287 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 28 May 2026 12:06:20 -0500
+Subject: [PATCH] cargt/imx93_00363: SPL rank-aware dispatch, EEPROM failsafe,
+ min-DRAM enforcement
+
+select_dram_timing(): dispatch 2GB parts by rank so rank1 hardware uses the
+new rank1 timing structs. Previously all 2GB parts used the rank2 timing
+file, which enables dual-rank DDRC (CS0+CS1); on single-rank parts the
+controller attempts to train a CS1 that does not exist and training fails.
+
+EEPROM validity: check cargt_eeprom_is_valid() before reading DDR params.
+On blank or invalid EEPROM (missing magic 0x43524754) print a clear warning
+and fall back to 1GB/3200/rank1, which is a safe common denominator for
+1GB/rank1, 2GB/rank1 and 2GB/rank2 hardware. Instruct the operator to
+program the EEPROM after boot.
+
+Add CARGT_IMX93_00363_MIN_SDRAM_SIZE_MB Kconfig symbol (int, default 0).
+When non-zero the SPL enforces a minimum installed DRAM size and falls back
+to 1GB/3200/rank1 rather than hanging if the part is undersized. Set to
+1024 in the production defconfig (imx93-cargt-00363-00365).
+---
+ board/cargt/imx93_00363/Kconfig           |  9 +++++-
+ board/cargt/imx93_00363/spl-cargt.c       | 36 +++++++++++++++++++----
+ configs/imx93-cargt-00363-00365_defconfig |  1 +
+ include/configs/imx93_00363.h             |  2 +-
+ 4 files changed, 41 insertions(+), 7 deletions(-)
+
+diff --git a/board/cargt/imx93_00363/Kconfig b/board/cargt/imx93_00363/Kconfig
+index f70f5b612d0..48d308f03fd 100644
+--- a/board/cargt/imx93_00363/Kconfig
++++ b/board/cargt/imx93_00363/Kconfig
+@@ -37,6 +37,13 @@ config CARGT_IMX93_00363_LPDDR4X_TIMING_FILENAME
+ 	help
+ 	  Name of the timing file to use when CARGT_IMX93_00363_LPDDR4X_TIMING_BY_NAME is used.
+ 
+-
++config CARGT_IMX93_00363_MIN_SDRAM_SIZE_MB
++	int "Minimum required SDRAM size in MB (0 = no minimum)"
++	default 0
++	help
++	  If non-zero, the SPL will halt with an error if the EEPROM-reported
++	  DRAM size is less than this value. Set to 1024 for machines that
++	  require at least 1 GB of DDR (e.g. those using video or M33 remoteproc
++	  with reserved memory above the 512 MB mark).
+ 
+ endif
+diff --git a/board/cargt/imx93_00363/spl-cargt.c b/board/cargt/imx93_00363/spl-cargt.c
+index c5c37b59a38..e9e03b6b32d 100644
+--- a/board/cargt/imx93_00363/spl-cargt.c
++++ b/board/cargt/imx93_00363/spl-cargt.c
+@@ -76,8 +76,10 @@ void spl_board_init(void)
+ extern struct dram_timing_info dram_timing_1866mts;
+ extern struct dram_timing_info cargt_lpddr4x_1gbyte_3733mts_timing;
+ extern struct dram_timing_info cargt_lpddr4x_2gbyte_3733mts_timing;
++extern struct dram_timing_info cargt_lpddr4x_2gbyte_3733mts_rank1_timing;
+ extern struct dram_timing_info cargt_lpddr4x_1gbyte_3200mts_timing;
+ extern struct dram_timing_info cargt_lpddr4x_2gbyte_3200mts_timing;
++extern struct dram_timing_info cargt_lpddr4x_2gbyte_3200mts_rank1_timing;
+ /* These may be provided as generated reference objects; make weak so
+  * the SPL can build without them and fall back to nearby timings.
+  */
+@@ -96,9 +98,14 @@ static struct dram_timing_info *select_dram_timing(uint16_t speed_mts,
+ 	/* Choose by size first to make the cases explicit and readable */
+ 	switch (size_mbytes) {
+ 	case 2048: /* 2 GB */
++		if (rank == 1) {
++			if (speed_mts == 3733)
++				return &cargt_lpddr4x_2gbyte_3733mts_rank1_timing;
++			return &cargt_lpddr4x_2gbyte_3200mts_rank1_timing;
++		}
+ 		if (speed_mts == 3733)
+ 			return &cargt_lpddr4x_2gbyte_3733mts_timing;
+-		/* default to 3200 for 2GB */
++		/* default to 3200 for 2GB rank2 */
+ 		return &cargt_lpddr4x_2gbyte_3200mts_timing;
+ 
+ 	case 1024: /* 1 GB */
+@@ -293,12 +300,31 @@ void spl_dram_init(void)
+ 	cargt_eeprom_read(&eeprom);
+ 	printf("Cargt EEPROM read complete.\n");
+ 	printf("Cargt EEPROM contents at address: 0x%p\n", &eeprom);
+-	cargt_eeprom_print_prod_info(&eeprom);
++
++	if (!cargt_eeprom_is_valid(&eeprom)) {
++		printf("WARNING: EEPROM blank or invalid magic — using failsafe timing 1GB/3200/rank1\n");
++		printf("         Program EEPROM with correct DDR parameters after boot.\n");
++		dram_size_mbytes = 1024;
++		dram_speed_mts   = 3200;
++		dram_rank        = 1;
++	} else {
++		cargt_eeprom_print_prod_info(&eeprom);
++		dram_size_mbytes = cargt_eeprom_get_dram_size_mb(&eeprom);
++		dram_speed_mts   = cargt_eeprom_get_dram_speed_mts(&eeprom);
++		dram_rank        = cargt_eeprom_get_dram_rank(&eeprom);
++	}
+ 
+ 	/* Determine timing based on size, speed and rank from EEPROM */
+-	dram_size_mbytes = cargt_eeprom_get_dram_size_mb(&eeprom);
+-	dram_speed_mts = cargt_eeprom_get_dram_speed_mts(&eeprom);
+-	dram_rank = cargt_eeprom_get_dram_rank(&eeprom);
++
++#if CONFIG_CARGT_IMX93_00363_MIN_SDRAM_SIZE_MB > 0
++	if (dram_size_mbytes < CONFIG_CARGT_IMX93_00363_MIN_SDRAM_SIZE_MB) {
++		printf("WARNING: DRAM %u MB < minimum %u MB, loading failsafe 1GB/3200/rank1\n",
++		       dram_size_mbytes, CONFIG_CARGT_IMX93_00363_MIN_SDRAM_SIZE_MB);
++		dram_size_mbytes = 1024;
++		dram_speed_mts   = 3200;
++		dram_rank        = 1;
++	}
++#endif
+ 
+ 	/* Select a board-provided timing using a centralized helper. */
+ 	ptiming = select_dram_timing(dram_speed_mts, dram_size_mbytes, dram_rank);
+diff --git a/configs/imx93-cargt-00363-00365_defconfig b/configs/imx93-cargt-00363-00365_defconfig
+index c29edce11d9..3fd8ad9ddd8 100644
+--- a/configs/imx93-cargt-00363-00365_defconfig
++++ b/configs/imx93-cargt-00363-00365_defconfig
+@@ -217,3 +217,4 @@ CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=100
+ # CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_NAME is not set
+ # CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME="cargt_lpddr4x_1gbyte_3200mts_timing"
+ CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_EEPROM=y
++CONFIG_CARGT_IMX93_00363_MIN_SDRAM_SIZE_MB=1024
+diff --git a/include/configs/imx93_00363.h b/include/configs/imx93_00363.h
+index 247ef450056..4623aad1034 100644
+--- a/include/configs/imx93_00363.h
++++ b/include/configs/imx93_00363.h
+@@ -19,7 +19,7 @@
+ #define PHYS_SDRAM                      0x80000000
+ #define PHYS_SDRAM_SIZE					0x40000000 /* 1GB DDR */
+ 
+-#define DEFAULT_SDRAM_SIZE_MB	(1024) 			/* 1GB Minimum DDR4, see get_dram_size */
++#define DEFAULT_SDRAM_SIZE_MB	(1024) 			/* 1GB minimum DDR4 (supports 1GB/2GB variants); headless/512MB machines override this */
+ #define CARGT_EEPROM_DRAM_START (PHYS_SDRAM + ((DEFAULT_SDRAM_SIZE_MB * SZ_1M) >> 1))
+ #define DEFAULT_SDRAM_SPEED_MTS	(0) 			/* Not yet supported for imx93_00363, see get_dram_speed */
+ #define CARGT_EEPROM_I2C_NAME "i2c@44340000" 	/* lpi2c1 see imx93.dtsi */

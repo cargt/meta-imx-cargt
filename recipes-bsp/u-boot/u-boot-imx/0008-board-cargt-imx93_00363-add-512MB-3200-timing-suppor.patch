@@ -1,0 +1,56 @@
+From 9dd939ec8f6e406dcc37fef3a6be54678e028680 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Tue, 26 May 2026 12:10:43 -0500
+Subject: [PATCH] board/cargt(imx93_00363): add 512MB@3200 timing support and
+ make it default
+
+---
+ board/cargt/imx93_00363/spl-cargt.c | 14 +++++++++-----
+ 1 file changed, 9 insertions(+), 5 deletions(-)
+
+diff --git a/board/cargt/imx93_00363/spl-cargt.c b/board/cargt/imx93_00363/spl-cargt.c
+index 109c6dafd30..a99b037c97d 100644
+--- a/board/cargt/imx93_00363/spl-cargt.c
++++ b/board/cargt/imx93_00363/spl-cargt.c
+@@ -78,6 +78,7 @@ extern struct dram_timing_info cargt_lpddr4x_1gbyte_3733mts_timing;
+ extern struct dram_timing_info cargt_lpddr4x_2gbyte_3733mts_timing;
+ extern struct dram_timing_info cargt_lpddr4x_1gbyte_3200mts_timing;
+ extern struct dram_timing_info cargt_lpddr4x_2gbyte_3200mts_timing;
++extern struct dram_timing_info cargt_lpddr4x_512mb_3200mts_timing;
+ 
+ /*
+  * Select a board-provided `dram_timing_info` based on requested
+@@ -88,25 +89,28 @@ static struct dram_timing_info *select_dram_timing(uint16_t speed_mts,
+ 												  uint16_t size_mbytes,
+ 												  uint8_t rank)
+ {
+-	/* Prefer 3200 MT/s as the default speed */
++	/* Prefer 3200 MT/s as the default speed and prefer 512MB as default */
+ 	if (speed_mts == 3200) {
+ 		if (size_mbytes == 2048)
+ 			return &cargt_lpddr4x_2gbyte_3200mts_timing;
+-		/* default and 1GB cases */
+-		return &cargt_lpddr4x_1gbyte_3200mts_timing;
++		if (size_mbytes == 512)
++			return &cargt_lpddr4x_512mb_3200mts_timing;
++		/* default case falls back to 512MB */
++		return &cargt_lpddr4x_512mb_3200mts_timing;
+ 	}
+ 
+ 	if (speed_mts == 3733) {
+ 		if (size_mbytes == 2048)
+ 			return &cargt_lpddr4x_2gbyte_3733mts_timing;
++		/* no 512@3733 reference yet: fall back to 3200 512MB timing */
+ 		return &cargt_lpddr4x_1gbyte_3733mts_timing;
+ 	}
+ 
+-	/* Fallback: prefer 3200 variants */
++	/* Fallback: prefer 3200/512 variants */
+ 	if (size_mbytes == 2048)
+ 		return &cargt_lpddr4x_2gbyte_3200mts_timing;
+ 
+-	return &cargt_lpddr4x_1gbyte_3200mts_timing;
++	return &cargt_lpddr4x_512mb_3200mts_timing;
+ }
+ 
+ /*

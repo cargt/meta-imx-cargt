@@ -6480,15 +6480,6 @@ diff --git a/board/cargt/imx93_00363/spl-cargt.c b/board/cargt/imx93_00363/spl-c
 index ca339344c4a..c5c37b59a38 100644
 --- a/board/cargt/imx93_00363/spl-cargt.c
 +++ b/board/cargt/imx93_00363/spl-cargt.c
-@@ -36,7 +36,7 @@
- #include <power/pca9450.h>
- #include <power/pf0900.h>
- #include <asm/arch/trdc.h>
--#include "../common/imx9_eeprom.h"
-+#include "../common/cargt_eeprom.h"
- 
- DECLARE_GLOBAL_DATA_PTR;
- 
 @@ -78,62 +78,235 @@ extern struct dram_timing_info cargt_lpddr4x_1gbyte_3733mts_timing;
  extern struct dram_timing_info cargt_lpddr4x_2gbyte_3733mts_timing;
  extern struct dram_timing_info cargt_lpddr4x_1gbyte_3200mts_timing;

@@ -1,0 +1,128 @@
+From 3cccf9cb3add89d0642bfb5f1b58e60a833b6a28 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Tue, 26 May 2026 12:34:34 -0500
+Subject: [PATCH] board/cargt: limit rank-2 runtime patches to sizes > 1024MB;
+ centralize dram_size/dram_rank handling
+
+---
+ board/cargt/imx93_00363/spl-cargt.c | 38 ++++++++++++++++++++---------
+ 1 file changed, 26 insertions(+), 12 deletions(-)
+
+diff --git a/board/cargt/imx93_00363/spl-cargt.c b/board/cargt/imx93_00363/spl-cargt.c
+index 13fbd542b73..6c79bb035fc 100644
+--- a/board/cargt/imx93_00363/spl-cargt.c
++++ b/board/cargt/imx93_00363/spl-cargt.c
+@@ -260,6 +260,10 @@ void spl_dram_init(void)
+ 	struct udevice *dev;
+ 	int ret;
+ 	uint8_t board_id = 0;
++	/* Global DRAM characteristics determined during selection */
++	uint16_t dram_size_mbytes = 1024;
++	uint16_t dram_speed_mts = 0;
++	uint8_t dram_rank = 1;
+ 
+ 	struct udevice *i2c_dev;
+ 	int addr, res;
+@@ -274,29 +278,20 @@ void spl_dram_init(void)
+ 	(void)res;
+ 
+ #if IS_ENABLED(CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_EEPROM)
+-	uint16_t dram_size_mbytes = 0;
+-	uint16_t dram_speed_mts = 0;
+-	uint8_t dram_rank = 1;
+ 	printf("Reading Cargt EEPROM over I2C...\n");
+ 	cargt_eeprom_read(&eeprom);
+ 	printf("Cargt EEPROM read complete.\n");
+ 	printf("Cargt EEPROM contents at address: 0x%p\n", &eeprom);
+-	cargt_eeprom_print_prod_info(&eeprom);	
++	cargt_eeprom_print_prod_info(&eeprom);
+ 
+-	/* Determine timing based on size and speed */
++	/* Determine timing based on size, speed and rank from EEPROM */
+ 	dram_size_mbytes = cargt_eeprom_get_dram_size_mb(&eeprom);
+ 	dram_speed_mts = cargt_eeprom_get_dram_speed_mts(&eeprom);
+ 	dram_rank = cargt_eeprom_get_dram_rank(&eeprom);
+-	
++
+ 	/* Select a board-provided timing using a centralized helper. */
+ 	ptiming = select_dram_timing(dram_speed_mts, dram_size_mbytes, dram_rank);
+ 
+-	/* Apply rank-specific DDRC overrides when needed */
+-	patch_ddrc_cfg_for_rank(ptiming, dram_rank);
+-	/* Apply rank-specific FSP message overrides when needed */
+-	patch_fsp_msg_for_rank(ptiming, dram_rank);
+-	/* Make trained CSR writable in SRAM and optionally patch for rank */
+-	patch_ddrphy_trained_csr_for_rank(ptiming, dram_rank);
+ 	printf("\tSelected board timing: %uMB @ %u MT/s (rank %u)\r\n",
+ 		   dram_size_mbytes, dram_speed_mts, dram_rank);
+ 
+@@ -374,9 +369,11 @@ BANKS ARE WRONG IN SPL becuase u-boot doesn't use proper alias!
+ 		case 0x0f:
+ 		if (dram_speed_mts_bid == 3200) {
+ 			ptiming = &cargt_lpddr4x_2gbyte_3200mts_timing;
++			dram_size_mbytes = 2048;
+ 			printf("\tLoading timing for Cargt 2Gbyte LPDDR4x @ 3200 MT/s\r\n");
+ 		} else {
+ 			ptiming = &cargt_lpddr4x_2gbyte_3733mts_timing;
++			dram_size_mbytes = 2048;
+ 			printf("\tLoading timing for Cargt 2Gbyte LPDDR4x @ 3733 MT/s\r\n");
+ 		}
+ 		break;
+@@ -385,9 +382,11 @@ BANKS ARE WRONG IN SPL becuase u-boot doesn't use proper alias!
+ 		default:
+ 		if (dram_speed_mts_bid == 3200) {
+ 			ptiming = &cargt_lpddr4x_1gbyte_3200mts_timing;
++			dram_size_mbytes = 1024;
+ 			printf("\tLoading timing for Cargt 1Gbyte LPDDR4x @ 3200 MT/s\r\n");
+ 		} else {
+ 			ptiming = &cargt_lpddr4x_1gbyte_3733mts_timing;
++			dram_size_mbytes = 1024;
+ 			printf("\tLoading timing for Cargt 1Gbyte LPDDR4x @ 3733 MT/s\r\n");
+ 		}
+ 		break;
+@@ -412,15 +411,18 @@ static char *cargt_lpddr4t_timing_string = "default";
+ 	{
+ 		if (dram_speed_mts_name == 3200) {
+ 			ptiming = &cargt_lpddr4x_2gbyte_3200mts_timing;
++			dram_size_mbytes = 2048;
+ 			printf("\tLoading timing for Cargt 2Gbyte LPDDR4x @ 3200 MT/s\r\n");
+ 		} else {
+ 			ptiming = &cargt_lpddr4x_2gbyte_3733mts_timing;
++			dram_size_mbytes = 2048;
+ 			printf("\tLoading timing for Cargt 2Gbyte LPDDR4x @ 3733 MT/s\r\n");
+ 		}
+ 	}
+ 	else if (!strncmp("cargt_lpddr4x_1gbyte_3200mts_timing", cargt_lpddr4t_timing_string, strlen("cargt_lpddr4x_1gbyte_3200mts_timing")))
+ 	{
+ 		ptiming = &cargt_lpddr4x_1gbyte_3200mts_timing;
++		dram_size_mbytes = 1024;
+ 		printf("\tLoading timing for Cargt 1Gbyte LPDDR4x @ 3200 MT/s\r\n");
+ 	}
+ 	else
+@@ -428,14 +430,26 @@ static char *cargt_lpddr4t_timing_string = "default";
+ 		/* Default to 1GB with speed-aware selection */
+ 		if (dram_speed_mts_name == 3200) {
+ 			ptiming = &cargt_lpddr4x_1gbyte_3200mts_timing;
++			dram_size_mbytes = 1024;
+ 			printf("\tLoading timing for Cargt 1Gbyte LPDDR4x @ 3200 MT/s\r\n");
+ 		} else {
+ 			ptiming = &cargt_lpddr4x_1gbyte_3733mts_timing;
++			dram_size_mbytes = 1024;
+ 			printf("\tLoading timing for Cargt 1Gbyte LPDDR4x @ 3733 MT/s\r\n");
+ 		}
+ 	}
+ #endif /* CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_NAME */
+ 
++	/* Apply rank-specific runtime patches only for sizes > 1024MB */
++	if (dram_rank == 2 && dram_size_mbytes > 1024) {
++		/* Apply rank-specific DDRC overrides when needed */
++		patch_ddrc_cfg_for_rank(ptiming, dram_rank);
++		/* Apply rank-specific FSP message overrides when needed */
++		patch_fsp_msg_for_rank(ptiming, dram_rank);
++		/* Make trained CSR writable in SRAM and optionally patch for rank */
++		patch_ddrphy_trained_csr_for_rank(ptiming, dram_rank);
++	}
++
+ 	printf("DDR: %uMTS\n", ptiming->fsp_msg[0].drate);
+ 	ddr_init(ptiming);
+ }

@@ -1,0 +1,50 @@
+From 46acfa99dc8594a10cb7a570c5b3475f2ca97a88 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Tue, 26 May 2026 12:15:32 -0500
+Subject: [PATCH] board/cargt: make 512MB timing symbols weak and add fallbacks
+ when not provided
+
+---
+ board/cargt/imx93_00363/spl-cargt.c | 22 ++++++++++++++++------
+ 1 file changed, 16 insertions(+), 6 deletions(-)
+
+diff --git a/board/cargt/imx93_00363/spl-cargt.c b/board/cargt/imx93_00363/spl-cargt.c
+index 01d547632d9..d74c3d357ed 100644
+--- a/board/cargt/imx93_00363/spl-cargt.c
++++ b/board/cargt/imx93_00363/spl-cargt.c
+@@ -78,8 +78,11 @@ extern struct dram_timing_info cargt_lpddr4x_1gbyte_3733mts_timing;
+ extern struct dram_timing_info cargt_lpddr4x_2gbyte_3733mts_timing;
+ extern struct dram_timing_info cargt_lpddr4x_1gbyte_3200mts_timing;
+ extern struct dram_timing_info cargt_lpddr4x_2gbyte_3200mts_timing;
+-extern struct dram_timing_info cargt_lpddr4x_512mb_3200mts_timing;
+-extern struct dram_timing_info cargt_lpddr4x_512mb_3733mts_timing;
++/* These may be provided as generated reference objects; make weak so
++ * the SPL can build without them and fall back to nearby timings.
++ */
++extern struct dram_timing_info cargt_lpddr4x_512mb_3200mts_timing __weak;
++extern struct dram_timing_info cargt_lpddr4x_512mb_3733mts_timing __weak;
+ 
+ /*
+  * Select a board-provided `dram_timing_info` based on requested
+@@ -105,10 +108,17 @@ static struct dram_timing_info *select_dram_timing(uint16_t speed_mts,
+ 		return &cargt_lpddr4x_1gbyte_3200mts_timing;
+ 
+ 	case 512: /* 512 MB */
+-		if (speed_mts == 3733)
+-			return &cargt_lpddr4x_512mb_3733mts_timing;
+-		/* default to 3200 for 512MB */
+-		return &cargt_lpddr4x_512mb_3200mts_timing;
++		if (speed_mts == 3733) {
++			/* prefer the 512@3733 object if it was provided */
++			if (&cargt_lpddr4x_512mb_3733mts_timing)
++				return &cargt_lpddr4x_512mb_3733mts_timing;
++			/* otherwise fall through to try 512@3200 */
++		}
++		/* prefer 512@3200 if available */
++		if (&cargt_lpddr4x_512mb_3200mts_timing)
++			return &cargt_lpddr4x_512mb_3200mts_timing;
++		/* final fallback: use 1GB@3200 */
++		return &cargt_lpddr4x_1gbyte_3200mts_timing;
+ 
+ 	default: /* unknown size: fall back to the preferred default (512MB@3200) */
+ 		return &cargt_lpddr4x_512mb_3200mts_timing;
