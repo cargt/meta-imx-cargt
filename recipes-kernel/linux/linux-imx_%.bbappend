@@ -25,6 +25,7 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0027-arm64-dts-imx91-Add-CARGT-00363-OSM-L-SOM-and-00365-.patch \
             file://0028-arm64-dts-imx91-Update-shared-DMA-pool-configuration.patch \
             file://0029-arm64-dts-imx93-cargt-00363-osm-som-Configure-Blueto.patch \
+            file://0030-Add-support-for-second-RS-232-UART-lpuart7-in-device.patch \
             "
 
 SRC_URI += "file://cargt_router_kernel_config_mods.cfg \
