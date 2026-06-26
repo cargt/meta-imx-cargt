@@ -1,0 +1,120 @@
+From 8755c586698f1fe543d70b30d3b68ac66c547937 Mon Sep 17 00:00:00 2001
+From: Graham Taylor-Jones <graham.taylor-jones@cargt.com>
+Date: Fri, 26 Jun 2026 14:41:00 -0500
+Subject: [PATCH] Modify Serial Number output to be decimal as well as hex
+
+---
+ board/cargt/imx91_00363/spl-cargt.c | 16 +++++++++++++++-
+ board/cargt/imx93_00324/spl-cargt.c | 16 +++++++++++++++-
+ board/cargt/imx93_00359/spl-cargt.c | 16 +++++++++++++++-
+ board/cargt/imx93_00363/spl-cargt.c | 16 +++++++++++++++-
+ 4 files changed, 60 insertions(+), 4 deletions(-)
+
+diff --git a/board/cargt/imx91_00363/spl-cargt.c b/board/cargt/imx91_00363/spl-cargt.c
+index 274e384ca7d..920012320a0 100644
+--- a/board/cargt/imx91_00363/spl-cargt.c
++++ b/board/cargt/imx91_00363/spl-cargt.c
+@@ -224,7 +224,21 @@ void board_init_f(ulong dummy)
+ 	if (ret) {
+ 		printf("Fail to init ELE API\n");
+ 	} else {
+-		printf("SOC: 0x%x\n", gd->arch.soc_rev);
++		// U-boot doesn't support printing u32 with commas, so we do it manually here
++		u32 v = gd->arch.soc_rev;
++		char buf[16];
++		int i = sizeof(buf) - 1;
++		int d = 0;
++		buf[i] = '\0';
++		do {
++			if (d && d % 3 == 0) {
++				buf[--i] = ',';
++			}
++			buf[--i] = '0' + (v % 10);
++			v /= 10;
++			d++;
++		} while (v);
++		printf("SOC Serial #: %s (0x%x)\n", &buf[i], gd->arch.soc_rev);
+ 		printf("LC: 0x%x\n", gd->arch.lifecycle);
+ 	}
+ 
+diff --git a/board/cargt/imx93_00324/spl-cargt.c b/board/cargt/imx93_00324/spl-cargt.c
+index 4f54ba33e45..84908ca756c 100644
+--- a/board/cargt/imx93_00324/spl-cargt.c
++++ b/board/cargt/imx93_00324/spl-cargt.c
+@@ -652,7 +652,21 @@ void board_init_f(ulong dummy)
+ 	if (ret) {
+ 		printf("Fail to init ELE API\n");
+ 	} else {
+-		printf("SOC: 0x%x\n", gd->arch.soc_rev);
++		// U-boot doesn't support printing u32 with commas, so we do it manually here
++		u32 v = gd->arch.soc_rev;
++		char buf[16];
++		int i = sizeof(buf) - 1;
++		int d = 0;
++		buf[i] = '\0';
++		do {
++			if (d && d % 3 == 0) {
++				buf[--i] = ',';
++			}
++			buf[--i] = '0' + (v % 10);
++			v /= 10;
++			d++;
++		} while (v);
++		printf("SOC Serial #: %s (0x%x)\n", &buf[i], gd->arch.soc_rev);
+ 		printf("LC: 0x%x\n", gd->arch.lifecycle);
+ 	}
+ 
+diff --git a/board/cargt/imx93_00359/spl-cargt.c b/board/cargt/imx93_00359/spl-cargt.c
+index 4e5d1bf217e..93d3d3b1761 100644
+--- a/board/cargt/imx93_00359/spl-cargt.c
++++ b/board/cargt/imx93_00359/spl-cargt.c
+@@ -652,7 +652,21 @@ void board_init_f(ulong dummy)
+ 	if (ret) {
+ 		printf("Fail to init ELE API\n");
+ 	} else {
+-		printf("SOC: 0x%x\n", gd->arch.soc_rev);
++		// U-boot doesn't support printing u32 with commas, so we do it manually here
++		u32 v = gd->arch.soc_rev;
++		char buf[16];
++		int i = sizeof(buf) - 1;
++		int d = 0;
++		buf[i] = '\0';
++		do {
++			if (d && d % 3 == 0) {
++				buf[--i] = ',';
++			}
++			buf[--i] = '0' + (v % 10);
++			v /= 10;
++			d++;
++		} while (v);
++		printf("SOC Serial #: %s (0x%x)\n", &buf[i], gd->arch.soc_rev);
+ 		printf("LC: 0x%x\n", gd->arch.lifecycle);
+ 	}
+ 
+diff --git a/board/cargt/imx93_00363/spl-cargt.c b/board/cargt/imx93_00363/spl-cargt.c
+index 9b4f188cafd..eaa1e691f48 100644
+--- a/board/cargt/imx93_00363/spl-cargt.c
++++ b/board/cargt/imx93_00363/spl-cargt.c
+@@ -652,7 +652,21 @@ void board_init_f(ulong dummy)
+ 	if (ret) {
+ 		printf("Fail to init ELE API\n");
+ 	} else {
+-		printf("SOC: 0x%x\n", gd->arch.soc_rev);
++		// U-boot doesn't support printing u32 with commas, so we do it manually here
++		u32 v = gd->arch.soc_rev;
++		char buf[16];
++		int i = sizeof(buf) - 1;
++		int d = 0;
++		buf[i] = '\0';
++		do {
++			if (d && d % 3 == 0) {
++				buf[--i] = ',';
++			}
++			buf[--i] = '0' + (v % 10);
++			v /= 10;
++			d++;
++		} while (v);
++		printf("SOC Serial #: %s (0x%x)\n", &buf[i], gd->arch.soc_rev);
+ 		printf("LC: 0x%x\n", gd->arch.lifecycle);
+ 	}
+ 
