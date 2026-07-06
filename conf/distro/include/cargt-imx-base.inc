@@ -2,8 +2,12 @@ require conf/distro/poky.conf
 
 DISTRO = "imx-cargt"
 DISTRO_NAME = "Cargt i.MX Release Distro"
-DISTRO_VERSION = "6.6-scarthgap"
+DISTRO_VERSION = "6.18-wrynose"
 DISTROOVERRIDES = "fsl"
+
+# Temporarily pin u-boot to scarthgap version for kernel-only validation (Phase 3)
+# Remove this after kernel patches are validated (Phase 4)
+PREFERRED_VERSION_u-boot-imx = "2024.04%"
 
 MAINTAINER = "Cargt <tim.carney@cargt.com>"
 
