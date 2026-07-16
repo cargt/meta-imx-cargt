@@ -9,7 +9,7 @@ FILES:${PN} = "${systemd_unitdir}/system/poe-power.service"
 
 do_install() {
   install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/poe-power.service ${D}/${systemd_unitdir}/system
+  install -m 0644 ${UNPACKDIR}/poe-power.service ${D}/${systemd_unitdir}/system
 }
 
 

@@ -4,6 +4,7 @@ Date: Fri, 27 Feb 2026 10:05:51 -0600
 Subject: [PATCH] Update USB role switch mode and add USB port auto
  configuration
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  arch/arm/dts/imx8mp-cargt-00377-00365.dts  | 6 ++++--
  cmd/fastboot.c                             | 3 ---

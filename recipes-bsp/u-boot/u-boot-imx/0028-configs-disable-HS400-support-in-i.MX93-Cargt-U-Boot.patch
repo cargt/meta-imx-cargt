@@ -4,6 +4,7 @@ Date: Wed, 24 Jun 2026 13:30:08 -0500
 Subject: [PATCH] configs: disable HS400 support in i.MX93 Cargt  U-Boot
  defconfigs
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  configs/imx93-cargt-00363-00365_defconfig   | 4 ++--
  configs/imx93-cargt-00363-osm-som_defconfig | 4 ++--

@@ -3,6 +3,7 @@ From: Tim Carney <tim.carney@cargt.com>
 Date: Tue, 23 Sep 2025 14:04:03 -0500
 Subject: [PATCH] Add support for imx93_00363.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  .../dts/imx93-cargt-00363-00365-u-boot.dtsi   |  225 ++
  arch/arm/dts/imx93-cargt-00363-00365.dts      |  395 ++++

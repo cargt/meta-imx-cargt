@@ -3,6 +3,7 @@ From: Tim Carney <tim.carney@cargt.com>
 Date: Tue, 12 May 2026 15:03:08 -0500
 Subject: [PATCH] Limit SD Card to 3.3V only on 00365 for compatibility.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365.dts | 1 +
  1 file changed, 1 insertion(+)

@@ -11,7 +11,7 @@ FILES:${PN} = "${systemd_unitdir}/system/kea-dhcp6.service \
                
 do_install() {
   install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/kea-dhcp6.service ${D}/${systemd_unitdir}/system
+  install -m 0644 ${UNPACKDIR}/kea-dhcp6.service ${D}/${systemd_unitdir}/system
 }
 
 

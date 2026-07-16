@@ -10,10 +10,10 @@ FILES:${PN} = "${systemd_unitdir}/system/mount-usb@.service ${sysconfdir}/udev/r
 
 do_install() {
   install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/mount-usb@.service ${D}/${systemd_unitdir}/system
+  install -m 0644 ${UNPACKDIR}/mount-usb@.service ${D}/${systemd_unitdir}/system
 
   install -d ${D}${sysconfdir}/udev/rules.d
-  install -m 0644 ${WORKDIR}/mount-usb.rules ${D}${sysconfdir}/udev/rules.d/
+  install -m 0644 ${UNPACKDIR}/mount-usb.rules ${D}${sysconfdir}/udev/rules.d/
 }
 
 

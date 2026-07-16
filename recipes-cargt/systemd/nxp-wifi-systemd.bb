@@ -9,7 +9,7 @@ FILES:${PN} = "${systemd_unitdir}/system/nxp-wifi.service"
 
 do_install() {
   install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/nxp-wifi.service ${D}/${systemd_unitdir}/system
+  install -m 0644 ${UNPACKDIR}/nxp-wifi.service ${D}/${systemd_unitdir}/system
 }
 
 

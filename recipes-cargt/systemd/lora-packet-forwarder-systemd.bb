@@ -11,7 +11,7 @@ FILES:${PN} = "${systemd_unitdir}/system/lora-packet-forwarder.service \
                
 do_install() {
   install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/lora-packet-forwarder.service ${D}/${systemd_unitdir}/system
+  install -m 0644 ${UNPACKDIR}/lora-packet-forwarder.service ${D}/${systemd_unitdir}/system
 }
 
 

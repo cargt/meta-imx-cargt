@@ -1,5 +1,3 @@
-LICENSE = "CLOSED"
-
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 SRC_URI += "file://cargt-swupdate-mods.cfg \
             "
@@ -12,7 +10,7 @@ SW_VER_STRING ?= "undefined"
 
 do_install:append() {
     mkdir -p ${D}/etc
-    cp -f ${WORKDIR}/swupdate.cfg ${D}/etc/swupdate.cfg         
+    cp -f ${UNPACKDIR}/swupdate.cfg ${D}/etc/swupdate.cfg         
 }
 
 RDEPENDS:${PN} += "lua tar zstd"

@@ -4,6 +4,7 @@ Date: Fri, 27 Feb 2026 10:49:12 -0600
 Subject: [PATCH] Add USB DWC3 gadget support and remove redundant compatible
  entries
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi | 2 --
  configs/imx8mp-cargt-00377-00365_defconfig        | 1 +

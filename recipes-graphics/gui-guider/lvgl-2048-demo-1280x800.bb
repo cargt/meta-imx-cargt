@@ -36,7 +36,7 @@ TARGET_CFLAGS += "-I${RECIPE_SYSROOT}/${includedir}/lvgl/src"
 do_install:append () {
 
     install -d ${D}/usr/share/weston/icon/
-    install -Dm 0644 ${WORKDIR}/${BPN}.png ${D}/usr/share/weston/icon/    
+    install -Dm 0644 ${UNPACKDIR}/${BPN}.png ${D}/usr/share/weston/icon/    
 }
 
 FILES:${PN} = "/usr/bin/${BPN} \

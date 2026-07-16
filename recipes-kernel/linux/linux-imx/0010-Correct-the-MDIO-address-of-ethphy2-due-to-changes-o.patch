@@ -4,6 +4,7 @@ Date: Thu, 11 Dec 2025 08:55:25 -0600
 Subject: [PATCH] Correct the MDIO address of ethphy2 due to changes on the
  latest version of 00365.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365.dts | 4 ++--
  1 file changed, 2 insertions(+), 2 deletions(-)

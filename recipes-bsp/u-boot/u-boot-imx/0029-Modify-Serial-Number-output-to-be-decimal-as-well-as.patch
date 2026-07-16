@@ -3,6 +3,7 @@ From: Graham Taylor-Jones <graham.taylor-jones@cargt.com>
 Date: Fri, 26 Jun 2026 14:41:00 -0500
 Subject: [PATCH] Modify Serial Number output to be decimal as well as hex
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  board/cargt/imx91_00363/spl-cargt.c | 16 +++++++++++++++-
  board/cargt/imx93_00324/spl-cargt.c | 16 +++++++++++++++-

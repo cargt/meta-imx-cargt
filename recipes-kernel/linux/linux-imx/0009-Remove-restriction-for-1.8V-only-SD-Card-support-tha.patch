@@ -4,6 +4,7 @@ Date: Thu, 11 Dec 2025 08:54:44 -0600
 Subject: [PATCH] Remove restriction for 1.8V only SD Card support that was
  added for ERR052674.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  .../dts/freescale/imx93-cargt-00363-00365.dts | 21 ++++++-------------
  1 file changed, 6 insertions(+), 15 deletions(-)

@@ -9,7 +9,7 @@ FILES:${PN} += "${systemd_unitdir}/system/chrome.service"
 
 do_install() {
   install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/chrome.service ${D}/${systemd_unitdir}/system
+  install -m 0644 ${UNPACKDIR}/chrome.service ${D}/${systemd_unitdir}/system
 }
 
 

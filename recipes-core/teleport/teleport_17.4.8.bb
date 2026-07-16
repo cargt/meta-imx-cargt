@@ -8,7 +8,7 @@ SRC_URI = "https://cdn.teleport.dev/${FILE_NAME}"
 
 SHASUM_URI = "https://cdn.teleport.dev/${FILE_NAME}.sha256"
 
-S = "${WORKDIR}/teleport"
+S = "${UNPACKDIR}/teleport"
 
 # Disable already-stripped as it is not needed
 INSANE_SKIP:${PN} += "already-stripped"
@@ -30,10 +30,10 @@ PACKAGES = "${PN} ${PN}-tctl ${PN}-tsh ${PN}-tbot"
 
 do_install() {
     install -d ${D}${bindir}
-    install -m 0755 ${WORKDIR}/teleport/teleport ${D}${bindir}
-    install -m 0755 ${WORKDIR}/teleport/tctl ${D}${bindir}
-    install -m 0755 ${WORKDIR}/teleport/tsh ${D}${bindir}
-    install -m 0755 ${WORKDIR}/teleport/tbot ${D}${bindir}
+    install -m 0755 ${S}/teleport ${D}${bindir}
+    install -m 0755 ${S}/tctl ${D}${bindir}
+    install -m 0755 ${S}/tsh ${D}${bindir}
+    install -m 0755 ${S}/tbot ${D}${bindir}
 
     install -d ${D}/var/lib/teleport
 }

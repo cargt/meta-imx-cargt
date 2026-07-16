@@ -4,6 +4,7 @@ Date: Thu, 11 Dec 2025 11:12:26 -0600
 Subject: [PATCH] Update MDIO addresses for Ethernet PHYs on 00365 boards to
  match new strapping.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  arch/arm/dts/imx8mp-cargt-00377-00365.dts | 8 ++++----
  arch/arm/dts/imx93-cargt-00363-00365.dts  | 4 ++--

@@ -26,6 +26,7 @@ WIP: REMOVE - Add debug printing.
 WIP: Update settings for proper UART in U-Boot for 00377.
 
 WIP: Fix dtb specification for U-Boot for 00377.
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  arch/arm/dts/Makefile                         |    1 +
  .../dts/imx8mp-cargt-00377-00365-u-boot.dtsi  |  180 ++

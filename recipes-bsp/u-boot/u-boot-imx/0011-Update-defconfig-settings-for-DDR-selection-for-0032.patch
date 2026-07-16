@@ -4,6 +4,7 @@ Date: Thu, 11 Dec 2025 16:24:58 -0600
 Subject: [PATCH] Update defconfig settings for DDR selection for 00324 and
  00359.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  configs/imx93-cargt-00324-00326_defconfig | 7 ++++---
  configs/imx93-cargt-00359-00406_defconfig | 7 ++++---

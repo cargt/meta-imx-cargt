@@ -3,6 +3,7 @@ From: Tim Carney <tim.carney@cargt.com>
 Date: Thu, 21 May 2026 09:10:09 -0500
 Subject: [PATCH] Limit SD Card access to 104 MHz and 3.3V.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  arch/arm/dts/imx93-cargt-00363-00365.dts | 2 ++
  1 file changed, 2 insertions(+)

@@ -6,6 +6,7 @@ Subject: [PATCH] Add common LPDDR4X timing support and update configurations
 - Introduced a new header file `cargt_lpddr4x_common.h` containing common DDR PHY trained CSR declarations for Cargt LPDDR4X timing variants.
 - Updated `spl-cargt.c` to support multiple LPDDR4X timing configurations based on EEPROM data, allowing for dynamic selection of timing based on DRAM size and speed.
 - Modified the default timing configurations in the defconfig files for various board versions to use the new 3200 MT/s and 3733 MT/s timing definitions.
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  board/cargt/common/imx9_eeprom.c              |  153 +++
  board/cargt/common/imx9_eeprom.h              |   72 ++

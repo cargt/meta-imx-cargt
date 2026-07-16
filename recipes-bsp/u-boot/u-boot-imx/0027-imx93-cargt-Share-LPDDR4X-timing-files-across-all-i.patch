@@ -38,6 +38,7 @@ This resolves build failures for 00359 and enables all boards to
 support the full range of DDR configurations via EEPROM.
 
 Signed-off-by: Tim Carney <tim.carney@cargt.com>
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  board/cargt/imx93_00324/Kconfig               |   30 +-
  board/cargt/imx93_00324/Makefile              |   16 +-

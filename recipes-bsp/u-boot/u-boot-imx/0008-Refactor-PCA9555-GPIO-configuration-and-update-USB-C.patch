@@ -4,6 +4,7 @@ Date: Thu, 22 Jan 2026 15:03:51 -0600
 Subject: [PATCH] Refactor PCA9555 GPIO configuration and update USB-C
  connector settings for improved functionality
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  arch/arm/dts/imx8mp-cargt-00377-00365.dts | 43 ++++++++++++++++++-----
  1 file changed, 34 insertions(+), 9 deletions(-)

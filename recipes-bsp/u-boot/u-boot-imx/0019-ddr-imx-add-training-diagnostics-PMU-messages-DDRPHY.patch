@@ -4,6 +4,7 @@ Date: Tue, 26 May 2026 09:54:13 -0500
 Subject: [PATCH 19/23] ddr/imx: add training diagnostics (PMU messages +
  DDRPHY CSR snapshot)
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  drivers/ddr/imx/phy/ddrphy_utils.c | 33 +++++++++++++++++++++++++++++-
  1 file changed, 32 insertions(+), 1 deletion(-)

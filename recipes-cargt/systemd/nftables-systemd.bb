@@ -13,9 +13,9 @@ FILES:${PN} = "${systemd_unitdir}/system/nftables.service \
                
 do_install() {
   install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/nftables.service ${D}/${systemd_unitdir}/system
+  install -m 0644 ${UNPACKDIR}/nftables.service ${D}/${systemd_unitdir}/system
   install -d ${D}/${sysconfdir}/nftables
-  install -m 0644 ${WORKDIR}/nftables.conf ${D}${sysconfdir}/nftables
+  install -m 0644 ${UNPACKDIR}/nftables.conf ${D}${sysconfdir}/nftables
 }
 
 

@@ -4,6 +4,7 @@ Date: Tue, 26 May 2026 09:54:29 -0500
 Subject: [PATCH 21/23] cargt/imx93_00363: 512MB timing variants, rank-2
  overrides, SPL size fixes
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  board/cargt/imx93_00363/Kconfig               |    1 +
  board/cargt/imx93_00363/Makefile              |   14 +-
