@@ -4,6 +4,7 @@ Date: Thu, 4 Jun 2026 12:46:30 -0500
 Subject: [PATCH 29/29] arm64: dts: imx93-cargt-00363-osm-som: Configure
  Bluetooth UART parameters
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts | 2 ++
  1 file changed, 2 insertions(+)

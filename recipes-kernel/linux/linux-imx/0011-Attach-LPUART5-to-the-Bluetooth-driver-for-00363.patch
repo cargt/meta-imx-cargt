@@ -3,6 +3,7 @@ From: Tim Carney <tim.carney@cargt.com>
 Date: Thu, 11 Dec 2025 08:55:57 -0600
 Subject: [PATCH] Attach LPUART5 to the Bluetooth driver for 00363.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts | 4 ++++
  1 file changed, 4 insertions(+)

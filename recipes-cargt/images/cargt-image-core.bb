@@ -40,6 +40,7 @@ IMAGE_INSTALL += " \
     ppp modemmanager \
     ${@bb.utils.contains('MACHINE_FEATURES', 'morsemicro', 'morsemicro-driver morsemicro-firmware morse-ctrl', 'nxp-wifi-systemd nxp-bluetooth-systemd', d)} \
     u-boot-fw-utils \
+    net-tools \
     mosquitto \
     libiio-tests \
     ${@bb.utils.contains('DISTRO_FEATURES', 'connman', 'connman-tools connman-tests connman-client', '', d)} \

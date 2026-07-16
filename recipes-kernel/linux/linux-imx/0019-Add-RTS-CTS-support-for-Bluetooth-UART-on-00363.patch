@@ -3,6 +3,7 @@ From: Tim Carney <tim.carney@cargt.com>
 Date: Wed, 22 Apr 2026 15:59:01 -0500
 Subject: [PATCH] Add RTS/CTS support for Bluetooth UART on 00363.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts | 1 +
  1 file changed, 1 insertion(+)
