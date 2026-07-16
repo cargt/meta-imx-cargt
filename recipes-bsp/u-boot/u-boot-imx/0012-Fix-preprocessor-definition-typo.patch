@@ -3,6 +3,7 @@ From: Tim Carney <tim.carney@cargt.com>
 Date: Thu, 11 Dec 2025 16:34:32 -0600
 Subject: [PATCH] Fix preprocessor definition typo.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  board/cargt/imx93_00324/spl-cargt.c | 2 +-
  board/cargt/imx93_00359/spl-cargt.c | 2 +-

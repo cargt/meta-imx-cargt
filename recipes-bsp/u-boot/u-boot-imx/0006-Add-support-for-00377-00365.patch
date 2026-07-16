@@ -3,6 +3,7 @@ From: Tim Carney <tim.carney@cargt.com>
 Date: Wed, 3 Dec 2025 14:17:48 -0600
 Subject: [PATCH] Add support for 00377-00365.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  .../dts/imx8mp-cargt-00377-00365-u-boot.dtsi  |  24 +++
  arch/arm/dts/imx8mp-cargt-00377-00365.dts     | 165 +++++++++++++++++-

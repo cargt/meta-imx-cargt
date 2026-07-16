@@ -4,6 +4,7 @@ Date: Thu, 19 Feb 2026 16:47:46 -0600
 Subject: [PATCH] Add Cargt EEPROM support for LPDDR4 timing configuration on
  i.MX8MP boards
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  .../common/{imx9_eeprom.c => cargt_eeprom.c}  |  9 +++-
  .../common/{imx9_eeprom.h => cargt_eeprom.h}  | 13 +++--

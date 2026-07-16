@@ -15,8 +15,8 @@ FILES:${PN} = "${systemd_unitdir}/system/poe-mqtt-publish.service \
 
 do_install() {
   install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/poe-mqtt-publish.service ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/poe-mqtt-publish.timer ${D}/${systemd_unitdir}/system
+  install -m 0644 ${UNPACKDIR}/poe-mqtt-publish.service ${D}/${systemd_unitdir}/system
+  install -m 0644 ${UNPACKDIR}/poe-mqtt-publish.timer ${D}/${systemd_unitdir}/system
 }
 
 

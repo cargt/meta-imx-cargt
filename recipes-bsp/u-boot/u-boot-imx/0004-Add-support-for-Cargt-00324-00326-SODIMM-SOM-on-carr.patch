@@ -3,6 +3,7 @@ From: Tim Carney <tim.carney@cargt.com>
 Date: Fri, 26 Sep 2025 15:47:04 -0500
 Subject: [PATCH] Add support for Cargt 00324-00326 SODIMM SOM on carrier.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  .../dts/imx93-cargt-00324-00326-u-boot.dtsi   |  202 ++
  arch/arm/dts/imx93-cargt-00324-00326.dts      |  357 +++

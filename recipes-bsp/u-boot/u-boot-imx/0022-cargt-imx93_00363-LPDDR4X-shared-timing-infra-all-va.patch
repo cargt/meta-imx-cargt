@@ -4,6 +4,7 @@ Date: Thu, 28 May 2026 12:05:39 -0500
 Subject: [PATCH 22/23] cargt/imx93_00363: LPDDR4X shared timing infra, all
  variants, rank-aware SPL
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  board/cargt/imx93_00363/Kconfig               |    9 +-
  board/cargt/imx93_00363/Makefile              |    1 +

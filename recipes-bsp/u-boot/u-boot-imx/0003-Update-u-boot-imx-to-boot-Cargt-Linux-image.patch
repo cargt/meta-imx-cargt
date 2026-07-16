@@ -3,6 +3,7 @@ From: Tim Carney <tim.carney@cargt.com>
 Date: Tue, 23 Sep 2025 17:08:14 -0500
 Subject: [PATCH] Update u-boot-imx to boot Cargt Linux image.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  configs/imx93-cargt-00363-00365_defconfig |  4 ++--
  include/configs/imx93_00363.h             | 15 ++++++++-------

@@ -9,7 +9,7 @@ FILES:${PN} = "${systemd_unitdir}/system/morsemicro-ap.service"
 
 do_install() {
   install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/morsemicro-ap.service ${D}/${systemd_unitdir}/system
+  install -m 0644 ${UNPACKDIR}/morsemicro-ap.service ${D}/${systemd_unitdir}/system
 }
 
 

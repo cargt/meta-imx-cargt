@@ -4,7 +4,9 @@ inherit core-image
 
 IMAGE_FEATURES += " \    
     ${@bb.utils.contains('MACHINE_FEATURES', 'squashfs', 'read-only-rootfs','', d)} \
-    debug-tweaks \
+    allow-empty-password \
+    allow-root-login \
+    post-install-logging \
     tools-profile \
     tools-sdk \
     package-management \

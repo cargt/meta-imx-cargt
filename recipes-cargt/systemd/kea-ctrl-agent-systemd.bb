@@ -11,6 +11,6 @@ FILES:${PN} = "${systemd_unitdir}/system/kea-ctrl-agent.service \
                
 do_install() {
   install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/kea-ctrl-agent.service ${D}/${systemd_unitdir}/system
+  install -m 0644 ${UNPACKDIR}/kea-ctrl-agent.service ${D}/${systemd_unitdir}/system
 }
 

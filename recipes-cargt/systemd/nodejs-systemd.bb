@@ -14,8 +14,8 @@ FILES:${PN} += "${systemd_unitdir}/system/nodejs.service \
 
 do_install() {
   install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/nodejs.service ${D}/${systemd_unitdir}/system
+  install -m 0644 ${UNPACKDIR}/nodejs.service ${D}/${systemd_unitdir}/system
   install -d ${D}/${libdir}/node
-  install -m 0644 ${WORKDIR}/main.js ${D}/${libdir}/node
+  install -m 0644 ${UNPACKDIR}/main.js ${D}/${libdir}/node
 }
 

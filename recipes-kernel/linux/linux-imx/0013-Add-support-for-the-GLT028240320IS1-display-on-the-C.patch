@@ -5,6 +5,7 @@ Subject: [PATCH] Add support for the GLT028240320IS1 display on the Cargt
  00365 carrier with the i.MX 93 00363 OSM-L SOM. This includes device tree and
  DRM driver support for Sitronix ST7789T3 display panels.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  .../bindings/display/sitronix,st7789t3.yaml   |  72 ++++
  arch/arm64/boot/dts/freescale/Makefile        |   3 +-
@@ -12,8 +13,8 @@ Subject: [PATCH] Add support for the GLT028240320IS1 display on the Cargt
  ...x93-cargt-00363-00365-glt028240320is1.dtsi |  89 +++++
  drivers/gpu/drm/tiny/Kconfig                  |  14 +
  drivers/gpu/drm/tiny/Makefile                 |   1 +
- drivers/gpu/drm/tiny/st7789t3.c               | 328 ++++++++++++++++++
- 7 files changed, 519 insertions(+), 1 deletion(-)
+ drivers/gpu/drm/tiny/st7789t3.c               | 329 ++++++++++++++++++
+ 7 files changed, 520 insertions(+), 1 deletion(-)
  create mode 100644 Documentation/devicetree/bindings/display/sitronix,st7789t3.yaml
  create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dts
  create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dtsi
@@ -101,19 +102,14 @@ diff --git a/arch/arm64/boot/dts/freescale/Makefile b/arch/arm64/boot/dts/freesc
 index f7077bfffd3f..d56edd4660ab 100644
 --- a/arch/arm64/boot/dts/freescale/Makefile
 +++ b/arch/arm64/boot/dts/freescale/Makefile
-@@ -446,10 +446,11 @@ dtb-$(CONFIG_ARCH_MXC) += imx93-tqma9352-mba93xxla.dtb
- dtb-$(CONFIG_ARCH_MXC) += imx93-cargt-00324-00326.dtb \
- 				imx93-cargt-00324-00326-glt0701024600is2.dtb \
- 				imx93-cargt-00324-00326-glt1011280800is1.dtb \
- 				imx93-cargt-00359-00406.dtb \
- 				imx93-cargt-00363-00365.dtb \
+@@ -853,5 +853,6 @@ dtb-$(CONFIG_ARCH_MXC) += imx93-var-som-symphony.dtb
+ dtb-$(CONFIG_ARCH_MXC) += imx93-cargt-00363-00365.dtb \
  				imx93-cargt-00363-00365-glt0557201280is1.dtb \
 -				imx93-cargt-00363-00365-glt1011280800is1.dtb
 +				imx93-cargt-00363-00365-glt1011280800is1.dtb \
 +				imx93-cargt-00363-00365-glt028240320is1.dtb
-
+ 
  dtb-$(CONFIG_ARCH_MXC) += imx91-9x9-qsb.dtb \
- 			  imx91-9x9-qsb-can1.dtb \
 diff --git a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dts b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dts
 new file mode 100644
 index 000000000000..cfa35a53cae6
@@ -232,10 +228,10 @@ diff --git a/drivers/gpu/drm/tiny/Kconfig b/drivers/gpu/drm/tiny/Kconfig
 index f6889f649bc1..fbfbd6151f77 100644
 --- a/drivers/gpu/drm/tiny/Kconfig
 +++ b/drivers/gpu/drm/tiny/Kconfig
-@@ -212,3 +212,17 @@ config TINYDRM_ST7735R
- 	  * Okaya RH128128T 1.44" 128x128 TFT
+@@ -215,3 +215,17 @@ config TINYDRM_SHARP_MEMORY
+ 	  * 4.40" Sharp Memory LCD (LS044Q7DH01)
 
- 	  If M is selected the module will be called st7735r.
+ 	  If M is selected the module will be called sharp_memory.
 +
 +config TINYDRM_ST7789T3
 +	tristate "DRM support for Sitronix ST7789T3 display panels"
@@ -254,17 +250,17 @@ diff --git a/drivers/gpu/drm/tiny/Makefile b/drivers/gpu/drm/tiny/Makefile
 index 76dde89a044b..826dea30620e 100644
 --- a/drivers/gpu/drm/tiny/Makefile
 +++ b/drivers/gpu/drm/tiny/Makefile
-@@ -16,3 +16,4 @@ obj-$(CONFIG_TINYDRM_MI0283QT)		+= mi0283qt.o
+@@ -15,3 +15,4 @@ obj-$(CONFIG_TINYDRM_ILI9486)		+= ili9486.o
+ obj-$(CONFIG_TINYDRM_MI0283QT)		+= mi0283qt.o
  obj-$(CONFIG_TINYDRM_REPAPER)		+= repaper.o
- obj-$(CONFIG_TINYDRM_ST7586)		+= st7586.o
- obj-$(CONFIG_TINYDRM_ST7735R)		+= st7735r.o
+ obj-$(CONFIG_TINYDRM_SHARP_MEMORY)	+= sharp-memory.o
 +obj-$(CONFIG_TINYDRM_ST7789T3)		+= st7789t3.o
 diff --git a/drivers/gpu/drm/tiny/st7789t3.c b/drivers/gpu/drm/tiny/st7789t3.c
 new file mode 100644
 index 000000000000..b2728fc49757
 --- /dev/null
 +++ b/drivers/gpu/drm/tiny/st7789t3.c
-@@ -0,0 +1,328 @@
+@@ -0,0 +1,329 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * DRM driver for display panels connected to a Sitronix ST7789T3
@@ -285,9 +281,10 @@ index 000000000000..b2728fc49757
 +#include <linux/spi/spi.h>
 +#include <video/mipi_display.h>
 +
++#include <drm/clients/drm_client_setup.h>
 +#include <drm/drm_atomic_helper.h>
 +#include <drm/drm_drv.h>
-+#include <drm/drm_fbdev_generic.h>
++#include <drm/drm_fbdev_dma.h>
 +#include <drm/drm_gem_atomic_helper.h>
 +#include <drm/drm_gem_dma_helper.h>
 +#include <drm/drm_managed.h>
@@ -476,10 +473,10 @@ index 000000000000..b2728fc49757
 +	.driver_features	= DRIVER_GEM | DRIVER_MODESET | DRIVER_ATOMIC,
 +	.fops			= &st7789t3_fops,
 +	DRM_GEM_DMA_DRIVER_OPS_VMAP,
++	DRM_FBDEV_DMA_DRIVER_OPS,
 +	.debugfs_init		= mipi_dbi_debugfs_init,
 +	.name			= "st7789t3",
 +	.desc			= "Sitronix ST7789T3",
-+	.date			= "20171128",
 +	.major			= 1,
 +	.minor			= 0,
 +};
@@ -560,7 +557,7 @@ index 000000000000..b2728fc49757
 +
 +	spi_set_drvdata(spi, drm);
 +
-+	drm_fbdev_generic_setup(drm, 0);
++	drm_client_setup(drm, NULL);
 +
 +	return 0;
 +}

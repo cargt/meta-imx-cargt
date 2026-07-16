@@ -5,9 +5,12 @@ DISTRO_NAME = "Cargt i.MX Release Distro"
 DISTRO_VERSION = "6.18-wrynose"
 DISTROOVERRIDES = "fsl"
 
-# Temporarily pin u-boot to scarthgap version for kernel-only validation (Phase 3)
-# Remove this after kernel patches are validated (Phase 4)
-PREFERRED_VERSION_u-boot-imx = "2024.04%"
+# Pin u-boot to the scarthgap-era version (vendored into meta-imx-cargt as
+# u-boot-imx_2024.04.bb, since wrynose's meta-imx-bsp only ships 2026.04) so
+# u-boot bring-up is isolated from the wrynose migration until the kernel is
+# validated. Remove this pin (and the vendored recipe) once ready to move
+# u-boot to 2026.04.
+PREFERRED_VERSION_u-boot-imx = "2024.04"
 
 MAINTAINER = "Cargt <tim.carney@cargt.com>"
 
@@ -46,8 +49,6 @@ PACKAGECONFIG:append:pn-pulseaudio = " autospawn-for-root"
 
 PACKAGECONFIG:append:class-target:pn-qtquick3d     = " examples"
 PACKAGECONFIG:append:class-target:pn-qtwebengine   = " examples"
-
-PACKAGECONFIG:append:pn-systemd = " unmanaged-network"
 
 PACKAGECONFIG:append:mx93-nxp-bsp:pn-qtbase = " gles2"
 PACKAGECONFIG:remove:mx93-nxp-bsp:pn-qtbase = "no-opengl linuxfb"

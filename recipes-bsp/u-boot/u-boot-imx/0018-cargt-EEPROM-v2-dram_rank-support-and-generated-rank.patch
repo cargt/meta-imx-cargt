@@ -4,6 +4,7 @@ Date: Fri, 22 May 2026 12:34:45 -0500
 Subject: [PATCH 18/23] cargt: EEPROM v2 dram_rank support and generated rank
  timing TUs
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  board/cargt/common/cargt_eeprom.c             |   16 +
  board/cargt/common/cargt_eeprom.h             |    1 +

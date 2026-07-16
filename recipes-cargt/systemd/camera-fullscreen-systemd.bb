@@ -23,8 +23,8 @@ FILES:${PN} = "${systemd_unitdir}/system/camera-fullscreen.service \
 
 do_install() {
   install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/camera-fullscreen.service ${D}/${systemd_unitdir}/system
+  install -m 0644 ${UNPACKDIR}/camera-fullscreen.service ${D}/${systemd_unitdir}/system
 
   install -d ${D}/${bindir}
-  install -m 0755 ${WORKDIR}/camera-fullscreen.sh ${D}/${bindir}
+  install -m 0755 ${UNPACKDIR}/camera-fullscreen.sh ${D}/${bindir}
 }

@@ -25,10 +25,3 @@ SWUPDATE_IMAGES = " \
 # Images can have multiple formats - define which image must be
 # taken to be put in the compound image
 SWUPDATE_IMAGES_FSTYPES[cargt-image-chrome] = '.rootfs.tar.zst'
-
-
-do_patch:apepend() {
-	out_file = open(${S}/sw-description, "w")
-	sub = subprocess.call(['sed', 's/\"//g', inp], stdout=out_file )
-}
-

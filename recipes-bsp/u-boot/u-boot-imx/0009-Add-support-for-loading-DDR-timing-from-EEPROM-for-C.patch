@@ -4,6 +4,7 @@ Date: Thu, 11 Dec 2025 11:21:40 -0600
 Subject: [PATCH] Add support for loading DDR timing from EEPROM for Cargt
  i.MX93 boards.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  arch/arm/mach-imx/imx9/Kconfig            |   4 +-
  board/cargt/common/imx9_eeprom.c          | 153 ++++++++++++++++++++++

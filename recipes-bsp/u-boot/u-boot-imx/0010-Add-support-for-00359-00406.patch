@@ -3,6 +3,7 @@ From: Tim Carney <tim.carney@cargt.com>
 Date: Thu, 11 Dec 2025 11:22:10 -0600
 Subject: [PATCH] Add support for 00359-00406.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  .../dts/imx93-cargt-00359-00406-u-boot.dtsi   |  198 ++
  arch/arm/dts/imx93-cargt-00359-00406.dts      |  264 +++

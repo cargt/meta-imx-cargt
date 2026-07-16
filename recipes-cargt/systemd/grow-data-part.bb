@@ -15,10 +15,10 @@ FILES:${PN} = "${systemd_unitdir}/system/grow-data-part.service \
 
 do_install() {
   install -d ${D}/${systemd_unitdir}/system
-  install -m 0644 ${WORKDIR}/grow-data-part.service ${D}/${systemd_unitdir}/system
+  install -m 0644 ${UNPACKDIR}/grow-data-part.service ${D}/${systemd_unitdir}/system
 
   mkdir -p ${D}/usr/bin
-  cp -f ${WORKDIR}/grow-data-part.sh ${D}/usr/bin/grow-data-part.sh
+  cp -f ${UNPACKDIR}/grow-data-part.sh ${D}/usr/bin/grow-data-part.sh
   chmod +x ${D}/usr/bin/grow-data-part.sh
 } 
 
