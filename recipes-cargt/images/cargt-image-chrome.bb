@@ -47,6 +47,7 @@ IMAGE_INSTALL += " \
     i2c-tools \
     ppp modemmanager \
     u-boot-fw-utils \
+    net-tools \
     mosquitto \
     libiio-tests \
     tmux \
