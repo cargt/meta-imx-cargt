@@ -7,12 +7,12 @@ Upstream-Status: Inappropriate [Cargt board specific]
 ---
  arch/arm64/boot/dts/freescale/Makefile        |   5 +
  ...x93-cargt-00363-00365-glt0557201280is1.dts |  15 +
- ...93-cargt-00363-00365-glt0557201280is1.dtsi |  94 ++++
+ ...93-cargt-00363-00365-glt0557201280is1.dtsi | 105 ++++++
  ...x93-cargt-00363-00365-glt1011280800is1.dts |  15 +
  ...93-cargt-00363-00365-glt1011280800is1.dtsi | 154 ++++++
  .../dts/freescale/imx93-cargt-00363-00365.dts | 403 ++++++++++++++++
  .../freescale/imx93-cargt-00363-osm-som.dts   | 449 ++++++++++++++++++
- 7 files changed, 1135 insertions(+)
+ 7 files changed, 1146 insertions(+)
  create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dts
  create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dtsi
  create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt1011280800is1.dts
@@ -61,7 +61,7 @@ new file mode 100644
 index 000000000000..42f6cf4cdc2a
 --- /dev/null
 +++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dtsi
-@@ -0,0 +1,94 @@
+@@ -0,0 +1,105 @@
 + / {
 +	 pwm_backlight: pwm_backlight {
 +		compatible = "pwm-backlight";
@@ -71,8 +71,19 @@ index 000000000000..42f6cf4cdc2a
 +		default-brightness-level = <80>;
 +		status = "okay";
 +	};
++
++	reg_dsi_vdd: regulator-dsi-vdd {
++		compatible = "regulator-fixed";
++		regulator-name = "dsi_vdd";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&pca9555_20 3 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		regulator-always-on;
++		status = "okay";
++	};
 +};
-+	
++
 +&lcdif {
 +	status = "okay";
 +	assigned-clock-rates = <445333333>, <148444444>, <400000000>, <133333333>;
@@ -81,7 +92,7 @@ index 000000000000..42f6cf4cdc2a
 +&dphy {
 +	status = "okay";
 +};
-+	
++
 +&dsi {
 +	#address-cells = <1>;
 +	#size-cells = <0>;
@@ -91,8 +102,8 @@ index 000000000000..42f6cf4cdc2a
 +		compatible = "globaltech,glt0557201280is1", "ilitek,ili9881c";
 +		reg = <0>;
 +		pinctrl-names = "default";
-+		rotation = <90>;
-+		reset-gpios = <&pca9555_20 3 GPIO_ACTIVE_LOW>;
++		rotation = <0>;
++		power-supply = <&reg_dsi_vdd>;
 +		backlight = <&pwm_backlight>;
 +		status = "okay";
 +
