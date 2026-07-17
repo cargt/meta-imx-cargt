@@ -3,20 +3,21 @@ From: Tim Carney <tim.carney@cargt.com>
 Date: Wed, 24 Sep 2025 11:19:16 -0500
 Subject: [PATCH] Add support for Globaltech (GTG) panels.
 
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  drivers/gpu/drm/panel/panel-ilitek-ili9881c.c | 231 ++++++++++++++
  drivers/gpu/drm/panel/panel-simple.c          |  62 ++++
  drivers/hwmon/Kconfig                         |   9 +
  drivers/hwmon/Makefile                        |   1 +
- drivers/hwmon/max25221-hwmon.c                | 157 ++++++++++
+ drivers/hwmon/max25221-hwmon.c                | 156 ++++++++++
  drivers/mfd/Kconfig                           |   8 +
  drivers/mfd/Makefile                          |   1 +
- drivers/mfd/max25221-core.c                   | 241 ++++++++++++++
+ drivers/mfd/max25221-core.c                   | 261 ++++++++++++++
  drivers/regulator/Kconfig                     |   6 +-
  drivers/regulator/Makefile                    |   1 +
- drivers/regulator/max25221-regulator.c        | 296 ++++++++++++++++++
+ drivers/regulator/max25221-regulator.c        | 295 ++++++++++++++++++
  include/linux/mfd/max25221.h                  | 203 ++++++++++++
- 12 files changed, 1215 insertions(+), 1 deletion(-)
+ 12 files changed, 1233 insertions(+), 1 deletion(-)
  create mode 100644 drivers/hwmon/max25221-hwmon.c
  create mode 100644 drivers/mfd/max25221-core.c
  create mode 100644 drivers/regulator/max25221-regulator.c
@@ -260,29 +261,31 @@ index 7838947a1bf3..3e65d17f7a11 100644
  static int ili9881c_get_modes(struct drm_panel *panel,
  			      struct drm_connector *connector)
  {
-@@ -1145,11 +1365,21 @@ static const struct ili9881c_desc w552946aba_desc = {
- 		      MIPI_DSI_MODE_LPM | MIPI_DSI_MODE_NO_EOT_PACKET,
+@@ -2017,6 +2017,15 @@ static const struct ili9881c_desc bsd1218_a101kl68_desc = {
+ 	.lanes = 4,
  };
  
-+ static const struct ili9881c_desc glt0557201280is1_desc = {
-+	 .init = glt0557201280is1_init,
-+	 .init_length = ARRAY_SIZE(glt0557201280is1_init),
-+	 .mode = &glt0557201280is1_default_mode,
-+	 .mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_LPM | 
++static const struct ili9881c_desc glt0557201280is1_desc = {
++	.init = glt0557201280is1_init,
++	.init_length = ARRAY_SIZE(glt0557201280is1_init),
++	.mode = &glt0557201280is1_default_mode,
++	.mode_flags = MIPI_DSI_MODE_VIDEO | MIPI_DSI_MODE_LPM |
 +			   MIPI_DSI_MODE_NO_EOT_PACKET,
-+ };
-+ 
-+ 
++	.lanes = 4,
++};
++
  static const struct of_device_id ili9881c_of_match[] = {
  	{ .compatible = "bananapi,lhr050h41", .data = &lhr050h41_desc },
- 	{ .compatible = "feixin,k101-im2byl02", .data = &k101_im2byl02_desc },
- 	{ .compatible = "tdo,tl050hdv35", .data = &tl050hdv35_desc },
+ 	{ .compatible = "bestar,bsd1218-a101kl68", .data = &bsd1218_a101kl68_desc },
+@@ -2026,6 +2035,7 @@ static const struct of_device_id ili9881c_of_match[] = {
  	{ .compatible = "wanchanglong,w552946aba", .data = &w552946aba_desc },
-+	 { .compatible = "globaltech,glt0557201280is1", .data = &glt0557201280is1_desc },
+ 	{ .compatible = "ampire,am8001280g", .data = &am8001280g_desc },
+ 	{ .compatible = "raspberrypi,dsi-7inch", &rpi_7inch_desc },
++	{ .compatible = "globaltech,glt0557201280is1", .data = &glt0557201280is1_desc },
  	{ }
  };
  MODULE_DEVICE_TABLE(of, ili9881c_of_match);
-@@ -1167,3 +1397,4 @@ module_mipi_dsi_driver(ili9881c_dsi_driver);
+@@ -1167,3 +1398,4 @@ module_mipi_dsi_driver(ili9881c_dsi_driver);
  MODULE_AUTHOR("Maxime Ripard <maxime.ripard@free-electrons.com>");
  MODULE_DESCRIPTION("Ilitek ILI9881C Controller Driver");
  MODULE_LICENSE("GPL v2");
@@ -405,7 +408,7 @@ new file mode 100644
 index 000000000000..308911100b4c
 --- /dev/null
 +++ b/drivers/hwmon/max25221-hwmon.c
-@@ -0,0 +1,157 @@
+@@ -0,0 +1,156 @@
 +/* SPDX-License-Identifier: GPL-2.0-or-later */
 +/*
 + * Copyright (C) 2010-2015 Freescale Semiconductor, Inc.
@@ -440,7 +443,7 @@ index 000000000000..308911100b4c
 + * Functions declaration
 + */
 +static int max25221_sensor_probe(struct platform_device *pdev);
-+static int max25221_sensor_remove(struct platform_device *pdev);
++static void max25221_sensor_remove(struct platform_device *pdev);
 +
 +static const struct platform_device_id max25221_sns_id[] = {
 +	{ "max25221-sns", 0},
@@ -537,7 +540,7 @@ index 000000000000..308911100b4c
 +	return err;
 +}
 +
-+static int max25221_sensor_remove(struct platform_device *pdev)
++static void max25221_sensor_remove(struct platform_device *pdev)
 +{
 +	struct max25221_data *data = platform_get_drvdata(pdev);
 +
@@ -545,7 +548,6 @@ index 000000000000..308911100b4c
 +	sysfs_remove_group(&pdev->dev.kobj, &max25221_group);
 +
 +	kfree(data);
-+	return 0;
 +}
 +
 +static int __init sensors_max25221_init(void)
@@ -586,11 +588,12 @@ diff --git a/drivers/mfd/Makefile b/drivers/mfd/Makefile
 index cdbd3ef0c462..5dceb7d9a8e9 100644
 --- a/drivers/mfd/Makefile
 +++ b/drivers/mfd/Makefile
-@@ -159,6 +159,7 @@ obj-$(CONFIG_MFD_DA9063)	+= da9063.o
+@@ -168,6 +168,7 @@ obj-$(CONFIG_MFD_DA9063)	+= da9063.o
  obj-$(CONFIG_MFD_DA9150)	+= da9150-core.o
  
  obj-$(CONFIG_MFD_MAX14577)	+= max14577.o
 +obj-$(CONFIG_MFD_MAX25221)	+= max25221-core.o
+ obj-$(CONFIG_MFD_MAX7360)	+= max7360.o
  obj-$(CONFIG_MFD_MAX17135)	+= max17135-core.o
  obj-$(CONFIG_MFD_MAX77541)	+= max77541.o
  obj-$(CONFIG_MFD_FP9931)	+= fp9931-core.o
@@ -599,7 +602,7 @@ new file mode 100644
 index 000000000000..45ab7aa173ce
 --- /dev/null
 +++ b/drivers/mfd/max25221-core.c
-@@ -0,0 +1,241 @@
+@@ -0,0 +1,261 @@
 +/* SPDX-License-Identifier: GPL-2.0-or-later */
 +/*
 + * Copyright (C) 2010-2015 Freescale Semiconductor, Inc.
@@ -639,6 +642,7 @@ index 000000000000..45ab7aa173ce
 +			  struct i2c_board_info *info);
 +struct i2c_client *max25221_client;
 +static struct regulator *gpio_regulator;
++static struct regulator *lcd_regulator;
 +
 +static struct mfd_cell max25221_devs[] = {
 +	{ .name = "max25221-pmic", },
@@ -719,6 +723,21 @@ index 000000000000..45ab7aa173ce
 +		}
 +	}
 +
++	/*
++	 * The chip's own supply (lcd-supply in the devicetree) has to be
++	 * enabled before it will respond on the I2C bus at all -- without
++	 * this, max25221_detect() below fails with -EIO since the chip is
++	 * simply unpowered.
++	 */
++	lcd_regulator = devm_regulator_get(&client->dev, "lcd");
++	if (!IS_ERR(lcd_regulator)) {
++		ret = regulator_enable(lcd_regulator);
++		if (ret) {
++			dev_err(&client->dev, "lcd supply enable error\n");
++			return ret;
++		}
++	}
++
 +	/* Create the PMIC data structure */
 +	max25221 = kzalloc(sizeof(struct max25221), GFP_KERNEL);
 +	if (max25221 == NULL)
@@ -754,6 +773,8 @@ index 000000000000..45ab7aa173ce
 +err2:
 +	mfd_remove_devices(max25221->dev);
 +err1:
++	if (!IS_ERR(lcd_regulator))
++		regulator_disable(lcd_regulator);
 +	if (!IS_ERR(gpio_regulator))
 +		regulator_disable(gpio_regulator);
 +	kfree(max25221);
@@ -768,6 +789,8 @@ index 000000000000..45ab7aa173ce
 +
 +	mfd_remove_devices(max25221->dev);
 +
++	if (!IS_ERR(lcd_regulator))
++		regulator_disable(lcd_regulator);
 +	if (!IS_ERR(gpio_regulator))
 +		regulator_disable(gpio_regulator);
 +}
@@ -791,7 +814,7 @@ index 000000000000..45ab7aa173ce
 +	}
 +
 +	if (info)
-+		strlcpy(info->type, "max25221_sensor", I2C_NAME_SIZE);
++		strscpy(info->type, "max25221_sensor", I2C_NAME_SIZE);
 +
 +	return 0;
 +}
@@ -875,7 +898,7 @@ new file mode 100644
 index 000000000000..a0e9d95b627c
 --- /dev/null
 +++ b/drivers/regulator/max25221-regulator.c
-@@ -0,0 +1,296 @@
+@@ -0,0 +1,295 @@
 +/* SPDX-License-Identifier: GPL-2.0-or-later */
 +/*
 + * Copyright (C) 2010-2015 Freescale Semiconductor, Inc. All Rights Reserved.
@@ -1119,7 +1142,7 @@ index 000000000000..a0e9d95b627c
 +	return ret;
 +}
 +
-+static int max25221_regulator_remove(struct platform_device *pdev)
++static void max25221_regulator_remove(struct platform_device *pdev)
 +{
 +	struct max25221_data *priv = platform_get_drvdata(pdev);
 +	struct regulator_dev **rdev = priv->rdev;
@@ -1127,7 +1150,6 @@ index 000000000000..a0e9d95b627c
 +
 +	for (i = 0; i < priv->num_regulators; i++)
 +		regulator_unregister(rdev[i]);
-+	return 0;
 +}
 +
 +static const struct platform_device_id max25221_pmic_id[] = {

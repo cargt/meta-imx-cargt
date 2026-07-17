@@ -2,9 +2,12 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${BPN}:"
 
 
 SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
+            file://0002-Add-support-for-Globaltech-GTG-panels.patch \
+            file://0005-Move-ili9881c-panel-initialization-from-the-prepare-.patch \
             file://0009-Remove-restriction-for-1.8V-only-SD-Card-support-tha.patch \
             file://0010-Correct-the-MDIO-address-of-ethphy2-due-to-changes-o.patch \
             file://0011-Attach-LPUART5-to-the-Bluetooth-driver-for-00363.patch \
+            file://0012-Improve-panel-initialization-error-handling-and-rese.patch \
             file://0013-Add-support-for-the-GLT028240320IS1-display-on-the-C.patch \
             file://0019-Add-RTS-CTS-support-for-Bluetooth-UART-on-00363.patch \
             file://0025-Limit-the-maximum-frequency-for-the-SD-Card-to-104-M.patch \
@@ -18,15 +21,27 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
 # another board. Moved into the active SRC_URI list above (0011 must apply before 0029,
 # since 0029's hunk edits the bluetooth{} node that 0011 creates).
 #
-# Deferred for 00363-00365 kernel bring-up (2026-07-16): driver-only or other-board/machine
-# DT patches, not needed to boot this target. Re-enable (move back into SRC_URI above) as
-# each area gets picked back up.
+# Re-audited again (2026-07-16), continuing through the "driver-only" bucket: 0002 adds
+# the "globaltech,glt0557201280is1" ili9881c panel variant that this board's own
+# imx93-cargt-00363-00365-glt0557201280is1.dtsi actually uses (plus two more GTG panel
+# descriptors in panel-simple.c used by the unrelated 00324-00326 board -- harmless to
+# carry along, gated by DT compatible match, not a boot risk). 0005/0012 are generic
+# ili9881c.c prepare/unprepare/enable refinements layered on top of 0002's additions, not
+# board-specific -- moved all three into the active SRC_URI list (0002 before 0005/0012,
+# since 0002 adds the code they touch).
 #
-# Driver-only, not boot-critical:
-# file://0002-Add-support-for-Globaltech-GTG-panels.patch
-# file://0003-Add-support-for-Epson-RX8111-RTC.patch
-# file://0005-Move-ili9881c-panel-initialization-from-the-prepare-.patch
-# file://0012-Improve-panel-initialization-error-handling-and-rese.patch
+# 0003-Add-support-for-Epson-RX8111-RTC.patch: NOT re-enabled, deleted as obsolete --
+# drivers/rtc/rtc-rx8111.c plus its Kconfig/Makefile entries are already upstream in the
+# wrynose kernel tree (confirmed via kernel-source inspection and a live boot: "rtc-rx8111
+# 0-0032: registered as rtc0" using only patch 0001's existing rtc_i2c DT node + this
+# board's cargt_00363_kernel_config_mods.cfg CONFIG_RTC_DRV_RX8111=y, no patch needed).
+#
+# Deferred for 00363-00365 kernel bring-up (2026-07-16): other-board/machine DT patches,
+# not needed to boot this target. Re-enable (move back into SRC_URI above) as each board
+# gets picked back up. Confirmed via diff --git targets, not just this comment block, that
+# each of these touches only that other board's own files (00363/00365 was burned once
+# already by trusting this categorization blindly for 0011/0019/0029 above -- always verify
+# the actual diff target before deferring or re-enabling).
 #
 # Other boards/machines (00324-00326, 00377, 00359-00406, imx91 variant):
 # file://0004-Add-device-tree-files-for-00324-00326.patch
