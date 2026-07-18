@@ -3,6 +3,8 @@ From: Tim Carney <tim.carney@cargt.com>
 Date: Thu, 11 Dec 2025 16:58:51 -0600
 Subject: [PATCH] Add support for 00359-00406.
 
+Upstream-Status: Inappropriate [Cargt board specific]
+
 ---
  arch/arm64/boot/dts/freescale/Makefile        |   1 +
  .../dts/freescale/imx93-cargt-00359-00406.dts | 276 ++++++++++++

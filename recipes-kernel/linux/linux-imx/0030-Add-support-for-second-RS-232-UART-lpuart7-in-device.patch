@@ -3,6 +3,8 @@ From: Tim Carney <tim.carney@cargt.com>
 Date: Fri, 5 Jun 2026 15:24:38 -0500
 Subject: [PATCH] Add support for second RS-232 UART (lpuart7) in device tree
 
+Upstream-Status: Inappropriate [Cargt board specific]
+
 ---
  .../dts/freescale/imx93-cargt-00359-00406.dts  | 18 +++++++++++++++++-
  1 file changed, 17 insertions(+), 1 deletion(-)

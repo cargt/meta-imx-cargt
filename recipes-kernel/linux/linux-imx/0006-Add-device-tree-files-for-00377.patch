@@ -3,13 +3,15 @@ From: Tim Carney <tim.carney@cargt.com>
 Date: Wed, 3 Dec 2025 14:10:43 -0600
 Subject: [PATCH] Add device tree files for 00377.
 
+Upstream-Status: Inappropriate [Cargt board specific]
+
 ---
  arch/arm64/boot/dts/freescale/Makefile        |   4 +
  ...8mp-cargt-00377-00365-glt0557201280is1.dts |  16 +
- ...mp-cargt-00377-00365-glt0557201280is1.dtsi | 118 +++++
+ ...mp-cargt-00377-00365-glt0557201280is1.dtsi | 120 +++++
  .../freescale/imx8mp-cargt-00377-00365.dts    | 466 +++++++++++++++++
  .../freescale/imx8mp-cargt-00377-osm-som.dts  | 493 ++++++++++++++++++
- 5 files changed, 1097 insertions(+)
+ 5 files changed, 1099 insertions(+)
  create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-glt0557201280is1.dts
  create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-glt0557201280is1.dtsi
  create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365.dts
@@ -56,7 +58,7 @@ new file mode 100644
 index 000000000000..8916704dd98f
 --- /dev/null
 +++ b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-glt0557201280is1.dtsi
-@@ -0,0 +1,118 @@
+@@ -0,0 +1,120 @@
 +/ {
 +	pwm_backlight: pwm_backlight {
 +		compatible = "pwm-backlight";
@@ -88,15 +90,15 @@ index 000000000000..8916704dd98f
 +	status = "okay";
 +};
 +
-+&gpu_3d {
++&gpu3d {
 +	status = "okay";
 +};
 +
-+&gpu_2d {
++&gpu2d {
 +	status = "okay";
 +};
 +
-+&ml_vipsi {
++&npu {
 +	status = "okay";
 +};
 +
@@ -146,6 +148,8 @@ index 000000000000..8916704dd98f
 +	#address-cells = <1>;
 +	#size-cells = <0>;
 +	status = "okay";
++
++	/delete-node/ port;
 +
 +	port@0 {
 +		dsim_from_lcdif: endpoint {

@@ -4,6 +4,8 @@ Date: Fri, 12 Dec 2025 15:35:52 -0600
 Subject: [PATCH] Make device tree changes to allow 00324 to boot with 1GB of
  LPDDR4x.
 
+Upstream-Status: Inappropriate [Cargt board specific]
+
 ---
  .../boot/dts/freescale/imx93-cargt-00324.dtsi | 22 ++++---------------
  1 file changed, 4 insertions(+), 18 deletions(-)

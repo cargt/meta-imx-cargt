@@ -4,6 +4,8 @@ Date: Wed, 22 Apr 2026 15:59:18 -0500
 Subject: [PATCH] Add FlexCAN support and update UART RTS/CTS configuration for
  00377-00365.
 
+Upstream-Status: Inappropriate [Cargt board specific]
+
 ---
  .../freescale/imx8mp-cargt-00377-00365.dts    | 26 +++++++++++++++++++
  .../freescale/imx8mp-cargt-00377-osm-som.dts  | 12 +++------
