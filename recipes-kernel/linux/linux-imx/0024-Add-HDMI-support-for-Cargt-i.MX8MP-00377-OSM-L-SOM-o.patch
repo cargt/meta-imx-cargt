@@ -4,6 +4,8 @@ Date: Thu, 30 Apr 2026 09:28:11 -0500
 Subject: [PATCH] Add HDMI support for Cargt i.MX8MP 00377 OSM-L SOM on 00365
  carrier board
 
+Upstream-Status: Inappropriate [Cargt board specific]
+
 ---
  arch/arm64/boot/dts/freescale/Makefile           |  1 +
  .../freescale/imx8mp-cargt-00377-00365-hdmi.dts  | 16 ++++++++++++++++

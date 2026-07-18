@@ -3,6 +3,8 @@ From: Tim Carney <tim.carney@cargt.com>
 Date: Fri, 26 Sep 2025 16:37:59 -0500
 Subject: [PATCH] Add device tree files for 00324-00326.
 
+Upstream-Status: Inappropriate [Cargt board specific]
+
 ---
  arch/arm64/boot/dts/freescale/Makefile        |   5 +-
  ...x93-cargt-00324-00326-glt0701024600is2.dts |  13 +

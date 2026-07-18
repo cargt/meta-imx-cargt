@@ -4,6 +4,8 @@ Date: Thu, 4 Jun 2026 12:46:20 -0500
 Subject: [PATCH 28/29] arm64: dts: imx91: Update shared DMA pool
  configurations and memory regions
 
+Upstream-Status: Inappropriate [Cargt board specific]
+
 ---
  .../freescale/imx91-cargt-00363-osm-som.dts   | 43 +++----------------
  1 file changed, 6 insertions(+), 37 deletions(-)

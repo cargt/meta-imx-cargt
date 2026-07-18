@@ -6,15 +6,17 @@ Subject: [PATCH] Reorganize device tree source file for the Cargt i.MX8MP
  display (GLT1011280800IS1).
 
 Co-authored-by: Copilot <copilot@github.com>
+Upstream-Status: Inappropriate [Cargt board specific]
+
 ---
  arch/arm64/boot/dts/freescale/Makefile        |   3 +-
  ...8mp-cargt-00377-00365-glt0557201280is1.dts |   9 +-
  ...8mp-cargt-00377-00365-glt1011280800is1.dts |  16 +
  ...mp-cargt-00377-00365-glt1011280800is1.dtsi | 133 +++++
  .../freescale/imx8mp-cargt-00377-00365.dts    | 546 +----------------
- .../freescale/imx8mp-cargt-00377-00365.dtsi   | 561 ++++++++++++++++++
+ .../freescale/imx8mp-cargt-00377-00365.dtsi   | 562 ++++++++++++++++++
  .../freescale/imx8mp-cargt-00377-osm-som.dtsi |  18 +-
- 7 files changed, 736 insertions(+), 550 deletions(-)
+ 7 files changed, 737 insertions(+), 550 deletions(-)
  create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-glt1011280800is1.dts
  create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-glt1011280800is1.dtsi
  create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365.dtsi
@@ -775,7 +777,7 @@ new file mode 100644
 index 000000000000..545b25cd609e
 --- /dev/null
 +++ b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365.dtsi
-@@ -0,0 +1,561 @@
+@@ -0,0 +1,562 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright 2022 NXP
@@ -784,6 +786,7 @@ index 000000000000..545b25cd609e
 +#include <dt-bindings/usb/pd.h>
 +#include <dt-bindings/phy/phy-imx8-pcie.h>
 +#include "imx8mp-cargt-00377-osm-som.dtsi"
++#include "imx8mp-nxp-display.dtsi"
 +
 +/ {
 +	model = "Cargt i.MX8MP 00377 OSM-L SOM on 00365 carrier board";
