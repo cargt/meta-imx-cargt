@@ -14,11 +14,11 @@ Upstream-Status: Inappropriate [Cargt board specific]
  board/cargt/imx93_00324/Makefile              |   14 +
  .../imx93_00324/cargt_lpddr4x_1gbyte_timing.c | 1544 +++++++++++++
  .../imx93_00324/cargt_lpddr4x_2gbyte_timing.c | 2004 +++++++++++++++++
- board/cargt/imx93_00324/imx93_00324.c         |  272 +++
- board/cargt/imx93_00324/spl-cargt.c           |  359 +++
- configs/imx93-cargt-00324-00326_defconfig     |  212 ++
+ board/cargt/imx93_00324/imx93_00324.c         |  271 +++
+ board/cargt/imx93_00324/spl-cargt.c           |  361 +++
+ configs/imx93-cargt-00324-00326_defconfig     |  213 ++
  include/configs/imx93_00324.h                 |  178 ++
- 13 files changed, 5189 insertions(+), 1 deletion(-)
+ 13 files changed, 5191 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm/dts/imx93-cargt-00324-00326-u-boot.dtsi
  create mode 100644 arch/arm/dts/imx93-cargt-00324-00326.dts
  create mode 100644 board/cargt/imx93_00324/Kconfig
@@ -606,8 +606,8 @@ diff --git a/arch/arm/dts/imx93-cargt-00363-osm-som.dts b/arch/arm/dts/imx93-car
 index 2b873053ac9..e2c53bb365d 100644
 --- a/arch/arm/dts/imx93-cargt-00363-osm-som.dts
 +++ b/arch/arm/dts/imx93-cargt-00363-osm-som.dts
-@@ -15,7 +15,7 @@
-  
+@@ -10,7 +10,7 @@
+ 
   / {
  	 model = "Cargt i.MX93 00363 OSM-L SOM";
 -	 compatible = "fsl,imx93-11x11-evk", "fsl,imx93";
@@ -619,22 +619,22 @@ diff --git a/arch/arm/mach-imx/imx9/Kconfig b/arch/arm/mach-imx/imx9/Kconfig
 index fe839f1e271..36001e5ec02 100644
 --- a/arch/arm/mach-imx/imx9/Kconfig
 +++ b/arch/arm/mach-imx/imx9/Kconfig
-@@ -68,6 +68,12 @@ config TARGET_IMX93_9X9_QSB
- 	select IMX93
- 	select IMX9_LPDDR4X
+@@ -196,6 +196,12 @@ config TARGET_PHYCORE_IMX93
+ 	select OF_BOARD_FIXUP
+ 	select OF_BOARD_SETUP
  
 +config TARGET_IMX93_00324
 +	bool "imx93_00324"
 +	select IMX93
 +	select IMX9_LPDDR4X
 +	select CARGT_IMX93_LPDDR4X_TIMING_BY_NAME
-+	
++
  config TARGET_IMX93_00363
  	bool "imx93_00363"
  	select IMX93
-@@ -96,6 +102,7 @@ source "board/variscite/imx93_var_som/Kconfig"
- source "board/freescale/imx93_qsb/Kconfig"
- source "board/freescale/imx95_evk/Kconfig"
+@@ -292,5 +298,6 @@ source "board/nxp/imx95_frdm/Kconfig"
+ source "board/nxp/imx952_evk/Kconfig"
+ source "board/toradex/smarc-imx95/Kconfig"
  source "board/toradex/verdin-imx95/Kconfig"
 +source "board/cargt/imx93_00324/Kconfig"
  source "board/cargt/imx93_00363/Kconfig"
@@ -4277,13 +4277,12 @@ new file mode 100644
 index 00000000000..c496dd37668
 --- /dev/null
 +++ b/board/cargt/imx93_00324/imx93_00324.c
-@@ -0,0 +1,272 @@
+@@ -0,0 +1,271 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright 2022 NXP
 + */
 +
-+#include <common.h>
 +#include <env.h>
 +#include <efi_loader.h>
 +#include <init.h>
@@ -4555,13 +4554,12 @@ new file mode 100644
 index 00000000000..85ea365af37
 --- /dev/null
 +++ b/board/cargt/imx93_00324/spl-cargt.c
-@@ -0,0 +1,359 @@
+@@ -0,0 +1,361 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright 2022 NXP
 + */
 +
-+#include <common.h>
 +#include <command.h>
 +#include <cpu_func.h>
 +#include <hang.h>
@@ -4593,6 +4591,9 @@ index 00000000000..85ea365af37
 +#include <power/pca9450.h>
 +#include <power/pf0900.h>
 +#include <asm/arch/trdc.h>
++
++/* Not defined in u-boot's power/pca9450.h; PCA9450_REG_PWRCTRL[5] per datasheet */
++#define PCA9450_REG_PWRCTRL_TOFF_DEB 0x20
 +
 +DECLARE_GLOBAL_DATA_PTR;
 +
@@ -4920,7 +4921,7 @@ new file mode 100644
 index 00000000000..f9dd7fd3dae
 --- /dev/null
 +++ b/configs/imx93-cargt-00324-00326_defconfig
-@@ -0,0 +1,212 @@
+@@ -0,0 +1,213 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_IMX9=y
 +CONFIG_TEXT_BASE=0x80200000
@@ -4973,6 +4974,7 @@ index 00000000000..f9dd7fd3dae
 +CONFIG_SPL_HAS_CUSTOM_MALLOC_START=y
 +CONFIG_SPL_CUSTOM_SYS_MALLOC_ADDR=0x83200000
 +CONFIG_SPL_SYS_MALLOC_SIZE=0x80000
++CONFIG_SPL_SYS_MMCSD_RAW_MODE=y
 +CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_SECTOR=y
 +CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR=0x1040
 +CONFIG_SPL_I2C=y
@@ -5150,7 +5152,7 @@ index 00000000000..8a94cfdfc80
 +#include <linux/sizes.h>
 +#include <linux/stringify.h>
 +#include <asm/arch/imx-regs.h>
-+#include "imx_env.h"
++#include <env/nxp/imx_env.h>
 +
 +#define CFG_SYS_UBOOT_BASE	\
 +	(QSPI0_AMBA_BASE + CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR * 512)

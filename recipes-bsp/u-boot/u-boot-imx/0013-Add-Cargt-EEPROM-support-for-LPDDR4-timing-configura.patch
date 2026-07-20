@@ -335,15 +335,15 @@ diff --git a/board/cargt/imx93_00324/spl-cargt.c b/board/cargt/imx93_00324/spl-c
 index 4f7c0b433d0..a379b019fe5 100644
 --- a/board/cargt/imx93_00324/spl-cargt.c
 +++ b/board/cargt/imx93_00324/spl-cargt.c
-@@ -36,7 +36,7 @@
+@@ -35,7 +35,7 @@
  #include <power/pca9450.h>
  #include <power/pf0900.h>
  #include <asm/arch/trdc.h>
 -#include "../common/imx9_eeprom.h"
 +#include "../common/cargt_eeprom.h"
  
- DECLARE_GLOBAL_DATA_PTR;
- 
+ /* Not defined in u-boot's power/pca9450.h; PCA9450_REG_PWRCTRL[5] per datasheet */
+ #define PCA9450_REG_PWRCTRL_TOFF_DEB 0x20
 diff --git a/board/cargt/imx93_00363/Makefile b/board/cargt/imx93_00363/Makefile
 index e28f86189d3..9076a82f8eb 100644
 --- a/board/cargt/imx93_00363/Makefile
@@ -361,15 +361,15 @@ diff --git a/board/cargt/imx93_00363/spl-cargt.c b/board/cargt/imx93_00363/spl-c
 index 1dc174c20d6..10acc192adb 100644
 --- a/board/cargt/imx93_00363/spl-cargt.c
 +++ b/board/cargt/imx93_00363/spl-cargt.c
-@@ -36,7 +36,7 @@
+@@ -35,7 +35,7 @@
  #include <power/pca9450.h>
  #include <power/pf0900.h>
  #include <asm/arch/trdc.h>
 -#include "../common/imx9_eeprom.h"
 +#include "../common/cargt_eeprom.h"
  
- DECLARE_GLOBAL_DATA_PTR;
- 
+ /* Not defined in u-boot's power/pca9450.h; PCA9450_REG_PWRCTRL[5] per datasheet */
+ #define PCA9450_REG_PWRCTRL_TOFF_DEB 0x20
 diff --git a/configs/imx8mp-cargt-00377-00365_defconfig b/configs/imx8mp-cargt-00377-00365_defconfig
 index 5d1d101677a..34ceee8d6ef 100644
 --- a/configs/imx8mp-cargt-00377-00365_defconfig

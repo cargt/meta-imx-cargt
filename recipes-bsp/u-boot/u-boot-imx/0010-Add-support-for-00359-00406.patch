@@ -14,13 +14,13 @@ Upstream-Status: Inappropriate [Cargt board specific]
  board/cargt/imx93_00359/Makefile              |   15 +
  .../imx93_00359/cargt_lpddr4x_1gbyte_timing.c | 1544 +++++++++++++
  .../imx93_00359/cargt_lpddr4x_2gbyte_timing.c | 2004 +++++++++++++++++
- board/cargt/imx93_00359/imx93_00359.c         |  272 +++
- board/cargt/imx93_00359/spl-cargt.c           |  399 ++++
- configs/imx93-cargt-00359-00406_defconfig     |  218 ++
+ board/cargt/imx93_00359/imx93_00359.c         |  271 +++
+ board/cargt/imx93_00359/spl-cargt.c           |  401 ++++
+ configs/imx93-cargt-00359-00406_defconfig     |  219 ++
  include/configs/imx93_00324.h                 |   21 +-
  include/configs/imx93_00359.h                 |  183 ++
  include/configs/imx93_00363.h                 |   20 +-
- 15 files changed, 5460 insertions(+), 15 deletions(-)
+ 15 files changed, 5462 insertions(+), 15 deletions(-)
  create mode 100644 arch/arm/dts/imx93-cargt-00359-00406-u-boot.dtsi
  create mode 100644 arch/arm/dts/imx93-cargt-00359-00406.dts
  create mode 100644 arch/arm/dts/imx93-cargt-00359.dts
@@ -803,15 +803,15 @@ diff --git a/arch/arm/mach-imx/imx9/Kconfig b/arch/arm/mach-imx/imx9/Kconfig
 index ec044f3e074..198e9931ec2 100644
 --- a/arch/arm/mach-imx/imx9/Kconfig
 +++ b/arch/arm/mach-imx/imx9/Kconfig
-@@ -73,6 +73,11 @@ config TARGET_IMX93_00324
+@@ -201,6 +201,11 @@
  	select IMX93
  	select IMX9_LPDDR4X
- 	
+ 
 +config TARGET_IMX93_00359
 +	bool "imx93_00359"
 +	select IMX93
 +	select IMX9_LPDDR4X
-+	
++
  config TARGET_IMX93_00363
  	bool "imx93_00363"
  	select IMX93
@@ -4461,13 +4461,12 @@ new file mode 100644
 index 00000000000..6178e53473f
 --- /dev/null
 +++ b/board/cargt/imx93_00359/imx93_00359.c
-@@ -0,0 +1,272 @@
+@@ -0,0 +1,271 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright 2022 NXP
 + */
 +
-+#include <common.h>
 +#include <env.h>
 +#include <efi_loader.h>
 +#include <init.h>
@@ -4739,13 +4738,12 @@ new file mode 100644
 index 00000000000..28fa501bc9f
 --- /dev/null
 +++ b/board/cargt/imx93_00359/spl-cargt.c
-@@ -0,0 +1,399 @@
+@@ -0,0 +1,401 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright 2022 NXP
 + */
 +
-+#include <common.h>
 +#include <command.h>
 +#include <cpu_func.h>
 +#include <hang.h>
@@ -4779,6 +4777,9 @@ index 00000000000..28fa501bc9f
 +#include <power/pf0900.h>
 +#include <asm/arch/trdc.h>
 +#include "../common/imx9_eeprom.h"
++
++/* Not defined in u-boot's power/pca9450.h; PCA9450_REG_PWRCTRL[5] per datasheet */
++#define PCA9450_REG_PWRCTRL_TOFF_DEB 0x20
 +
 +DECLARE_GLOBAL_DATA_PTR;
 +
@@ -5144,7 +5145,7 @@ new file mode 100644
 index 00000000000..d867e7ea573
 --- /dev/null
 +++ b/configs/imx93-cargt-00359-00406_defconfig
-@@ -0,0 +1,218 @@
+@@ -0,0 +1,219 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_IMX9=y
 +CONFIG_TEXT_BASE=0x80200000
@@ -5197,6 +5198,7 @@ index 00000000000..d867e7ea573
 +CONFIG_SPL_HAS_CUSTOM_MALLOC_START=y
 +CONFIG_SPL_CUSTOM_SYS_MALLOC_ADDR=0x83200000
 +CONFIG_SPL_SYS_MALLOC_SIZE=0x80000
++CONFIG_SPL_SYS_MMCSD_RAW_MODE=y
 +CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_SECTOR=y
 +CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR=0x1040
 +CONFIG_SPL_I2C=y
@@ -5369,7 +5371,7 @@ index 8a94cfdfc80..eca836a0ae2 100644
 +++ b/include/configs/imx93_00324.h
 @@ -11,6 +11,19 @@
  #include <asm/arch/imx-regs.h>
- #include "imx_env.h"
+ #include <env/nxp/imx_env.h>
  
 +/* Link Definitions */
 +#define CFG_SYS_INIT_RAM_ADDR        	0x80000000
@@ -5419,7 +5421,7 @@ index 00000000000..cd812eb09b1
 +#include <linux/sizes.h>
 +#include <linux/stringify.h>
 +#include <asm/arch/imx-regs.h>
-+#include "imx_env.h"
++#include <env/nxp/imx_env.h>
 +
 +/* Link Definitions */
 +#define CFG_SYS_INIT_RAM_ADDR        	0x80000000
@@ -5597,7 +5599,7 @@ index 8e8e3fd46c5..247ef450056 100644
 +++ b/include/configs/imx93_00363.h
 @@ -11,6 +11,19 @@
  #include <asm/arch/imx-regs.h>
- #include "imx_env.h"
+ #include <env/nxp/imx_env.h>
  
 +/* Link Definitions */
 +#define CFG_SYS_INIT_RAM_ADDR        	0x80000000

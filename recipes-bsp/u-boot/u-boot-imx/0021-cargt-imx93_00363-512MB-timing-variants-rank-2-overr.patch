@@ -6842,18 +6842,18 @@ index ca339344c4a..c5c37b59a38 100644
  	
  #if CONFIG_IS_ENABLED(DM_PMIC_PF0900)
 diff --git a/common/board_f.c b/common/board_f.c
-index 987a1e980e2..d20cc67e2a9 100644
+index 1111111..2222222 100644
 --- a/common/board_f.c
 +++ b/common/board_f.c
 @@ -11,6 +11,7 @@
  
- #include <common.h>
+ #include <config.h>
  #include <bloblist.h>
 +#include <handoff.h>
  #include <bootstage.h>
  #include <clock_legacy.h>
  #include <console.h>
-@@ -307,7 +308,18 @@ static int setup_spl_handoff(void)
+@@ -290,7 +291,18 @@ static int setup_spl_handoff(void)
  #if CONFIG_IS_ENABLED(HANDOFF)
  	gd->spl_handoff = bloblist_find(BLOBLISTT_U_BOOT_SPL_HANDOFF,
  					sizeof(struct spl_handoff));

@@ -251,7 +251,7 @@ index b2a7f599ed3..8b1387338e0 100644
    
 \ No newline at end of file
 diff --git a/arch/arm/mach-imx/spl.c b/arch/arm/mach-imx/spl.c
-index fd0ebc4a8ed..68f3e156b32 100644
+index 1111111..2222222 100644
 --- a/arch/arm/mach-imx/spl.c
 +++ b/arch/arm/mach-imx/spl.c
 @@ -5,7 +5,6 @@
@@ -260,9 +260,9 @@ index fd0ebc4a8ed..68f3e156b32 100644
   */
 -#define DEBUG
  
- #include <common.h>
+ #include <config.h>
  #include <hang.h>
-@@ -519,8 +518,6 @@ int board_spl_fit_post_load(const void *fit, struct spl_image_info *spl_image)
+@@ -519,8 +518,6 @@ int board_spl_fit_post_load(const void *
  	int ret;
  #endif
  
@@ -271,7 +271,7 @@ index fd0ebc4a8ed..68f3e156b32 100644
  	if (IS_ENABLED(CONFIG_IMX_HAB)) {
  		u32 offset = ALIGN(fdt_totalsize(fit), 0x1000);
  
-@@ -537,14 +534,12 @@ printf("SPL: FIT image loaded to 0x%p\n", fit);
+@@ -537,14 +534,12 @@ printf("SPL: FIT image loaded to 0x%p\n"
  	}
  #if defined(CONFIG_IMX8MP) || defined(CONFIG_IMX8MN)
  #define MCU_RDC_MAGIC "mcu_rdc"
@@ -296,10 +296,10 @@ index fd0ebc4a8ed..68f3e156b32 100644
  }
  
 diff --git a/arch/arm/mach-imx/spl_imx_romapi.c b/arch/arm/mach-imx/spl_imx_romapi.c
-index bfd2118e296..8b8d16d911f 100644
+index 1111111..2222222 100644
 --- a/arch/arm/mach-imx/spl_imx_romapi.c
 +++ b/arch/arm/mach-imx/spl_imx_romapi.c
-@@ -400,16 +400,12 @@ static int spl_romapi_load_image_stream(struct spl_image_info *spl_image,
+@@ -394,16 +394,12 @@ static int spl_romapi_load_image_stream(
  
  		ret = rom_api_download_image(p, 0, imagesize);
  
@@ -316,9 +316,9 @@ index bfd2118e296..8b8d16d911f 100644
  	}
  
  	if (IS_ENABLED(CONFIG_SPL_LOAD_FIT)) {
-@@ -424,12 +420,9 @@ static int spl_romapi_load_image_stream(struct spl_image_info *spl_image,
- 		load.read = spl_romapi_read_stream;
- 		load.priv = &ss;
+@@ -415,12 +411,9 @@ static int spl_romapi_load_image_stream(
+ 
+ 		spl_load_init(&load, spl_romapi_read_stream, &ss, 1);
  
 -		printf("Calling spl_load_simple_fit (%s)\n", spl_image->name);
  		return spl_load_simple_fit(spl_image, &load, (ulong)phdr, phdr);
@@ -329,7 +329,7 @@ index bfd2118e296..8b8d16d911f 100644
  	total = img_total_size(phdr);
  	total += 3;
  	total &= ~0x3;
-@@ -451,12 +444,8 @@ static int spl_romapi_load_image_stream(struct spl_image_info *spl_image,
+@@ -442,12 +435,8 @@ static int spl_romapi_load_image_stream(
  	load.read = spl_ram_load_read;
  
  	if (IS_ENABLED(CONFIG_SPL_LOAD_IMX_CONTAINER))
@@ -342,7 +342,7 @@ index bfd2118e296..8b8d16d911f 100644
  	return -1;
  }
  
-@@ -465,21 +454,14 @@ int board_return_to_bootrom(struct spl_image_info *spl_image,
+@@ -456,21 +445,14 @@ int board_return_to_bootrom(struct spl_i
  {
  	int ret;
  	u32 boot, bstage;
@@ -365,7 +365,7 @@ index bfd2118e296..8b8d16d911f 100644
  
  	printf("Boot Stage: ");
  
-@@ -501,12 +483,8 @@ int board_return_to_bootrom(struct spl_image_info *spl_image,
+@@ -492,12 +474,8 @@ int board_return_to_bootrom(struct spl_i
  	}
  
  	if (is_boot_from_stream_device(boot))
@@ -545,7 +545,7 @@ index 4dcb80517bf..95015d51643 100644
  	board_init_r(NULL, 0);
  }
 diff --git a/common/spl/spl.c b/common/spl/spl.c
-index a9b78156602..b65c439e7aa 100644
+index 1111111..2222222 100644
 --- a/common/spl/spl.c
 +++ b/common/spl/spl.c
 @@ -5,7 +5,6 @@
@@ -554,33 +554,39 @@ index a9b78156602..b65c439e7aa 100644
   */
 -#define DEBUG
  
- #include <common.h>
+ #include <config.h>
  #include <bloblist.h>
-@@ -678,7 +677,7 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
- 	struct spl_image_info spl_image;
+@@ -701,7 +700,7 @@ void board_init_r(gd_t *dummy1, ulong du
  	int ret, os;
+ 	void *fdt;
  
--	printf(">>" SPL_TPL_PROMPT "board_init_r()\n");
-+	debug(">>" SPL_TPL_PROMPT "board_init_r()\n");
+-	printf(">>" PHASE_PROMPT "board_init_r()\n");
++	debug(">>" PHASE_PROMPT "board_init_r()\n");
  
  	spl_set_bd();
  
-@@ -816,10 +815,7 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
+@@ -856,7 +855,6 @@ void board_init_r(gd_t *dummy1, ulong du
  			       ret);
  	}
  
 -	printf("Preparing to boot ...\n");
  	spl_board_prepare_for_boot();
+ 
+ 	if (CONFIG_IS_ENABLED(RELOC_LOADER)) {
+@@ -870,8 +868,6 @@ void board_init_r(gd_t *dummy1, ulong du
+ 		}
+ 	}
+ 
 -	printf("Jumping to image at 0x%lx...\n",
 -	       spl_image.entry_point);
- 	jump_to_image(&spl_image);
+ 	jumper(&spl_image);
  }
  
 diff --git a/common/spl/spl_bootrom.c b/common/spl/spl_bootrom.c
-index e476cfcea28..0eefd39a519 100644
+index 1111111..2222222 100644
 --- a/common/spl/spl_bootrom.c
 +++ b/common/spl/spl_bootrom.c
-@@ -9,7 +9,6 @@
+@@ -8,7 +8,6 @@
  __weak int board_return_to_bootrom(struct spl_image_info *spl_image,
  				   struct spl_boot_device *bootdev)
  {
@@ -589,10 +595,10 @@ index e476cfcea28..0eefd39a519 100644
  }
  
 diff --git a/common/spl/spl_fit.c b/common/spl/spl_fit.c
-index be2ab712674..5ecf589412e 100644
+index 1111111..2222222 100644
 --- a/common/spl/spl_fit.c
 +++ b/common/spl/spl_fit.c
-@@ -748,34 +748,22 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
+@@ -837,34 +837,22 @@ int spl_load_simple_fit(struct spl_image
  	int index = 0;
  	int firmware_node;
  
@@ -628,7 +634,7 @@ index be2ab712674..5ecf589412e 100644
  
  #if defined(CONFIG_IMX_TRUSTY_OS) && !defined(CONFIG_IMX_MATTER_TRUSTY)
  	int rbindex;
-@@ -796,7 +784,6 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
+@@ -885,7 +873,6 @@ int spl_load_simple_fit(struct spl_image
  	 *   - fall back 'kernel' (e.g. a Falcon-mode OS boot
  	 *   - fall back to using the first 'loadables' entry
  	 */
@@ -636,7 +642,7 @@ index be2ab712674..5ecf589412e 100644
  	if (node < 0)
  		node = spl_fit_get_image_node(&ctx, FIT_FIRMWARE_PROP, 0);
  
-@@ -804,7 +791,7 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
+@@ -893,7 +880,7 @@ int spl_load_simple_fit(struct spl_image
  		node = spl_fit_get_image_node(&ctx, FIT_KERNEL_PROP, 0);
  
  	if (node < 0) {
@@ -645,7 +651,7 @@ index be2ab712674..5ecf589412e 100644
  		node = spl_fit_get_image_node(&ctx, "loadables", 0);
  		/*
  		 * If we pick the U-Boot image from "loadables", start at
-@@ -813,34 +800,25 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
+@@ -902,34 +889,25 @@ int spl_load_simple_fit(struct spl_image
  		index = 1;
  	}
  	if (node < 0) {
@@ -682,7 +688,7 @@ index be2ab712674..5ecf589412e 100644
  	/*
  	 * Booting a next-stage U-Boot may require us to append the FDT.
  	 * We allow this to fail, as the U-Boot image might embed its FDT.
-@@ -848,11 +826,7 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
+@@ -937,11 +915,7 @@ int spl_load_simple_fit(struct spl_image
  	if (os_takes_devicetree(spl_image->os)) {
  		ret = spl_fit_append_fdt(spl_image, info, offset, &ctx);
  		if (ret < 0 && spl_image->os != IH_OS_U_BOOT)
@@ -694,7 +700,7 @@ index be2ab712674..5ecf589412e 100644
  	}
  
  	firmware_node = node;
-@@ -862,11 +836,8 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
+@@ -951,11 +925,8 @@ int spl_load_simple_fit(struct spl_image
  
  		node = spl_fit_get_image_node(&ctx, "loadables", index);
  		if (node < 0)
@@ -708,7 +714,7 @@ index be2ab712674..5ecf589412e 100644
  		/*
  		 * if the firmware is also a loadable, skip it because
  		 * it already has been loaded. This is typically the case with
-@@ -887,7 +858,7 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
+@@ -976,7 +947,7 @@ int spl_load_simple_fit(struct spl_image
  			spl_fit_upload_fpga(&ctx, node, &image_info);
  
  		if (!spl_fit_image_get_os(ctx.fit, node, &os_type))
@@ -717,16 +723,15 @@ index be2ab712674..5ecf589412e 100644
  
  		if (os_takes_devicetree(os_type)) {
  			spl_fit_append_fdt(&image_info, info, offset, &ctx);
-@@ -918,8 +889,7 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
- 		spl_image->entry_point = spl_image->load_addr;
- 
+@@ -1013,8 +984,6 @@ int spl_load_simple_fit(struct spl_image
  	spl_image->flags |= SPL_FIT_FOUND;
+ 	upl_set_fit_info(map_to_sysmem(ctx.fit), ctx.conf_node,
+ 			 spl_image->entry_point);
 -	printf("SPL: U-Boot entry point at 0x%lx\n",
 -		       spl_image->entry_point);
-+
+ 
  	return board_spl_fit_post_load(ctx.fit, spl_image);
  }
- 
 diff --git a/configs/imx8mp-cargt-00377-00365_defconfig b/configs/imx8mp-cargt-00377-00365_defconfig
 index 88c528e3d56..5d1d101677a 100644
 --- a/configs/imx8mp-cargt-00377-00365_defconfig
