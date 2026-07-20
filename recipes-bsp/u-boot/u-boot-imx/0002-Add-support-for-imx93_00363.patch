@@ -5,10 +5,10 @@ Subject: [PATCH] Add support for imx93_00363.
 
 Upstream-Status: Inappropriate [Cargt board specific]
 ---
- .../dts/imx93-cargt-00363-00365-u-boot.dtsi   |  225 ++
- arch/arm/dts/imx93-cargt-00363-00365.dts      |  395 ++++
+ .../dts/imx93-cargt-00363-00365-u-boot.dtsi   |  219 ++
+ arch/arm/dts/imx93-cargt-00363-00365.dts      |  374 ++++
  .../dts/imx93-cargt-00363-osm-som-u-boot.dtsi |  176 ++
- arch/arm/dts/imx93-cargt-00363-osm-som.dts    |  363 +++
+ arch/arm/dts/imx93-cargt-00363-osm-som.dts    |  351 +++
  arch/arm/mach-imx/imx9/Kconfig                |    8 +-
  board/cargt/common/Makefile                   |   92 +
  board/cargt/common/arm_sleep.c                |  130 ++
@@ -55,7 +55,7 @@ Upstream-Status: Inappropriate [Cargt board specific]
  board/cargt/common/sleep.h                    |   20 +
  board/cargt/common/spl.h                      |   12 +
  board/cargt/common/sys_eeprom.c               |  649 ++++++
- board/cargt/common/tcpc.c                     | 1069 +++++++++
+ board/cargt/common/tcpc.c                     | 1068 +++++++++
  board/cargt/common/tcpc.h                     |  472 ++++
  board/cargt/common/via.h                      |   18 +
  board/cargt/common/vid.c                      |  796 +++++++
@@ -66,11 +66,11 @@ Upstream-Status: Inappropriate [Cargt board specific]
  board/cargt/imx93_00363/Makefile              |   14 +
  .../imx93_00363/cargt_lpddr4x_1gbyte_timing.c | 1544 +++++++++++++
  .../imx93_00363/cargt_lpddr4x_2gbyte_timing.c | 2004 +++++++++++++++++
- board/cargt/imx93_00363/imx93_00363.c         |  272 +++
- board/cargt/imx93_00363/spl-cargt.c           |  359 +++
- configs/imx93-cargt-00363-00365_defconfig     |  212 ++
+ board/cargt/imx93_00363/imx93_00363.c         |  271 +++
+ board/cargt/imx93_00363/spl-cargt.c           |  361 +++
+ configs/imx93-cargt-00363-00365_defconfig     |  213 ++
  include/configs/imx93_00363.h                 |  177 ++
- 65 files changed, 13539 insertions(+), 1 deletion(-)
+ 65 files changed, 13501 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm/dts/imx93-cargt-00363-00365-u-boot.dtsi
  create mode 100644 arch/arm/dts/imx93-cargt-00363-00365.dts
  create mode 100644 arch/arm/dts/imx93-cargt-00363-osm-som-u-boot.dtsi
@@ -141,7 +141,7 @@ new file mode 100644
 index 00000000000..708e1759552
 --- /dev/null
 +++ b/arch/arm/dts/imx93-cargt-00363-00365-u-boot.dtsi
-@@ -0,0 +1,225 @@
+@@ -0,0 +1,219 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright 2022 NXP
@@ -361,18 +361,12 @@ index 00000000000..708e1759552
 +	bootph-all;
 +	bootph-pre-ram;
 +};
-+
-+&lcdif {
-+	assigned-clocks = <&clk IMX93_CLK_MEDIA_AXI>, <&clk IMX93_CLK_MEDIA_APB>;
-+	assigned-clock-parents = <&clk IMX93_CLK_SYS_PLL_PFD1>, <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>;
-+	assigned-clock-rates = <400000000>, <133333334>;
-+};
 diff --git a/arch/arm/dts/imx93-cargt-00363-00365.dts b/arch/arm/dts/imx93-cargt-00363-00365.dts
 new file mode 100644
 index 00000000000..23b14146e41
 --- /dev/null
 +++ b/arch/arm/dts/imx93-cargt-00363-00365.dts
-@@ -0,0 +1,395 @@
+@@ -0,0 +1,374 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright 2022 NXP
@@ -618,28 +612,7 @@ index 00000000000..23b14146e41
 + &adc1 {
 +	 status = "okay";
 + };
-+ 
-+ &epxp {
-+	 status = "disabled";
-+ };
-+ 
-+ &lcdif {
-+	 status = "disabled";
-+	 assigned-clock-rates = <445333333>, <148444444>, <400000000>, <133333333>;
-+ };
-+ 
-+ &ldb {
-+	 status = "disabled";
-+ };
-+ 
-+ &dphy {
-+	 status = "disabled";
-+ };
-+ 
-+ &dsi {
-+	 status = "disabled";
-+ };
-+ 
++
 + &iomuxc {
 +	 
 +	 pinctrl_eqos: eqosgrp {
@@ -956,7 +929,7 @@ new file mode 100644
 index 00000000000..2b873053ac9
 --- /dev/null
 +++ b/arch/arm/dts/imx93-cargt-00363-osm-som.dts
-@@ -0,0 +1,363 @@
+@@ -0,0 +1,351 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright 2022 NXP
@@ -966,12 +939,7 @@ index 00000000000..2b873053ac9
 +
 + #include <dt-bindings/usb/pd.h>
 + #include "imx93.dtsi"
-+ 
-+ 
-+ &ele_fw2 {
-+	 memory-region = <&ele_reserved>;
-+ };
-+ 
++
 + / {
 +	 model = "Cargt i.MX93 00363 OSM-L SOM";
 +	 compatible = "fsl,imx93-11x11-evk", "fsl,imx93";
@@ -1072,15 +1040,8 @@ index 00000000000..2b873053ac9
 +		regulator-name = "vref_1v8";
 +		regulator-min-microvolt = <1800000>;
 +		regulator-max-microvolt = <1800000>;
-+	};	
++	};
 + };
-+	 
-+ 
-+ &lpm {
-+	 soc-supply = <&buck1>;
-+	 status = "okay";
-+ };
-+ 
 +
 + &lpi2c1 {
 +	#address-cells = <1>;
@@ -1325,22 +1286,22 @@ diff --git a/arch/arm/mach-imx/imx9/Kconfig b/arch/arm/mach-imx/imx9/Kconfig
 index 1f78b1b6a31..fe839f1e271 100644
 --- a/arch/arm/mach-imx/imx9/Kconfig
 +++ b/arch/arm/mach-imx/imx9/Kconfig
-@@ -68,6 +68,12 @@ config TARGET_IMX93_9X9_QSB
- 	select IMX93
- 	select IMX9_LPDDR4X
+@@ -196,6 +196,12 @@ config TARGET_PHYCORE_IMX93
+ 	select OF_BOARD_FIXUP
+ 	select OF_BOARD_SETUP
  
 +config TARGET_IMX93_00363
 +	bool "imx93_00363"
 +	select IMX93
 +	select IMX9_LPDDR4X
 +	select CARGT_IMX93_LPDDR4X_TIMING_BY_NAME
-+	
++
  config TARGET_IMX95_19X19_EVK
  	bool "imx95_19x19_evk"
  	select IMX95
-@@ -90,6 +96,6 @@ source "board/variscite/imx93_var_som/Kconfig"
- source "board/freescale/imx93_qsb/Kconfig"
- source "board/freescale/imx95_evk/Kconfig"
+@@ -286,5 +292,5 @@ source "board/nxp/imx95_frdm/Kconfig"
+ source "board/nxp/imx952_evk/Kconfig"
+ source "board/toradex/smarc-imx95/Kconfig"
  source "board/toradex/verdin-imx95/Kconfig"
 -
 +source "board/cargt/imx93_00363/Kconfig"
@@ -4048,8 +4009,8 @@ index 00000000000..8cd5079f962
 + * Copyright 2018-2022 NXP
 + */
 +
-+#include <common.h>
 +#include <command.h>
++#include <vsprintf.h>
 +#include <asm/arch/sys_proto.h>
 +#include <linux/errno.h>
 +#include <asm/io.h>
@@ -6920,13 +6881,12 @@ new file mode 100644
 index 00000000000..a12c10fbe92
 --- /dev/null
 +++ b/board/cargt/common/tcpc.c
-@@ -0,0 +1,1069 @@
+@@ -0,0 +1,1068 @@
 +/*
 + * Copyright 2017,2019 NXP
 + *
 + * SPDX-License-Identifier:	GPL-2.0+
 + */
-+#include <common.h>
 +#include <i2c.h>
 +#include <time.h>
 +#include <linux/delay.h>
@@ -13041,13 +13001,12 @@ new file mode 100644
 index 00000000000..da743c12396
 --- /dev/null
 +++ b/board/cargt/imx93_00363/imx93_00363.c
-@@ -0,0 +1,272 @@
+@@ -0,0 +1,271 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright 2022 NXP
 + */
 +
-+#include <common.h>
 +#include <env.h>
 +#include <efi_loader.h>
 +#include <init.h>
@@ -13319,13 +13278,12 @@ new file mode 100644
 index 00000000000..85ea365af37
 --- /dev/null
 +++ b/board/cargt/imx93_00363/spl-cargt.c
-@@ -0,0 +1,359 @@
+@@ -0,0 +1,361 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright 2022 NXP
 + */
 +
-+#include <common.h>
 +#include <command.h>
 +#include <cpu_func.h>
 +#include <hang.h>
@@ -13357,6 +13315,9 @@ index 00000000000..85ea365af37
 +#include <power/pca9450.h>
 +#include <power/pf0900.h>
 +#include <asm/arch/trdc.h>
++
++/* Not defined in u-boot's power/pca9450.h; PCA9450_REG_PWRCTRL[5] per datasheet */
++#define PCA9450_REG_PWRCTRL_TOFF_DEB 0x20
 +
 +DECLARE_GLOBAL_DATA_PTR;
 +
@@ -13684,7 +13645,7 @@ new file mode 100644
 index 00000000000..4ec46337de8
 --- /dev/null
 +++ b/configs/imx93-cargt-00363-00365_defconfig
-@@ -0,0 +1,212 @@
+@@ -0,0 +1,213 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_IMX9=y
 +CONFIG_TEXT_BASE=0x80200000
@@ -13737,6 +13698,7 @@ index 00000000000..4ec46337de8
 +CONFIG_SPL_HAS_CUSTOM_MALLOC_START=y
 +CONFIG_SPL_CUSTOM_SYS_MALLOC_ADDR=0x83200000
 +CONFIG_SPL_SYS_MALLOC_SIZE=0x80000
++CONFIG_SPL_SYS_MMCSD_RAW_MODE=y
 +CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_SECTOR=y
 +CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR=0x1040
 +CONFIG_SPL_I2C=y
@@ -13914,7 +13876,7 @@ index 00000000000..1cab1452a30
 +#include <linux/sizes.h>
 +#include <linux/stringify.h>
 +#include <asm/arch/imx-regs.h>
-+#include "imx_env.h"
++#include <env/nxp/imx_env.h>
 +
 +#define CFG_SYS_UBOOT_BASE	\
 +	(QSPI0_AMBA_BASE + CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR * 512)

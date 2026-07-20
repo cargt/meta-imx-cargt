@@ -22,32 +22,31 @@ Upstream-Status: Inappropriate [Cargt board specific]
  create mode 100644 board/cargt/common/imx9_eeprom.h
 
 diff --git a/arch/arm/mach-imx/imx9/Kconfig b/arch/arm/mach-imx/imx9/Kconfig
-index 36001e5ec02..ec044f3e074 100644
+index 1111111..2222222 100644
 --- a/arch/arm/mach-imx/imx9/Kconfig
 +++ b/arch/arm/mach-imx/imx9/Kconfig
-@@ -72,13 +72,11 @@ config TARGET_IMX93_00324
+@@ -200,13 +200,11 @@
  	bool "imx93_00324"
  	select IMX93
  	select IMX9_LPDDR4X
 -	select CARGT_IMX93_LPDDR4X_TIMING_BY_NAME
- 	
+ 
  config TARGET_IMX93_00363
  	bool "imx93_00363"
  	select IMX93
  	select IMX9_LPDDR4X
 -	select CARGT_IMX93_LPDDR4X_TIMING_BY_NAME
- 	
+ 
  config TARGET_IMX95_19X19_EVK
  	bool "imx95_19x19_evk"
-@@ -103,6 +101,8 @@ source "board/freescale/imx93_qsb/Kconfig"
- source "board/freescale/imx95_evk/Kconfig"
+@@ -299,5 +297,7 @@
+ source "board/toradex/smarc-imx95/Kconfig"
  source "board/toradex/verdin-imx95/Kconfig"
  source "board/cargt/imx93_00324/Kconfig"
 +source "board/cargt/imx93_00359/Kconfig"
  source "board/cargt/imx93_00363/Kconfig"
 +
  endif
- 
 diff --git a/board/cargt/common/imx9_eeprom.c b/board/cargt/common/imx9_eeprom.c
 new file mode 100644
 index 00000000000..f26723d4584
@@ -345,7 +344,7 @@ diff --git a/board/cargt/imx93_00324/spl-cargt.c b/board/cargt/imx93_00324/spl-c
 index 85ea365af37..efc03c1caca 100644
 --- a/board/cargt/imx93_00324/spl-cargt.c
 +++ b/board/cargt/imx93_00324/spl-cargt.c
-@@ -24,6 +24,7 @@
+@@ -23,6 +23,7 @@
  #include <asm/mach-imx/syscounter.h>
  #include <asm/sections.h>
  #include <dm/uclass.h>
@@ -353,11 +352,14 @@ index 85ea365af37..efc03c1caca 100644
  #include <dm/device.h>
  #include <dm/uclass-internal.h>
  #include <dm/device-internal.h>
-@@ -35,9 +36,12 @@
+@@ -34,12 +35,15 @@
  #include <power/pca9450.h>
  #include <power/pf0900.h>
  #include <asm/arch/trdc.h>
 +#include "../common/imx9_eeprom.h"
+ 
+ /* Not defined in u-boot's power/pca9450.h; PCA9450_REG_PWRCTRL[5] per datasheet */
+ #define PCA9450_REG_PWRCTRL_TOFF_DEB 0x20
  
  DECLARE_GLOBAL_DATA_PTR;
  
@@ -520,7 +522,7 @@ diff --git a/board/cargt/imx93_00363/spl-cargt.c b/board/cargt/imx93_00363/spl-c
 index 85ea365af37..1dc174c20d6 100644
 --- a/board/cargt/imx93_00363/spl-cargt.c
 +++ b/board/cargt/imx93_00363/spl-cargt.c
-@@ -24,6 +24,7 @@
+@@ -23,6 +23,7 @@
  #include <asm/mach-imx/syscounter.h>
  #include <asm/sections.h>
  #include <dm/uclass.h>
@@ -528,11 +530,14 @@ index 85ea365af37..1dc174c20d6 100644
  #include <dm/device.h>
  #include <dm/uclass-internal.h>
  #include <dm/device-internal.h>
-@@ -35,9 +36,12 @@
+@@ -34,12 +35,15 @@
  #include <power/pca9450.h>
  #include <power/pf0900.h>
  #include <asm/arch/trdc.h>
 +#include "../common/imx9_eeprom.h"
+ 
+ /* Not defined in u-boot's power/pca9450.h; PCA9450_REG_PWRCTRL[5] per datasheet */
+ #define PCA9450_REG_PWRCTRL_TOFF_DEB 0x20
  
  DECLARE_GLOBAL_DATA_PTR;
  

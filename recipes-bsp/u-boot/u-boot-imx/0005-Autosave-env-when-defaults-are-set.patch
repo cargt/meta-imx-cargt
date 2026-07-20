@@ -42,13 +42,13 @@ Upstream-Status: Inappropriate [Cargt board specific]
  .../imx8mp_00377/imximage-8mp-lpddr4.cfg      |    9 +
  board/cargt/imx8mp_00377/lpddr4_timing.c      | 2484 +++++++++++++++++
  board/cargt/imx8mp_00377/lpddr4_timing_ndm.c  | 2484 +++++++++++++++++
- board/cargt/imx8mp_00377/spl.c                |  200 ++
+ board/cargt/imx8mp_00377/spl.c                |  199 ++
  board/cargt/imx93_00363/Kconfig               |    9 +-
  board/freescale/imx8mp_evk/imx8mp_evk.c       |    6 +-
  common/spl/spl.c                              |    6 +-
  common/spl/spl_bootrom.c                      |    1 +
  common/spl/spl_fit.c                          |   46 +-
- configs/imx8mp-cargt-00377-00365_defconfig    |  214 ++
+ configs/imx8mp-cargt-00377-00365_defconfig    |  215 ++
  env/common.c                                  |    2 +
  include/configs/imx8mp_00377.h                |  178 ++
  23 files changed, 7126 insertions(+), 18 deletions(-)
@@ -70,10 +70,10 @@ diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
 index 6b2df7a0428..75b123dd2f7 100644
 --- a/arch/arm/dts/Makefile
 +++ b/arch/arm/dts/Makefile
-@@ -1180,6 +1180,7 @@ dtb-$(CONFIG_ARCH_IMX8M) += \
- 	imx8mp-venice-gw7905-2x.dtb \
- 	imx8mp-verdin-wifi-dev.dtb \
- 	imx8mp-navqp.dtb \
+@@ -945,6 +945,7 @@ dtb-$(CONFIG_ARCH_IMX8M) += \
+ 	imx8mp-frdm.dtb \
+ 	imx8mp-icore-mx8mp-edimm2.2.dtb \
+ 	imx8mp-msc-sm2s.dtb \
 +	imx8mp-cargt-00377-00365.dtb \
  	imx8mq-pico-pi.dtb \
  	imx8mq-kontron-pitx-imx8m.dtb \
@@ -1025,9 +1025,9 @@ diff --git a/arch/arm/mach-imx/imx8m/Kconfig b/arch/arm/mach-imx/imx8m/Kconfig
 index 1f9f1eafb0b..73e9a75153c 100644
 --- a/arch/arm/mach-imx/imx8m/Kconfig
 +++ b/arch/arm/mach-imx/imx8m/Kconfig
-@@ -325,6 +325,16 @@ config TARGET_IMX8MP_FRDM
+@@ -419,6 +419,16 @@ config TARGET_IMX8MP_NAVQP
  	select ARCH_MISC_INIT
- 	select SPL_CRYPTO if SPL
+ 	imply OF_UPSTREAM
  
 +config TARGET_IMX8MP_00377
 +	bool "imx8mp-00377"
@@ -1042,15 +1042,15 @@ index 1f9f1eafb0b..73e9a75153c 100644
  config TARGET_IMX8MP_VENICE
  	bool "Support Gateworks Venice iMX8M Plus module"
  	select IMX8MP
-@@ -493,5 +503,5 @@ source "board/variscite/imx8mn_var_som/Kconfig"
+@@ -606,5 +616,5 @@ source "board/variscite/imx8mn_var_som/Kconfig"
+ source "board/toradex/smarc-imx8mp/Kconfig"
  source "board/toradex/verdin-imx8mm/Kconfig"
  source "board/toradex/verdin-imx8mp/Kconfig"
- source "board/voxelbotics/navqp/Kconfig"
 -
 +source "board/cargt/imx8mp_00377/Kconfig"
  endif
 diff --git a/arch/arm/mach-imx/spl.c b/arch/arm/mach-imx/spl.c
-index 68f3e156b32..fd0ebc4a8ed 100644
+index 1111111..2222222 100644
 --- a/arch/arm/mach-imx/spl.c
 +++ b/arch/arm/mach-imx/spl.c
 @@ -5,6 +5,7 @@
@@ -1059,9 +1059,9 @@ index 68f3e156b32..fd0ebc4a8ed 100644
   */
 +#define DEBUG
  
- #include <common.h>
+ #include <config.h>
  #include <hang.h>
-@@ -518,6 +519,8 @@ int board_spl_fit_post_load(const void *fit, struct spl_image_info *spl_image)
+@@ -518,6 +519,8 @@ int board_spl_fit_post_load(const void *
  	int ret;
  #endif
  
@@ -1070,7 +1070,7 @@ index 68f3e156b32..fd0ebc4a8ed 100644
  	if (IS_ENABLED(CONFIG_IMX_HAB)) {
  		u32 offset = ALIGN(fdt_totalsize(fit), 0x1000);
  
-@@ -534,12 +537,14 @@ int board_spl_fit_post_load(const void *fit, struct spl_image_info *spl_image)
+@@ -534,12 +537,14 @@ int board_spl_fit_post_load(const void *
  	}
  #if defined(CONFIG_IMX8MP) || defined(CONFIG_IMX8MN)
  #define MCU_RDC_MAGIC "mcu_rdc"
@@ -1085,7 +1085,7 @@ index 68f3e156b32..fd0ebc4a8ed 100644
  #endif
  
  #ifdef CONFIG_IMX_TRUSTY_OS
-@@ -579,6 +584,8 @@ int board_spl_fit_post_load(const void *fit, struct spl_image_info *spl_image)
+@@ -579,6 +584,8 @@ int board_spl_fit_post_load(const void *
          }
  #endif
  
@@ -1095,10 +1095,10 @@ index 68f3e156b32..fd0ebc4a8ed 100644
  }
  
 diff --git a/arch/arm/mach-imx/spl_imx_romapi.c b/arch/arm/mach-imx/spl_imx_romapi.c
-index 8b8d16d911f..bfd2118e296 100644
+index 1111111..2222222 100644
 --- a/arch/arm/mach-imx/spl_imx_romapi.c
 +++ b/arch/arm/mach-imx/spl_imx_romapi.c
-@@ -400,12 +400,16 @@ static int spl_romapi_load_image_stream(struct spl_image_info *spl_image,
+@@ -394,12 +394,16 @@ static int spl_romapi_load_image_stream(
  
  		ret = rom_api_download_image(p, 0, imagesize);
  
@@ -1115,9 +1115,9 @@ index 8b8d16d911f..bfd2118e296 100644
  	}
  
  	if (IS_ENABLED(CONFIG_SPL_LOAD_FIT)) {
-@@ -420,9 +424,12 @@ static int spl_romapi_load_image_stream(struct spl_image_info *spl_image,
- 		load.read = spl_romapi_read_stream;
- 		load.priv = &ss;
+@@ -411,9 +415,12 @@ static int spl_romapi_load_image_stream(
+ 
+ 		spl_load_init(&load, spl_romapi_read_stream, &ss, 1);
  
 +		printf("Calling spl_load_simple_fit (%s)\n", spl_image->name);
  		return spl_load_simple_fit(spl_image, &load, (ulong)phdr, phdr);
@@ -1128,7 +1128,7 @@ index 8b8d16d911f..bfd2118e296 100644
  	total = img_total_size(phdr);
  	total += 3;
  	total &= ~0x3;
-@@ -444,8 +451,12 @@ static int spl_romapi_load_image_stream(struct spl_image_info *spl_image,
+@@ -435,8 +442,12 @@ static int spl_romapi_load_image_stream(
  	load.read = spl_ram_load_read;
  
  	if (IS_ENABLED(CONFIG_SPL_LOAD_IMX_CONTAINER))
@@ -1141,7 +1141,7 @@ index 8b8d16d911f..bfd2118e296 100644
  	return -1;
  }
  
-@@ -454,14 +465,21 @@ int board_return_to_bootrom(struct spl_image_info *spl_image,
+@@ -445,14 +456,21 @@ int board_return_to_bootrom(struct spl_i
  {
  	int ret;
  	u32 boot, bstage;
@@ -1164,7 +1164,7 @@ index 8b8d16d911f..bfd2118e296 100644
  
  	printf("Boot Stage: ");
  
-@@ -483,8 +501,12 @@ int board_return_to_bootrom(struct spl_image_info *spl_image,
+@@ -474,8 +492,12 @@ int board_return_to_bootrom(struct spl_i
  	}
  
  	if (is_boot_from_stream_device(boot))
@@ -6738,14 +6738,13 @@ new file mode 100644
 index 00000000000..4dcb80517bf
 --- /dev/null
 +++ b/board/cargt/imx8mp_00377/spl.c
-@@ -0,0 +1,200 @@
+@@ -0,0 +1,199 @@
 +// SPDX-License-Identifier: GPL-2.0-or-later
 +/*
 + * Copyright 2018-2019, 2021 NXP
 + *
 + */
 +
-+#include <common.h>
 +#include <hang.h>
 +#include <init.h>
 +#include <log.h>
@@ -6958,32 +6957,8 @@ index 88ff04bcee3..9cb9f1467c8 100644
 +      Name of the timing file to use when CONFIG_CARGT_LPDDR4X_BY_NAME is used.
  
  endif
-diff --git a/board/freescale/imx8mp_evk/imx8mp_evk.c b/board/freescale/imx8mp_evk/imx8mp_evk.c
-index 9fa9b4c8071..c0029d7516c 100644
---- a/board/freescale/imx8mp_evk/imx8mp_evk.c
-+++ b/board/freescale/imx8mp_evk/imx8mp_evk.c
-@@ -33,8 +33,8 @@ DECLARE_GLOBAL_DATA_PTR;
- #define WDOG_PAD_CTRL	(PAD_CTL_DSE6 | PAD_CTL_ODE | PAD_CTL_PUE | PAD_CTL_PE)
- 
- static iomux_v3_cfg_t const uart_pads[] = {
--	MX8MP_PAD_UART2_RXD__UART2_DCE_RX | MUX_PAD_CTRL(UART_PAD_CTRL),
--	MX8MP_PAD_UART2_TXD__UART2_DCE_TX | MUX_PAD_CTRL(UART_PAD_CTRL),
-+	MX8MP_PAD_UART4_RXD__UART4_DCE_RX | MUX_PAD_CTRL(UART_PAD_CTRL),
-+	MX8MP_PAD_UART4_TXD__UART4_DCE_TX | MUX_PAD_CTRL(UART_PAD_CTRL),
- };
- 
- static iomux_v3_cfg_t const wdog_pads[] = {
-@@ -76,7 +76,7 @@ int board_early_init_f(void)
- 
- 	imx_iomux_v3_setup_multiple_pads(uart_pads, ARRAY_SIZE(uart_pads));
- 
--	init_uart_clk(1);
-+	init_uart_clk(3);
- 
- 	return 0;
- }
 diff --git a/common/spl/spl.c b/common/spl/spl.c
-index b65c439e7aa..a9b78156602 100644
+index 1111111..2222222 100644
 --- a/common/spl/spl.c
 +++ b/common/spl/spl.c
 @@ -5,6 +5,7 @@
@@ -6992,33 +6967,39 @@ index b65c439e7aa..a9b78156602 100644
   */
 +#define DEBUG
  
- #include <common.h>
+ #include <config.h>
  #include <bloblist.h>
-@@ -677,7 +678,7 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
- 	struct spl_image_info spl_image;
+@@ -700,7 +701,7 @@ void board_init_r(gd_t *dummy1, ulong du
  	int ret, os;
+ 	void *fdt;
  
--	debug(">>" SPL_TPL_PROMPT "board_init_r()\n");
-+	printf(">>" SPL_TPL_PROMPT "board_init_r()\n");
+-	debug(">>" PHASE_PROMPT "board_init_r()\n");
++	printf(">>" PHASE_PROMPT "board_init_r()\n");
  
  	spl_set_bd();
  
-@@ -815,7 +816,10 @@ void board_init_r(gd_t *dummy1, ulong dummy2)
+@@ -855,6 +856,7 @@ void board_init_r(gd_t *dummy1, ulong du
  			       ret);
  	}
  
 +	printf("Preparing to boot ...\n");
  	spl_board_prepare_for_boot();
+ 
+ 	if (CONFIG_IS_ENABLED(RELOC_LOADER)) {
+@@ -868,6 +870,8 @@ void board_init_r(gd_t *dummy1, ulong du
+ 		}
+ 	}
+ 
 +	printf("Jumping to image at 0x%lx...\n",
 +	       spl_image.entry_point);
- 	jump_to_image(&spl_image);
+ 	jumper(&spl_image);
  }
  
 diff --git a/common/spl/spl_bootrom.c b/common/spl/spl_bootrom.c
-index 0eefd39a519..e476cfcea28 100644
+index 1111111..2222222 100644
 --- a/common/spl/spl_bootrom.c
 +++ b/common/spl/spl_bootrom.c
-@@ -9,6 +9,7 @@
+@@ -8,6 +8,7 @@
  __weak int board_return_to_bootrom(struct spl_image_info *spl_image,
  				   struct spl_boot_device *bootdev)
  {
@@ -7155,22 +7136,22 @@ index 5ecf589412e..be2ab712674 100644
  
  		if (os_takes_devicetree(os_type)) {
  			spl_fit_append_fdt(&image_info, info, offset, &ctx);
-@@ -889,7 +918,8 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
- 		spl_image->entry_point = spl_image->load_addr;
- 
+@@ -984,6 +984,8 @@ int spl_load_simple_fit(struct spl_image_info *spl_image,
  	spl_image->flags |= SPL_FIT_FOUND;
--
+ 	upl_set_fit_info(map_to_sysmem(ctx.fit), ctx.conf_node,
+ 			 spl_image->entry_point);
 +	printf("SPL: U-Boot entry point at 0x%lx\n",
 +		       spl_image->entry_point);
+ 
  	return board_spl_fit_post_load(ctx.fit, spl_image);
  }
- 
+
 diff --git a/configs/imx8mp-cargt-00377-00365_defconfig b/configs/imx8mp-cargt-00377-00365_defconfig
 new file mode 100644
 index 00000000000..88c528e3d56
 --- /dev/null
 +++ b/configs/imx8mp-cargt-00377-00365_defconfig
-@@ -0,0 +1,214 @@
+@@ -0,0 +1,215 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_IMX8M=y
 +CONFIG_TEXT_BASE=0x40200000
@@ -7222,6 +7203,7 @@ index 00000000000..88c528e3d56
 +CONFIG_SPL_HAS_CUSTOM_MALLOC_START=y
 +CONFIG_SPL_CUSTOM_SYS_MALLOC_ADDR=0x42200000
 +CONFIG_SPL_SYS_MALLOC_SIZE=0x80000
++CONFIG_SPL_SYS_MMCSD_RAW_MODE=y
 +CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_USE_SECTOR=y
 +CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR=0x300
 +CONFIG_SPL_I2C=y
@@ -7386,18 +7368,18 @@ index 00000000000..88c528e3d56
 +CONFIG_EFI_HAVE_CAPSULE_UPDATE=y
 +CONFIG_FIT_SIGNATURE=y
 diff --git a/env/common.c b/env/common.c
-index 48a565107c1..fa665a3b551 100644
+index 1111111..2222222 100644
 --- a/env/common.c
 +++ b/env/common.c
-@@ -393,6 +393,8 @@ void env_set_default(const char *s, int flags)
- 
- 	gd->flags |= GD_FLG_ENV_READY;
- 	gd->flags |= GD_FLG_ENV_DEFAULT;
+@@ -413,6 +413,8 @@ void env_set_default(const char *s, int
+ 	/* This has to be done after GD_FLG_ENV_READY is set */
+ 	if (env_update_fdt_addr_from_bloblist())
+ 		pr_err("Failed to set fdt_addr to point at DTB\n");
 +
 +	env_save();
  }
  
- 
+ /* [re]set individual variables to their value in the default environment */
 diff --git a/include/configs/imx8mp_00377.h b/include/configs/imx8mp_00377.h
 new file mode 100644
 index 00000000000..da00825398f
@@ -7415,7 +7397,7 @@ index 00000000000..da00825398f
 +#include <linux/sizes.h>
 +#include <linux/stringify.h>
 +#include <asm/arch/imx-regs.h>
-+#include "imx_env.h"
++#include <env/nxp/imx_env.h>
 +
 +#define CFG_SYS_UBOOT_BASE	(QSPI0_AMBA_BASE + CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR * 512)
 +
