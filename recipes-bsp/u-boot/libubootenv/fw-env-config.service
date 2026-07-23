@@ -1,0 +1,13 @@
+[Unit]
+Description=Regenerate /etc/fw_env.config for the active boot device
+DefaultDependencies=no
+Before=sysinit.target
+ConditionPathExists=/etc/fw-env-geometry.conf
+
+[Service]
+Type=oneshot
+ExecStart=/usr/bin/fw-env-config-gen.sh
+RemainAfterExit=yes
+
+[Install]
+WantedBy=sysinit.target

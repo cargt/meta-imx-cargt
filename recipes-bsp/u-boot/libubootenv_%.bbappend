@@ -1,14 +1,38 @@
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-SRC_URI:append:class-target = " file://fw_env.config"
+SRC_URI:append:class-target = " \
+	file://fw-env-geometry.conf \
+	file://fw-env-config-gen.sh \
+	file://fw-env-config.service \
+"
 
+inherit systemd
+
+SYSTEMD_SERVICE:${PN}:class-target = "fw-env-config.service"
+SYSTEMD_AUTO_ENABLE:${PN}:class-target = "enable"
+
+# fw_env.config is regenerated at every boot by fw-env-config.service,
+# using the geometry below, once the actual boot device (eMMC vs SD
+# card) is known - see fw-env-config-gen.sh. This is because U-Boot
+# keeps its environment at the same offset/size on every boot medium,
+# but the device node differs depending on which one was booted from;
+# a static fw_env.config can only ever be correct for one of them.
 do_install:append:class-target() {
 	install -d ${D}${sysconfdir}
-	install -m 644 ${WORKDIR}/fw_env.config ${D}${sysconfdir}
+	install -d ${D}${bindir}
+	install -d ${D}${systemd_system_unitdir}
+
+	install -m 644 ${WORKDIR}/fw-env-geometry.conf ${D}${sysconfdir}
+	install -m 755 ${WORKDIR}/fw-env-config-gen.sh ${D}${bindir}
+	install -m 644 ${WORKDIR}/fw-env-config.service ${D}${systemd_system_unitdir}
 }
 
-FILES:${PN}:append:class-target = " ${sysconfdir}"
+FILES:${PN}:append:class-target = " \
+	${sysconfdir}/fw-env-geometry.conf \
+	${bindir}/fw-env-config-gen.sh \
+	${systemd_system_unitdir}/fw-env-config.service \
+"
 
 
 
