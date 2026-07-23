@@ -12,6 +12,7 @@ POKY_DEFAULT_DISTRO_FEATURES_IMX_REMOVE             ?= "wayland"
 POKY_DEFAULT_DISTRO_FEATURES_IMX_REMOVE:mx6-nxp-bsp ?= "wayland vulkan"
 POKY_DEFAULT_DISTRO_FEATURES_IMX_REMOVE:mx7-nxp-bsp ?= "wayland vulkan"
 DISTRO_FEATURES:remove = "pulseaudio"
+DISTRO_FEATURES:append = " opencl"
 
 POKY_DEFAULT_DISTRO_FEATURES:append = " ${POKY_DEFAULT_DISTRO_FEATURES_IMX_APPEND}"
 POKY_DEFAULT_DISTRO_FEATURES_IMX_APPEND             ?= "jailhouse xen"

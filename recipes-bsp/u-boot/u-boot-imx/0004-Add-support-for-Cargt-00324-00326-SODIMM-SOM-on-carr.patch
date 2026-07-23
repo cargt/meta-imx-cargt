@@ -5,8 +5,8 @@ Subject: [PATCH] Add support for Cargt 00324-00326 SODIMM SOM on carrier.
 
 Upstream-Status: Inappropriate [Cargt board specific]
 ---
- .../dts/imx93-cargt-00324-00326-u-boot.dtsi   |  202 ++
- arch/arm/dts/imx93-cargt-00324-00326.dts      |  357 +++
+ .../dts/imx93-cargt-00324-00326-u-boot.dtsi   |  207 ++
+ arch/arm/dts/imx93-cargt-00324-00326.dts      |  351 +++
  arch/arm/dts/imx93-cargt-00363-osm-som.dts    |    2 +-
  arch/arm/mach-imx/imx9/Kconfig                |    7 +
  board/cargt/imx93_00324/Kconfig               |   33 +
@@ -16,7 +16,7 @@ Upstream-Status: Inappropriate [Cargt board specific]
  .../imx93_00324/cargt_lpddr4x_2gbyte_timing.c | 2004 +++++++++++++++++
  board/cargt/imx93_00324/imx93_00324.c         |  271 +++
  board/cargt/imx93_00324/spl-cargt.c           |  361 +++
- configs/imx93-cargt-00324-00326_defconfig     |  213 ++
+ configs/imx93-cargt-00324-00326_defconfig     |  214 ++
  include/configs/imx93_00324.h                 |  178 ++
  13 files changed, 5191 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm/dts/imx93-cargt-00324-00326-u-boot.dtsi
@@ -36,7 +36,7 @@ new file mode 100644
 index 00000000000..18a35e61357
 --- /dev/null
 +++ b/arch/arm/dts/imx93-cargt-00324-00326-u-boot.dtsi
-@@ -0,0 +1,202 @@
+@@ -0,0 +1,207 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright 2022 NXP
@@ -46,7 +46,8 @@ index 00000000000..18a35e61357
 +	wdt-reboot {
 +		compatible = "wdt-reboot";
 +		wdt = <&wdog3>;
-+		u-boot,dm-spl;
++		bootph-pre-ram;
++		bootph-some-ram;
 +	};
 +
 +	aliases {
@@ -77,111 +78,120 @@ index 00000000000..18a35e61357
 +};
 +
 +&{/soc@0} {
-+	u-boot,dm-pre-reloc;
-+	u-boot,dm-spl;
++	bootph-all;
++	bootph-pre-ram;
 +};
 +
 +&aips1 {
-+	u-boot,dm-spl;
-+	u-boot,dm-pre-reloc;
++	bootph-pre-ram;
++	bootph-all;
 +};
 +
 +&aips2 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +&aips3 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +&iomuxc {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +// &reg_usdhc2_vmmc {
 +// 	u-boot,off-on-delay-us = <20000>;
-+// 	u-boot,dm-spl;
++// 	bootph-pre-ram;
 +// };
 +
 +&pinctrl_reg_usdhc2_vmmc {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&pinctrl_uart1 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +&pinctrl_usdhc1 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&pinctrl_usdhc2_gpio {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&pinctrl_usdhc2 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&gpio1 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +&gpio2 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +&gpio3 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +&gpio4 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +&lpuart1 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +&usdhc1 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&usdhc2 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +	fsl,signal-voltage-switch-extra-delay-ms = <8>;
 +};
 +
 +&lpi2c1 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&lpi2c2 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&lpi2c3 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&{/soc@0/bus@44000000/i2c@44350000/pmic@25} {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&{/soc@0/bus@44000000/i2c@44350000/pmic@25/regulators} {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&pinctrl_lpi2c1 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&pinctrl_lpi2c2 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&pinctrl_lpi2c3 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&fec {
@@ -207,44 +217,39 @@ index 00000000000..18a35e61357
 +};
 +
 +&s4muap {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +	status = "okay";
 +};
 +
 +&clk {
-+	u-boot,dm-pre-reloc;
-+	u-boot,dm-spl;
++	bootph-all;
++	bootph-pre-ram;
 +	/delete-property/ assigned-clocks;
 +	/delete-property/ assigned-clock-rates;
 +	/delete-property/ assigned-clock-parents;
 +};
 +
 +&osc_32k {
-+	u-boot,dm-pre-reloc;
-+	u-boot,dm-spl;
++	bootph-all;
++	bootph-pre-ram;
 +};
 +
 +&osc_24m {
-+	u-boot,dm-pre-reloc;
-+	u-boot,dm-spl;
++	bootph-all;
++	bootph-pre-ram;
 +};
 +
 +&clk_ext1 {
-+	u-boot,dm-pre-reloc;
-+	u-boot,dm-spl;
-+};
-+
-+&lcdif {
-+	assigned-clocks = <&clk IMX93_CLK_MEDIA_AXI>, <&clk IMX93_CLK_MEDIA_APB>;
-+	assigned-clock-parents = <&clk IMX93_CLK_SYS_PLL_PFD1>, <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>;
-+	assigned-clock-rates = <400000000>, <133333334>;
++	bootph-all;
++	bootph-pre-ram;
 +};
 diff --git a/arch/arm/dts/imx93-cargt-00324-00326.dts b/arch/arm/dts/imx93-cargt-00324-00326.dts
 new file mode 100644
 index 00000000000..d8a711e4abd
 --- /dev/null
 +++ b/arch/arm/dts/imx93-cargt-00324-00326.dts
-@@ -0,0 +1,357 @@
+@@ -0,0 +1,351 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright 2022 NXP
@@ -320,12 +325,6 @@ index 00000000000..d8a711e4abd
 +		};
 +	};
 +};
-+
-+&lcdif {
-+	status = "okay";
-+	assigned-clock-rates = <484000000>, <121000000>, <400000000>, <133333333>;
-+};
-+
 +
 +&lpi2c2 {
 +	#address-cells = <1>;
@@ -4921,7 +4920,7 @@ new file mode 100644
 index 00000000000..f9dd7fd3dae
 --- /dev/null
 +++ b/configs/imx93-cargt-00324-00326_defconfig
-@@ -0,0 +1,213 @@
+@@ -0,0 +1,214 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_IMX9=y
 +CONFIG_TEXT_BASE=0x80200000
@@ -4943,6 +4942,7 @@ index 00000000000..f9dd7fd3dae
 +CONFIG_SPL_SERIAL=y
 +CONFIG_SPL_DRIVERS_MISC=y
 +CONFIG_SPL_STACK=0x20519dd0
++CONFIG_SPL_HAVE_INIT_STACK=y
 +CONFIG_SPL=y
 +CONFIG_CMD_DEKBLOB=y
 +CONFIG_SPL_IMX_ROMAPI_LOADADDR=0x88000000

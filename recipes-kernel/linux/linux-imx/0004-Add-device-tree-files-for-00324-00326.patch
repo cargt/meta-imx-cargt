@@ -11,9 +11,9 @@ Upstream-Status: Inappropriate [Cargt board specific]
  ...93-cargt-00324-00326-glt0701024600is2.dtsi | 102 +++++
  ...x93-cargt-00324-00326-glt1011280800is1.dts |  15 +
  ...93-cargt-00324-00326-glt1011280800is1.dtsi | 126 ++++++
- .../dts/freescale/imx93-cargt-00324-00326.dts | 424 ++++++++++++++++++
+ .../dts/freescale/imx93-cargt-00324-00326.dts | 426 ++++++++++++++++++
  .../boot/dts/freescale/imx93-cargt-00324.dtsi | 352 +++++++++++++++
- 7 files changed, 1036 insertions(+), 1 deletion(-)
+ 7 files changed, 1038 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00324-00326-glt0701024600is2.dts
  create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00324-00326-glt0701024600is2.dtsi
  create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00324-00326-glt1011280800is1.dts
@@ -323,7 +323,7 @@ new file mode 100644
 index 000000000000..b7eae16f0668
 --- /dev/null
 +++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00324-00326.dts
-@@ -0,0 +1,424 @@
+@@ -0,0 +1,426 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright 2022 NXP
@@ -409,6 +409,8 @@ index 000000000000..b7eae16f0668
 +	 aliases {
 +		 rtc0 = &rtc_i2c;
 +		 rtc1 = &bbnsm_rtc;
++		 serial0 = &lpuart1;
++		 serial4 = &lpuart5;
 +	 };
 + };
 +

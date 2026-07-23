@@ -68,9 +68,9 @@ Upstream-Status: Inappropriate [Cargt board specific]
  .../imx93_00363/cargt_lpddr4x_2gbyte_timing.c | 2004 +++++++++++++++++
  board/cargt/imx93_00363/imx93_00363.c         |  271 +++
  board/cargt/imx93_00363/spl-cargt.c           |  361 +++
- configs/imx93-cargt-00363-00365_defconfig     |  213 ++
+ configs/imx93-cargt-00363-00365_defconfig     |  214 ++
  include/configs/imx93_00363.h                 |  177 ++
- 65 files changed, 13501 insertions(+), 1 deletion(-)
+ 65 files changed, 13502 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm/dts/imx93-cargt-00363-00365-u-boot.dtsi
  create mode 100644 arch/arm/dts/imx93-cargt-00363-00365.dts
  create mode 100644 arch/arm/dts/imx93-cargt-00363-osm-som-u-boot.dtsi
@@ -13645,7 +13645,7 @@ new file mode 100644
 index 00000000000..4ec46337de8
 --- /dev/null
 +++ b/configs/imx93-cargt-00363-00365_defconfig
-@@ -0,0 +1,213 @@
+@@ -0,0 +1,214 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_IMX9=y
 +CONFIG_TEXT_BASE=0x80200000
@@ -13667,6 +13667,7 @@ index 00000000000..4ec46337de8
 +CONFIG_SPL_SERIAL=y
 +CONFIG_SPL_DRIVERS_MISC=y
 +CONFIG_SPL_STACK=0x20519dd0
++CONFIG_SPL_HAVE_INIT_STACK=y
 +CONFIG_SPL=y
 +CONFIG_CMD_DEKBLOB=y
 +CONFIG_SPL_IMX_ROMAPI_LOADADDR=0x88000000
