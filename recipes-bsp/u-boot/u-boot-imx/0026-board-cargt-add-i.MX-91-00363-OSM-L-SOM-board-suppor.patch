@@ -62,10 +62,10 @@ arch/arm/mach-imx/imx9/Kconfig: add TARGET_IMX91_00363 + Kconfig source
  .../imx9x_00363_common/imx9x_00363_board.h    |   37 +
  .../imx9x_00363_common/imx9x_00363_pmic.c     |   78 +
  .../imx9x_00363_common/imx9x_00363_pmic.h     |   29 +
- configs/imx91-cargt-00363-00365_defconfig     |  197 ++
- configs/imx91-cargt-00363-osm-som_defconfig   |  197 ++
+ configs/imx91-cargt-00363-00365_defconfig     |  198 ++
+ configs/imx91-cargt-00363-osm-som_defconfig   |  198 ++
  include/configs/imx91_00363.h                 |  116 +
- 30 files changed, 12914 insertions(+), 1 deletion(-)
+ 30 files changed, 12916 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm/dts/imx91-cargt-00363-00365-u-boot.dtsi
  create mode 100644 arch/arm/dts/imx91-cargt-00363-00365.dts
  create mode 100644 arch/arm/dts/imx91-cargt-00363-osm-som-u-boot.dtsi
@@ -12684,7 +12684,7 @@ new file mode 100644
 index 00000000000..728a87173ef
 --- /dev/null
 +++ b/configs/imx91-cargt-00363-00365_defconfig
-@@ -0,0 +1,197 @@
+@@ -0,0 +1,198 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_IMX9=y
 +CONFIG_TEXT_BASE=0x80200000
@@ -12705,6 +12705,7 @@ index 00000000000..728a87173ef
 +CONFIG_SPL_SERIAL=y
 +CONFIG_SPL_DRIVERS_MISC=y
 +CONFIG_SPL_STACK=0x204dfdd0
++CONFIG_SPL_HAVE_INIT_STACK=y
 +CONFIG_SPL=y
 +CONFIG_CMD_DEKBLOB=y
 +CONFIG_SPL_IMX_ROMAPI_LOADADDR=0x88000000
@@ -12887,7 +12888,7 @@ new file mode 100644
 index 00000000000..91738edce54
 --- /dev/null
 +++ b/configs/imx91-cargt-00363-osm-som_defconfig
-@@ -0,0 +1,197 @@
+@@ -0,0 +1,198 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_IMX9=y
 +CONFIG_TEXT_BASE=0x80200000
@@ -12908,6 +12909,7 @@ index 00000000000..91738edce54
 +CONFIG_SPL_SERIAL=y
 +CONFIG_SPL_DRIVERS_MISC=y
 +CONFIG_SPL_STACK=0x204dfdd0
++CONFIG_SPL_HAVE_INIT_STACK=y
 +CONFIG_SPL=y
 +CONFIG_CMD_DEKBLOB=y
 +CONFIG_SPL_IMX_ROMAPI_LOADADDR=0x88000000

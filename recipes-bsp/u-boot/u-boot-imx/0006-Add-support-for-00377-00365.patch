@@ -9,14 +9,14 @@ Upstream-Status: Inappropriate [Cargt board specific]
  arch/arm/dts/imx8mp-cargt-00377-00365.dts     | 165 +++++++++++++++++-
  arch/arm/mach-imx/spl.c                       |   7 -
  arch/arm/mach-imx/spl_imx_romapi.c            |  24 +--
- board/cargt/imx8mp_00377/imx8mp_00377.c       |  29 +--
+ board/cargt/imx8mp_00377/imx8mp_00377.c       |  33 +--
  board/cargt/imx8mp_00377/spl.c                |  18 +-
  common/spl/spl.c                              |   6 +-
  common/spl/spl_bootrom.c                      |   1 -
  common/spl/spl_fit.c                          |  46 +----
  configs/imx8mp-cargt-00377-00365_defconfig    |   2 +-
  include/configs/imx8mp_00377.h                |  14 +-
- 11 files changed, 221 insertions(+), 115 deletions(-)
+ 11 files changed, 221 insertions(+), 119 deletions(-)
 
 diff --git a/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi b/arch/arm/dts/imx8mp-cargt-00377-00365-u-boot.dtsi
 index 30f686e0273..a794aeb2f6e 100644
@@ -455,16 +455,16 @@ index 58f6d43c82a..b1b1e5f4895 100644
  /* Not used so far */
  int board_typec_get_mode(int index)
  {
-@@ -429,34 +438,30 @@ int board_typec_get_mode(int index)
+@@ -429,34 +438,26 @@ int board_typec_get_mode(int index)
  
  int board_init(void)
  {
 -	printf("Board init\n");
- #ifdef CONFIG_DM_REGULATOR
+-#ifdef CONFIG_DM_REGULATOR
 -printf("Regulator init\n");
- 	regulators_enable_boot_on(false);
- #endif
- 
+-	regulators_enable_boot_on(false);
+-#endif
+-
  #ifdef CONFIG_USB_TCPC
 -	printf("Type-C PD init\n");
 -	setup_typec();

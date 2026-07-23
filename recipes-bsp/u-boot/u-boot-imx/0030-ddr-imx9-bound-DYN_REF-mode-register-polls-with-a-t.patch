@@ -1,0 +1,110 @@
+From 0000000000000000000000000000000000000a Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Wed, 22 Jul 2026 15:50:00 -0500
+Subject: [PATCH] ddr: imx9: bound DYN_REF mode-register polls with a timeout
+
+ddrc_mrr()/ddrc_mrs() gained new DYN_REF-related polling loops upstream
+(between 2024.04 and 2026.04) with no timeout at all:
+
+  writel(0x0, REG_DDR_SDRAM_MPR5);
+  while ((readl(REG_DDR_SDRAM_MPR5) & 0x1) == 0)
+      ;
+  ...
+  while ((readl(REG_DDR_SDRAM_MD_CNTL) & 0x80000000) == 0x80000000)
+      ;
+
+These only execute when the DDRC config enables dynamic refresh rate
+(bit 7 of REG_DDR_SDRAM_CFG_3), which cargt's boards do for at least
+one supported timing variant. If the polled condition never resolves
+for a given board/DDR part combination, the CPU spins forever with no
+timeout, no error, and no way to recover. Add a bounded poll helper
+that logs a warning and continues after ~100ms instead of hanging
+indefinitely.
+
+Upstream-Status: Pending
+---
+ drivers/ddr/imx/imx9/ddr_init.c | 33 +++++++++++++++++++++------------
+ 1 file changed, 25 insertions(+), 8 deletions(-)
+
+diff --git a/drivers/ddr/imx/imx9/ddr_init.c b/drivers/ddr/imx/imx9/ddr_init.c
+index 1111111111a..2222222222b 100644
+--- a/drivers/ddr/imx/imx9/ddr_init.c
++++ b/drivers/ddr/imx/imx9/ddr_init.c
+@@ -5,6 +5,8 @@
+
+ #include <errno.h>
+ #include <log.h>
++#include <stdio.h>
++#include <time.h>
+ #include <asm/io.h>
+ #include <asm/arch/ddr.h>
+ #include <asm/arch/clock.h>
+@@ -13,6 +15,25 @@
+ #include <linux/string.h>
+ #include <linux/bitfield.h>
+
++/*
++ * These DYN_REF mode-register polls were added upstream with no timeout.
++ * Boards whose DDRC config enables DYN_REF (bit 7 of REG_DDR_SDRAM_CFG_3)
++ * can hang forever here if the polled condition never resolves. Bound them
++ * so DDR init can proceed (with a warning) instead of hanging silently.
++ */
++static void ddrc_poll_or_warn(unsigned long reg, u32 mask, u32 expect, const char *what)
++{
++	unsigned long start = get_timer(0);
++
++	while ((readl(reg) & mask) != expect) {
++		if (get_timer(start) > 100) {
++			printf("DDRC: timeout waiting for %s (reg 0x%lx = 0x%x)\n",
++			       what, reg, readl(reg));
++			return;
++		}
++	}
++}
++
+ static unsigned int g_cdd_rr_max[4];
+ static unsigned int g_cdd_rw_max[4];
+ static unsigned int g_cdd_wr_max[4];
+@@ -316,8 +337,7 @@ u32 ddrc_mrr(u32 chip_select, u32 mode_reg_num, u32 *mode_reg_val)
+ 		/* Clear MPR_VLD so that the next MR4 read will set it */
+ 		writel(0x0, REG_DDR_SDRAM_MPR5);
+ 		/* Wait till MPR_VLD is set (MR4 read done) then immediately disable DYN_REF */
+-		while ((readl(REG_DDR_SDRAM_MPR5) & 0x1) == 0)
+-			;
++		ddrc_poll_or_warn(REG_DDR_SDRAM_MPR5, 0x1, 0x1, "MPR5 MPR_VLD set (mrr)");
+ 		/* Disable DYN_REF */
+ 		clrbits_le32(REG_DDR_SDRAM_CFG_3, BIT(7));
+
+@@ -326,8 +346,7 @@ u32 ddrc_mrr(u32 chip_select, u32 mode_reg_num, u32 *mode_reg_val)
+ 	}
+
+ 	/* Ensure DDR_SDRAM_MD_CNTL[MD_EN] is cleared before any MRR/MRS operation */
+-	while ((readl(REG_DDR_SDRAM_MD_CNTL) & 0x80000000) == 0x80000000)
+-		;
++	ddrc_poll_or_warn(REG_DDR_SDRAM_MD_CNTL, 0x80000000, 0, "MD_CNTL MD_EN clear (mrr pre)");
+
+ 	writel(0x80000000, REG_DDR_SDRAM_MD_CNTL_2);
+ 	temp = 0x80000000 | (chip_select << 28) | (mode_reg_num << 0);
+@@ -383,8 +402,7 @@ void ddrc_mrs(u32 cs_sel, u32 opcode, u32 mr)
+ 		/* Clear MPR_VLD so that the next MR4 read will set it */
+ 		writel(0x0, REG_DDR_SDRAM_MPR5);
+ 		/* Wait till MPR_VLD is set (MR4 read done) then immediately disable DYN_REF */
+-		while ((readl(REG_DDR_SDRAM_MPR5) & 0x1) == 0)
+-			;
++		ddrc_poll_or_warn(REG_DDR_SDRAM_MPR5, 0x1, 0x1, "MPR5 MPR_VLD set (mrs)");
+ 		/* Disable DYN_REF */
+ 		clrbits_le32(REG_DDR_SDRAM_CFG_3, BIT(7));
+
+@@ -393,8 +411,7 @@ void ddrc_mrs(u32 cs_sel, u32 opcode, u32 mr)
+ 	}
+
+ 	/* Ensure DDR_SDRAM_MD_CNTL[MD_EN] is cleared before any MRR/MRS operation */
+-	while ((readl(REG_DDR_SDRAM_MD_CNTL) & 0x80000000) == 0x80000000)
+-		;
++	ddrc_poll_or_warn(REG_DDR_SDRAM_MD_CNTL, 0x80000000, 0, "MD_CNTL MD_EN clear (mrs pre)");
+
+ 	regval = (cs_sel << 28) | (opcode << 6) | (mr);
+ 	writel(regval, REG_DDR_SDRAM_MD_CNTL);
+--
+2.34.1
+

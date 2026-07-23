@@ -8,8 +8,8 @@ Upstream-Status: Inappropriate [Cargt board specific]
 ---
  arch/arm64/boot/dts/freescale/Makefile        |   1 +
  .../dts/freescale/imx93-cargt-00359-00406.dts | 276 ++++++++++++
- .../boot/dts/freescale/imx93-cargt-00359.dts  | 420 ++++++++++++++++++
- 3 files changed, 697 insertions(+)
+ .../boot/dts/freescale/imx93-cargt-00359.dts  | 422 ++++++++++++++++++
+ 3 files changed, 699 insertions(+)
  create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00359-00406.dts
  create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00359.dts
 
@@ -313,7 +313,7 @@ new file mode 100644
 index 000000000000..21014eae5f9c
 --- /dev/null
 +++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00359.dts
-@@ -0,0 +1,420 @@
+@@ -0,0 +1,422 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright 2022 NXP
@@ -339,6 +339,8 @@ index 000000000000..21014eae5f9c
 +	aliases {
 +		rtc0 = &rtc_i2c;
 +		rtc1 = &bbnsm_rtc;
++		serial0 = &lpuart1;
++		serial4 = &lpuart5;
 +	};
 +
 +	reserved-memory {

@@ -5,8 +5,8 @@ Subject: [PATCH] Add support for 00359-00406.
 
 Upstream-Status: Inappropriate [Cargt board specific]
 ---
- .../dts/imx93-cargt-00359-00406-u-boot.dtsi   |  198 ++
- arch/arm/dts/imx93-cargt-00359-00406.dts      |  264 +++
+ .../dts/imx93-cargt-00359-00406-u-boot.dtsi   |  203 ++
+ arch/arm/dts/imx93-cargt-00359-00406.dts      |  258 +++
  arch/arm/dts/imx93-cargt-00359.dts            |  285 +++
  arch/arm/mach-imx/imx9/Kconfig                |    5 +
  board/cargt/imx93_00359/Kconfig               |   41 +
@@ -16,7 +16,7 @@ Upstream-Status: Inappropriate [Cargt board specific]
  .../imx93_00359/cargt_lpddr4x_2gbyte_timing.c | 2004 +++++++++++++++++
  board/cargt/imx93_00359/imx93_00359.c         |  271 +++
  board/cargt/imx93_00359/spl-cargt.c           |  401 ++++
- configs/imx93-cargt-00359-00406_defconfig     |  219 ++
+ configs/imx93-cargt-00359-00406_defconfig     |  220 ++
  include/configs/imx93_00324.h                 |   21 +-
  include/configs/imx93_00359.h                 |  183 ++
  include/configs/imx93_00363.h                 |   20 +-
@@ -39,7 +39,7 @@ new file mode 100644
 index 00000000000..579ac0e346f
 --- /dev/null
 +++ b/arch/arm/dts/imx93-cargt-00359-00406-u-boot.dtsi
-@@ -0,0 +1,198 @@
+@@ -0,0 +1,203 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright 2022 NXP
@@ -49,7 +49,8 @@ index 00000000000..579ac0e346f
 +	wdt-reboot {
 +		compatible = "wdt-reboot";
 +		wdt = <&wdog3>;
-+		u-boot,dm-spl;
++		bootph-pre-ram;
++		bootph-some-ram;
 +	};
 +
 +	aliases {
@@ -80,107 +81,116 @@ index 00000000000..579ac0e346f
 +};
 +
 +&{/soc@0} {
-+	u-boot,dm-pre-reloc;
-+	u-boot,dm-spl;
++	bootph-all;
++	bootph-pre-ram;
 +};
 +
 +&aips1 {
-+	u-boot,dm-spl;
-+	u-boot,dm-pre-reloc;
++	bootph-pre-ram;
++	bootph-all;
 +};
 +
 +&aips2 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +&aips3 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +&iomuxc {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +// &reg_usdhc2_vmmc {
 +// 	u-boot,off-on-delay-us = <20000>;
-+// 	u-boot,dm-spl;
++// 	bootph-pre-ram;
 +// };
 +
 +&pinctrl_reg_usdhc2_vmmc {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&pinctrl_uart1 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +&pinctrl_usdhc1 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&pinctrl_usdhc2_gpio {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&pinctrl_usdhc2 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&gpio1 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +&gpio2 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +&gpio3 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +&gpio4 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +&lpuart1 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +};
 +
 +&usdhc1 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&usdhc2 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +	fsl,signal-voltage-switch-extra-delay-ms = <8>;
 +};
 +
 +&lpi2c1 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +	eeprom@50 {
-+		u-boot,dm-spl;
++		bootph-pre-ram;
 +	};
 +};
 +
 +&{/soc@0/bus@44000000/i2c@44340000/pmic@25} {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&{/soc@0/bus@44000000/i2c@44340000/pmic@25/regulators} {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +/* Add an entry for the EEPROM at address 0x50 so U-Boot SPL can access it.*/
 +&{/soc@0/bus@44000000/i2c@44340000/eeprom@50} {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&pinctrl_lpi2c1 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&pinctrl_lpi2c3 {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
 +};
 +
 +&fec {
@@ -206,44 +216,39 @@ index 00000000000..579ac0e346f
 +};
 +
 +&s4muap {
-+	u-boot,dm-spl;
++	bootph-pre-ram;
++	bootph-some-ram;
 +	status = "okay";
 +};
 +
 +&clk {
-+	u-boot,dm-pre-reloc;
-+	u-boot,dm-spl;
++	bootph-all;
++	bootph-pre-ram;
 +	/delete-property/ assigned-clocks;
 +	/delete-property/ assigned-clock-rates;
 +	/delete-property/ assigned-clock-parents;
 +};
 +
 +&osc_32k {
-+	u-boot,dm-pre-reloc;
-+	u-boot,dm-spl;
++	bootph-all;
++	bootph-pre-ram;
 +};
 +
 +&osc_24m {
-+	u-boot,dm-pre-reloc;
-+	u-boot,dm-spl;
++	bootph-all;
++	bootph-pre-ram;
 +};
 +
 +&clk_ext1 {
-+	u-boot,dm-pre-reloc;
-+	u-boot,dm-spl;
-+};
-+
-+&lcdif {
-+	assigned-clocks = <&clk IMX93_CLK_MEDIA_AXI>, <&clk IMX93_CLK_MEDIA_APB>;
-+	assigned-clock-parents = <&clk IMX93_CLK_SYS_PLL_PFD1>, <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>;
-+	assigned-clock-rates = <400000000>, <133333334>;
++	bootph-all;
++	bootph-pre-ram;
 +};
 diff --git a/arch/arm/dts/imx93-cargt-00359-00406.dts b/arch/arm/dts/imx93-cargt-00359-00406.dts
 new file mode 100644
 index 00000000000..b01aee7f57a
 --- /dev/null
 +++ b/arch/arm/dts/imx93-cargt-00359-00406.dts
-@@ -0,0 +1,264 @@
+@@ -0,0 +1,258 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright 2022 NXP
@@ -315,12 +320,6 @@ index 00000000000..b01aee7f57a
 +		};
 +	};
 +};
-+
-+&lcdif {
-+	status = "okay";
-+	assigned-clock-rates = <484000000>, <121000000>, <400000000>, <133333333>;
-+};
-+
 +
 +&lpuart1 { /* console */
 +	pinctrl-names = "default";
@@ -4776,7 +4775,7 @@ index 00000000000..28fa501bc9f
 +#include <power/pca9450.h>
 +#include <power/pf0900.h>
 +#include <asm/arch/trdc.h>
-+#include "../common/imx9_eeprom.h"
++#include "../common/cargt_eeprom.h"
 +
 +/* Not defined in u-boot's power/pca9450.h; PCA9450_REG_PWRCTRL[5] per datasheet */
 +#define PCA9450_REG_PWRCTRL_TOFF_DEB 0x20
@@ -5145,7 +5144,7 @@ new file mode 100644
 index 00000000000..d867e7ea573
 --- /dev/null
 +++ b/configs/imx93-cargt-00359-00406_defconfig
-@@ -0,0 +1,219 @@
+@@ -0,0 +1,220 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_IMX9=y
 +CONFIG_TEXT_BASE=0x80200000
@@ -5167,6 +5166,7 @@ index 00000000000..d867e7ea573
 +CONFIG_SPL_SERIAL=y
 +CONFIG_SPL_DRIVERS_MISC=y
 +CONFIG_SPL_STACK=0x20519dd0
++CONFIG_SPL_HAVE_INIT_STACK=y
 +CONFIG_SPL=y
 +CONFIG_CMD_DEKBLOB=y
 +CONFIG_SPL_IMX_ROMAPI_LOADADDR=0x88000000

@@ -10,8 +10,8 @@ Upstream-Status: Inappropriate [Cargt board specific]
  ...8mp-cargt-00377-00365-glt0557201280is1.dts |  16 +
  ...mp-cargt-00377-00365-glt0557201280is1.dtsi | 120 +++++
  .../freescale/imx8mp-cargt-00377-00365.dts    | 466 +++++++++++++++++
- .../freescale/imx8mp-cargt-00377-osm-som.dts  | 493 ++++++++++++++++++
- 5 files changed, 1099 insertions(+)
+ .../freescale/imx8mp-cargt-00377-osm-som.dts  | 497 ++++++++++++++++++
+ 5 files changed, 1103 insertions(+)
  create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-glt0557201280is1.dts
  create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-glt0557201280is1.dtsi
  create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365.dts
@@ -657,7 +657,7 @@ new file mode 100644
 index 000000000000..94dfc95900bb
 --- /dev/null
 +++ b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-osm-som.dts
-@@ -0,0 +1,493 @@
+@@ -0,0 +1,497 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright 2022 NXP
@@ -845,6 +845,10 @@ index 000000000000..94dfc95900bb
 +	aliases {
 +		rtc0 = &rtc_i2c;
 +		rtc1 = &snvs_rtc;
++		serial0 = &uart1;
++		serial1 = &uart2;
++		serial2 = &uart3;
++		serial3 = &uart4;
 +	};
 +
 +	memory@40000000 {

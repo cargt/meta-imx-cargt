@@ -41,6 +41,7 @@ SRC_URI += "file://0002-Add-support-for-imx93_00363.patch \
             file://0027-imx93-cargt-Share-LPDDR4X-timing-files-across-all-i.patch \
             file://0028-configs-disable-HS400-support-in-i.MX93-Cargt-U-Boot.patch \
             file://0029-Modify-Serial-Number-output-to-be-decimal-as-well-as.patch \
+            file://0030-ddr-imx9-bound-DYN_REF-mode-register-polls-with-a-t.patch \
             "
 
 SRC_URI:remove = "file://0001-Add-Olimex-iMX8MP-SOM-EVB-IND.patch"

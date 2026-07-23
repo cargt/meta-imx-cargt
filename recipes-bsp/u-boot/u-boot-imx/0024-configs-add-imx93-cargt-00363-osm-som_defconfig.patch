@@ -7,8 +7,8 @@ Add defconfig for the OSM-L SOM variant on the 00365 carrier board.
 Selects the imx93-cargt-00363-osm-som device tree and sets
 CARGT_IMX93_00363_MIN_SDRAM_SIZE_MB=1024.
 ---
- configs/imx93-cargt-00363-osm-som_defconfig | 220 ++++++++++++++++++++
- 1 file changed, 220 insertions(+)
+ configs/imx93-cargt-00363-osm-som_defconfig | 221 +++++++++++++++++++++
+ 1 file changed, 221 insertions(+)
  create mode 100644 configs/imx93-cargt-00363-osm-som_defconfig
 
 diff --git a/configs/imx93-cargt-00363-osm-som_defconfig b/configs/imx93-cargt-00363-osm-som_defconfig
@@ -16,7 +16,7 @@ new file mode 100644
 index 00000000000..c350aef7ebc
 --- /dev/null
 +++ b/configs/imx93-cargt-00363-osm-som_defconfig
-@@ -0,0 +1,220 @@
+@@ -0,0 +1,221 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_IMX9=y
 +CONFIG_TEXT_BASE=0x80200000
@@ -38,6 +38,7 @@ index 00000000000..c350aef7ebc
 +CONFIG_SPL_SERIAL=y
 +CONFIG_SPL_DRIVERS_MISC=y
 +CONFIG_SPL_STACK=0x20519dd0
++CONFIG_SPL_HAVE_INIT_STACK=y
 +CONFIG_SPL=y
 +CONFIG_CMD_DEKBLOB=y
 +CONFIG_SPL_IMX_ROMAPI_LOADADDR=0x88000000
