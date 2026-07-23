@@ -35,10 +35,10 @@ Upstream-Status: Inappropriate [Cargt board specific]
  .../imx9x_00363_common/imx9x_00363_board.h    |   37 +
  .../imx9x_00363_common/imx9x_00363_pmic.c     |   80 +
  .../imx9x_00363_common/imx9x_00363_pmic.h     |   29 +
- configs/imx91-cargt-00363-00365_defconfig     |  200 ++
- configs/imx91-cargt-00363-osm-som_defconfig   |  198 ++
+ configs/imx91-cargt-00363-00365_defconfig     |  201 ++
+ configs/imx91-cargt-00363-osm-som_defconfig   |  199 ++
  include/configs/imx91_00363.h                 |  161 ++
- 33 files changed, 17172 insertions(+), 1 deletion(-)
+ 33 files changed, 17174 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm/dts/imx91-cargt-00363-00365-u-boot.dtsi
  create mode 100644 arch/arm/dts/imx91-cargt-00363-00365.dts
  create mode 100644 arch/arm/dts/imx91-cargt-00363-osm-som-u-boot.dtsi
@@ -16884,7 +16884,7 @@ new file mode 100644
 index 00000000000..dcb8f8ce05c
 --- /dev/null
 +++ b/configs/imx91-cargt-00363-00365_defconfig
-@@ -0,0 +1,200 @@
+@@ -0,0 +1,201 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_IMX9=y
 +CONFIG_TEXT_BASE=0x80200000
@@ -16907,6 +16907,7 @@ index 00000000000..dcb8f8ce05c
 +CONFIG_SPL_SERIAL=y
 +CONFIG_SPL_DRIVERS_MISC=y
 +CONFIG_SPL_STACK=0x204dfdd0
++CONFIG_SPL_HAVE_INIT_STACK=y
 +CONFIG_SPL=y
 +CONFIG_CMD_DEKBLOB=y
 +CONFIG_SPL_IMX_ROMAPI_LOADADDR=0x88000000
@@ -17090,7 +17091,7 @@ new file mode 100644
 index 00000000000..91738edce54
 --- /dev/null
 +++ b/configs/imx91-cargt-00363-osm-som_defconfig
-@@ -0,0 +1,198 @@
+@@ -0,0 +1,199 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_IMX9=y
 +CONFIG_TEXT_BASE=0x80200000
@@ -17111,6 +17112,7 @@ index 00000000000..91738edce54
 +CONFIG_SPL_SERIAL=y
 +CONFIG_SPL_DRIVERS_MISC=y
 +CONFIG_SPL_STACK=0x204dfdd0
++CONFIG_SPL_HAVE_INIT_STACK=y
 +CONFIG_SPL=y
 +CONFIG_CMD_DEKBLOB=y
 +CONFIG_SPL_IMX_ROMAPI_LOADADDR=0x88000000
