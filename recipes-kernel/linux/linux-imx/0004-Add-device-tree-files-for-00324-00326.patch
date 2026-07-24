@@ -11,9 +11,9 @@ Upstream-Status: Inappropriate [Cargt board specific]
  ...93-cargt-00324-00326-glt0701024600is2.dtsi | 102 +++++
  ...x93-cargt-00324-00326-glt1011280800is1.dts |  15 +
  ...93-cargt-00324-00326-glt1011280800is1.dtsi | 126 ++++++
- .../dts/freescale/imx93-cargt-00324-00326.dts | 426 ++++++++++++++++++
- .../boot/dts/freescale/imx93-cargt-00324.dtsi | 352 +++++++++++++++
- 7 files changed, 1038 insertions(+), 1 deletion(-)
+ .../dts/freescale/imx93-cargt-00324-00326.dts | 455 ++++++++++++++++++
+ .../boot/dts/freescale/imx93-cargt-00324.dtsi | 396 +++++++++++++++
+ 7 files changed, 1111 insertions(+), 1 deletion(-)
  create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00324-00326-glt0701024600is2.dts
  create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00324-00326-glt0701024600is2.dtsi
  create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00324-00326-glt1011280800is1.dts
@@ -323,7 +323,7 @@ new file mode 100644
 index 000000000000..b7eae16f0668
 --- /dev/null
 +++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00324-00326.dts
-@@ -0,0 +1,426 @@
+@@ -0,0 +1,455 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright 2022 NXP
@@ -412,6 +412,27 @@ index 000000000000..b7eae16f0668
 +		 serial0 = &lpuart1;
 +		 serial4 = &lpuart5;
 +	 };
++
++	 usdhc3_pwrseq: usdhc3_pwrseq {
++		compatible = "mmc-pwrseq-simple";
++		reset-gpios = <&pca9555 10 GPIO_ACTIVE_LOW>; /* BT_REG_ON */
++	 };
++
++	 reg_usdhc3_vmmc: regulator-usdhc3 {
++		compatible = "regulator-fixed";
++		regulator-name = "WL_REG_ON";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&pca9555 13 GPIO_ACTIVE_HIGH>;
++		/*
++		 * IW612 wifi chip needs more delay than other wifi chips to complete
++		 * the host interface initialization after power up, otherwise the
++		 * internal state of IW612 may be unstable, resulting in the failure of
++		 * the SDIO3.0 switch voltage.
++		 */
++		startup-delay-us = <20000>;
++		enable-active-high;
++	 };
 + };
 +
 + &wdog3 {
@@ -440,7 +461,9 @@ index 000000000000..b7eae16f0668
 +		 #gpio-cells = <2>;
 +		 reg = <0x20>;
 +		 interrupt-parent = <&gpio2>;
-+		 interrupts = <13 IRQ_TYPE_LEVEL_LOW>;		
++		 interrupts = <13 IRQ_TYPE_LEVEL_LOW>;
++		 interrupt-controller;
++		 #interrupt-cells = <2>;
 +	 };
 + 
 +	 adc@13 {
@@ -611,6 +634,12 @@ index 000000000000..b7eae16f0668
 +	pinctrl-0 = <&pinctrl_uart5>;
 +	fsl,uart-has-rtscts;
 +	status = "okay";
++
++	bluetooth {
++		compatible = "nxp,88w8997-bt";
++		fw-init-baudrate = <3000000>;
++		max-speed = <3000000>;
++	};
 +};
 +
 +&adc1 {
@@ -756,7 +785,7 @@ new file mode 100644
 index 000000000000..c9a85d0ba17f
 --- /dev/null
 +++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00324.dtsi
-@@ -0,0 +1,352 @@
+@@ -0,0 +1,396 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright 2022 NXP
@@ -1031,6 +1060,32 @@ index 000000000000..c9a85d0ba17f
 +	status = "okay";
 +};
 +
++&usdhc3 {
++	pinctrl-names = "default", "state_100mhz", "state_200mhz";
++	pinctrl-0 = <&pinctrl_usdhc3>, <&pinctrl_usdhc3_wlan>;
++	pinctrl-1 = <&pinctrl_usdhc3>, <&pinctrl_usdhc3_wlan>;
++	pinctrl-2 = <&pinctrl_usdhc3>, <&pinctrl_usdhc3_wlan>;
++
++	assigned-clocks = <&clk IMX93_CLK_CCM_CKO2>;
++	assigned-clock-rates = <32000>;
++
++	mmc-pwrseq = <&usdhc3_pwrseq>;
++	vmmc-supply = <&reg_usdhc3_vmmc>;
++	bus-width = <4>;
++	keep-power-in-suspend;
++	non-removable;
++	wakeup-source;
++	fsl,sdio-async-interrupt-enabled;
++	status = "okay";
++
++	wifi_wake_host {
++		compatible = "nxp,wifi-wake-host";
++		interrupt-parent = <&pca9555>;
++		interrupts = <7 IRQ_TYPE_LEVEL_LOW>;
++		interrupt-names = "host-wake";
++	};
++};
++
 +&iomuxc {
 +	pinctrl_eqos: eqosgrp {
 +		fsl,pins = <
@@ -1078,6 +1133,24 @@ index 000000000000..c9a85d0ba17f
 +		fsl,pins = <
 +			MX93_PAD_I2C2_SCL__LPI2C2_SCL			0x40000b9e
 +			MX93_PAD_I2C2_SDA__LPI2C2_SDA			0x40000b9e
++		>;
++	};
++
++	pinctrl_usdhc3: usdhc3grp {
++		fsl,pins = <
++			MX93_PAD_SD3_CLK__USDHC3_CLK			0x15fe
++			MX93_PAD_SD3_CMD__USDHC3_CMD			0x13fe
++			MX93_PAD_SD3_DATA0__USDHC3_DATA0		0x13fe
++			MX93_PAD_SD3_DATA1__USDHC3_DATA1		0x13fe
++			MX93_PAD_SD3_DATA2__USDHC3_DATA2		0x13fe
++			MX93_PAD_SD3_DATA3__USDHC3_DATA3		0x13fe
++		>;
++	};
++
++	pinctrl_usdhc3_wlan: usdhc3wlangrp {
++		fsl,pins = <
++			MX93_PAD_CCM_CLKO1__GPIO3_IO26			0x31e
++			MX93_PAD_CCM_CLKO2__CCMSRCGPCMIX_CLKO2		0x31e
 +		>;
 +	};
 +
