@@ -1,0 +1,38 @@
+# Wrynose Migration — Hardware Bring-Up Status
+
+Tracking document for the scarthgap → wrynose migration hardware validation pass.
+Last updated: 2026-07-23.
+
+## Test matrix
+
+| Platform | Kernel tested | U-Boot/imx-boot tested | Notes |
+|---|---|---|---|
+| `imx93-cargt-00324-00326` | ✅ Real HW (full `.swu`, boots to userspace, network up) | ⚠️ Built and verified (`CONFIG_SPL_HAVE_INIT_STACK` confirmed in built `.config`) — **not yet flashed/tested on hardware** | Original console-hang board |
+| `imx93-cargt-00359-00406` | ✅ Real HW (full `.swu`, boots to userspace, network up) | ✅ Real HW, eMMC flash (normal boot path) — TCPC fix built+verified in `.dtb`, **not yet reflashed/retested** | Confirmed no display/audio hardware |
+| `imx91-cargt-00363-00365` | ✅ Real HW (full `.swu`, boots to userspace, network up) | ✅ Real HW, USB/SDP boot only — **not yet tested via eMMC flash** | Confirmed no display/audio hardware; different machine from imx93 primary board despite same board ID |
+| `imx8mp-cargt-00377-00365` | ⚠️ Built and validated in build tree only — **no DUT connected yet** | ⚠️ Built and validated in build tree only — **no DUT connected yet** | Awaiting hardware connection |
+| `imx93-cargt-00363-00365` (primary) | ✅ Real HW (validated earlier, pre-dates this tracking doc) | ✅ Real HW via JTAG (this is where `CONFIG_SPL_HAVE_INIT_STACK` was originally discovered) | DSI shearing bug open, paused separately |
+
+Legend: ✅ tested on real hardware · 🔄 in progress · ⚠️ not yet hardware-tested
+
+## Issues found and resolved
+
+1. **Missing `CONFIG_SPL_HAVE_INIT_STACK` across all board defconfigs.** Without it, `_main()` uses an untrained-DRAM stack address before `board_init_f`, causing a hard SPL hang on real hardware. Found via JTAG on the primary board, confirmed missing on every other board. Fixed in all 5 in-scope boards' defconfigs (required a second pass on `imx91-cargt-00363-00365` — see orphaned-patch issue below).
+2. **Dangling `&lcdif` overrides + legacy `u-boot,dm-spl`/`u-boot,dm-pre-reloc` tags** (`00324-00326`, `00359-00406`). U-Boot's DT doesn't model `lcdif`, and only `bootph-*` tags are recognized by `fdtgrep`'s SPL-DTB pruning in 2026.04 — without the migration, the pruned SPL DTB was silently reduced to ~13 lines.
+3. **Stale `imx9_eeprom.h` include** (`00359-00406`) left behind by an eeprom-rename patch, causing implicit-declaration build errors.
+4. **Missing `IMX_BOOT_IMAGE_GUID` definition + duplicate `dm_usb_gadget_handle_interrupts()`/`regulators_enable_boot_on()`** (`imx8mp-00377-00365`) — upstream now provides both generically.
+5. **Unbounded `while()` poll on DYN_REF mode-register bits** in `ddr_init.c`, new in 2026.04 — bounded with a timeout instead (cargt's DDR config sets the bit that triggers this path).
+6. **Missing serial console/bluetooth aliases** (`00324-00326`, `00359-00406`, `imx91-00363-00365`, `imx8mp-00377-00365`). Without them, the console UART's dynamic `ttyLPx`/`ttymxcN` numbering doesn't reliably match u-boot's hardcoded `console=` bootarg — once `earlycon`'s clock is swept up by `clk: Disabling unused clocks`, the board hangs silently with no console output. Root-caused on `00324-00326` via a live hang, confirmed identical on the other three.
+7. **Missing `opencl` in `DISTRO_FEATURES`** blocked `clinfo`'s build for `imx8mp-00377-00365` (never hit before since that board's full image had never been built in this tree).
+8. **"No soundcards found" on `00324-00326`** — root-caused to a deployment gap, not a code/DT bug: `CONFIG_SND_SOC_FSL_SAI=m` (module) never had its `/lib/modules/` tree installed after a manual `Image`+`.dtb`-only file swap. Resolved by switching to full `.swu` deployment (bundles kernel+modules+rootfs correctly).
+9. **`weston.service` crash-looping on `00359-00406`** — this board has no display hardware at all (confirmed via DTS inspection + user), but `weston` is installed unconditionally distro-wide via `DISTRO_FEATURES` wayland. Masked via `SYSTEMD_AUTO_ENABLE:pn-weston-init = "disable"` in the machine conf.
+10. **U-Boot TCPC init failure on `imx93-cargt-00359-00406`** (`tcpc_init: Can't find bus` / `setup_typec: tcpc port1/port2 init failed, err=-22`). U-Boot's own DTS never modeled the PTN5110 TCPC chips or PCA9555 GPIO expander the kernel DTS has on `lpi2c3`, and board C code hardcoded `i2c_bus = 1` (aliased to the never-enabled `lpi2c2`) instead of `2` (`lpi2c3`'s real alias per `imx93.dtsi`). Added the missing `&lpi2c3` node + pinctrl groups matching the kernel DTS, and corrected the bus index. Verified via the compiled `.dtb` that `pca9555_21`/`ptn5110`/`ptn5110_2` now resolve correctly under the `i2c2` alias — not yet confirmed on real hardware.
+11. **Orphaned duplicate patch series silently absorbing a real fix.** `recipes-bsp/u-boot/u-boot-imx/` contained two entire patch series both numbered 0001-0026 — one active (referenced by `SRC_URI`), one a stale/unreferenced DDR-timing series from an earlier branch that happened to reuse the same filenames. The `CONFIG_SPL_HAVE_INIT_STACK` fix for `imx91-cargt-00363-00365` landed in the orphaned copy and was never actually built. Removed all 26 orphaned files (confirmed unreferenced anywhere in the tree first) and re-applied the fix to the real, active patch — verified via `cleansstate` rebuild that the option is now actually set in the built `.config`.
+
+## Issues found, noted for future resolution
+
+1. **`imx91-cargt-00363-00365`: EQOS ethernet fails to probe in u-boot** (`eqos_probe_resources() failed: -38`/ENOSYS), only the FEC interface comes up. U-Boot's `imx91.dtsi` correctly overrides `&eqos`/`&fec` clocks to i.MX91-specific IDs in parallel fashion, and both are registered in the shared `clk-imx93.c` driver — yet only FEC works. Likely a gap in NXP's upstream i.MX91 EQOS clock support. Non-blocking (boot completes fine, Linux fully unaffected on both interfaces). Not yet root-caused to the exact failing clock call — would need u-boot rebuilt with `DEBUG` enabled in `dwc_eth_qos_imx.c` plus a hardware retest.
+2. **`imx91-cargt-00363-00365`: `Could not read CPU frequency: -38` / `CPU: ... at 0 MHz`.** Likely a *different* root cause than #1 — the A55 core clock table entries are registered unconditionally for both imx91/imx93 (unlike the gated ENET entries). Not investigated further. Non-blocking.
+3. ~~**`imx93-cargt-00359-00406`: U-Boot's own DTS is stale/generic relative to the kernel DTS.**~~ **FIXED** (commit `c7e71ea`): added the missing `&lpi2c3` node (PCA9555 GPIO expander + PTN5110 tcpc@51/tcpc@52) and their pinctrl groups to u-boot's `imx93-cargt-00359-00406.dts`, matching the kernel DTS, and corrected `i2c_bus` from `1` (aliased to the never-enabled `lpi2c2`) to `2` (`lpi2c3`'s real alias index) in `board/cargt/imx93_00359/imx93_00359.c`. Verified via cleansstate rebuild that the compiled `.dtb` correctly resolves `pca9555_21`/`ptn5110`/`ptn5110_2` under the `i2c2` alias. **Not yet confirmed on real hardware** — still shows `Could not read CPU frequency: -2` / `at 0 MHz` (separate, not investigated) and a different `usdhc2` microSD pinout than the kernel DTS (not yet assessed — worth checking whether this same staleness pattern exists on the other boards' u-boot DTS too).
+4. **`imx93-cargt-00363-00365` (primary board): DSI shearing bug** — display-related, paused in an earlier session, not revisited during this pass.
+5. **`imx93-cargt-00324-00326`: cosmetic `fw_devlink` "Fixed dependency cycle(s)" warnings** (USB Type-C `tcpc@51`/`tcpc@52`, and the LVDS display chain) — everything downstream still binds/works, flagged as lower-severity DT modeling cleanup, not investigated further.
