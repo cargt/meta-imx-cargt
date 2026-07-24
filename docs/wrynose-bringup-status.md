@@ -1,7 +1,7 @@
 # Wrynose Migration — Hardware Bring-Up Status
 
 Tracking document for the scarthgap → wrynose migration hardware validation pass.
-Last updated: 2026-07-23.
+Last updated: 2026-07-24.
 
 ## Test matrix
 
@@ -9,7 +9,7 @@ Last updated: 2026-07-23.
 |---|---|---|---|
 | `imx93-cargt-00324-00326` | ✅ Real HW (full `.swu`, boots to userspace, network up) | ⚠️ Built and verified (`CONFIG_SPL_HAVE_INIT_STACK` confirmed in built `.config`) — **not yet flashed/tested on hardware** | Original console-hang board |
 | `imx93-cargt-00359-00406` | ✅ Real HW (full `.swu`, boots to userspace, network up) | ✅ Real HW, eMMC flash (normal boot path) — TCPC fix built+verified in `.dtb`, **not yet reflashed/retested** | Confirmed no display/audio hardware |
-| `imx91-cargt-00363-00365` | ✅ Real HW (full `.swu`, boots to userspace, network up) | ✅ Real HW, USB/SDP boot only — **not yet tested via eMMC flash** | Confirmed no display/audio hardware; different machine from imx93 primary board despite same board ID |
+| `imx91-cargt-00363-00365` | ✅ Real HW (full `.swu`, boots to userspace, network up) | ✅ Real HW, eMMC flash (production boot path) confirmed | Confirmed no display/audio hardware; different machine from imx93 primary board despite same board ID |
 | `imx8mp-cargt-00377-00365` | ⚠️ Built and validated in build tree only — **no DUT connected yet** | ⚠️ Built and validated in build tree only — **no DUT connected yet** | Awaiting hardware connection |
 | `imx93-cargt-00363-00365` (primary) | ✅ Real HW (validated earlier, pre-dates this tracking doc) | ✅ Real HW via JTAG (this is where `CONFIG_SPL_HAVE_INIT_STACK` was originally discovered) | DSI shearing bug open, paused separately |
 
@@ -27,7 +27,7 @@ Legend: ✅ tested on real hardware · 🔄 in progress · ⚠️ not yet hardwa
 8. **"No soundcards found" on `00324-00326`** — root-caused to a deployment gap, not a code/DT bug: `CONFIG_SND_SOC_FSL_SAI=m` (module) never had its `/lib/modules/` tree installed after a manual `Image`+`.dtb`-only file swap. Resolved by switching to full `.swu` deployment (bundles kernel+modules+rootfs correctly).
 9. **`weston.service` crash-looping on `00359-00406`** — this board has no display hardware at all (confirmed via DTS inspection + user), but `weston` is installed unconditionally distro-wide via `DISTRO_FEATURES` wayland. Masked via `SYSTEMD_AUTO_ENABLE:pn-weston-init = "disable"` in the machine conf.
 10. **U-Boot TCPC init failure on `imx93-cargt-00359-00406`** (`tcpc_init: Can't find bus` / `setup_typec: tcpc port1/port2 init failed, err=-22`). U-Boot's own DTS never modeled the PTN5110 TCPC chips or PCA9555 GPIO expander the kernel DTS has on `lpi2c3`, and board C code hardcoded `i2c_bus = 1` (aliased to the never-enabled `lpi2c2`) instead of `2` (`lpi2c3`'s real alias per `imx93.dtsi`). Added the missing `&lpi2c3` node + pinctrl groups matching the kernel DTS, and corrected the bus index. Verified via the compiled `.dtb` that `pca9555_21`/`ptn5110`/`ptn5110_2` now resolve correctly under the `i2c2` alias — not yet confirmed on real hardware.
-11. **Orphaned duplicate patch series silently absorbing a real fix.** `recipes-bsp/u-boot/u-boot-imx/` contained two entire patch series both numbered 0001-0026 — one active (referenced by `SRC_URI`), one a stale/unreferenced DDR-timing series from an earlier branch that happened to reuse the same filenames. The `CONFIG_SPL_HAVE_INIT_STACK` fix for `imx91-cargt-00363-00365` landed in the orphaned copy and was never actually built. Removed all 26 orphaned files (confirmed unreferenced anywhere in the tree first) and re-applied the fix to the real, active patch — verified via `cleansstate` rebuild that the option is now actually set in the built `.config`.
+11. **Orphaned duplicate patch series silently absorbing a real fix.** `recipes-bsp/u-boot/u-boot-imx/` contained two entire patch series both numbered 0001-0026 — one active (referenced by `SRC_URI`), one a stale/unreferenced DDR-timing series from an earlier branch that happened to reuse the same filenames. The `CONFIG_SPL_HAVE_INIT_STACK` fix for `imx91-cargt-00363-00365` landed in the orphaned copy and was never actually built. Removed all 26 orphaned files (confirmed unreferenced anywhere in the tree first) and re-applied the fix to the real, active patch — verified via `cleansstate` rebuild that the option is now actually set in the built `.config`, and now confirmed via a full eMMC flash boot on real hardware (clean boot, `mmcpart=1`, no failed systemd units, both eth0/eth1 register without error in Linux).
 
 ## Issues found, noted for future resolution
 
