@@ -6,8 +6,8 @@ After=nxp-wifi.service
 [Service]
 Type=oneshot
 ExecStartPre=/usr/bin/env modprobe btnxpuart
-ExecStart=/usr/bin/sleep 3
-ExecStartPost=/usr/bin/hciconfig hci0 up
+ExecStart=/bin/sh -c 'for i in $(seq 1 30); do /usr/bin/hciconfig hci0 up && exit 0; sleep 1; done; exit 1'
+RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
