@@ -1,0 +1,243 @@
+From 1d3b18e8cfbf555782d273a857ce2d615b67dd82 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Fri, 24 Jul 2026 11:39:19 -0500
+Subject: [PATCH 3/4] board: cargt: common: add EEPROM dram_rank write/repair
+ support
+
+Adds cargt_eeprom_write_dram_rank() and a "cargt_eeprom" U-Boot
+command so a unit's DRAM rank/chip-select field can be corrected in
+the field (mis-programmed at manufacturing, or a struct_ver bump for
+older EEPROM layouts) without needing a full reprovisioning flow:
+
+  cargt_eeprom read           - print production info
+  cargt_eeprom setrank <1|2>  - patch the rank byte, recompute CRC32,
+                                 write back, and verify by re-reading
+                                 over I2C
+
+Only the two small fields that actually change (the rank byte and
+the CRC32) are written, each as its own I2C transaction, rather than
+rewriting the whole struct in one shot - a multi-byte write spanning
+the EEPROM's physical page boundary can wrap and corrupt data on many
+I2C EEPROM parts, and neither field is wide enough to cross a page
+boundary on any page size in common use (8 bytes or larger). Refuses
+to touch a blank/invalid EEPROM, since that belongs to the normal
+provisioning flow rather than a field repair.
+
+Also fixes cargt_eeprom_get_dram_rank()'s struct_ver < 2 default:
+every unit built before the rank field existed used 2-rank DRAM, so a
+valid older-format EEPROM must be assumed rank 2, not the rank-1
+fail-safe used for blank/invalid EEPROM - otherwise already-fielded
+2-rank units would be misidentified as rank 1 the moment they ran
+this firmware.
+
+Validated on hardware: used cargt_eeprom setrank to correct a
+deliberately mis-provisioned Micron 00377 unit's rank field from 1 to
+2, confirmed the corrected value read back and the normal DDR
+dispatch then loaded the correct 2-rank timing directly.
+
+Signed-off-by: Tim Carney <tim.carney@cargt.com>
+---
+ board/cargt/common/cargt_eeprom.c | 147 +++++++++++++++++++++++++++++-
+ board/cargt/common/cargt_eeprom.h |   6 +-
+ 2 files changed, 148 insertions(+), 5 deletions(-)
+
+diff --git a/board/cargt/common/cargt_eeprom.c b/board/cargt/common/cargt_eeprom.c
+index 5a622995be8..22e016c0c7d 100644
+--- a/board/cargt/common/cargt_eeprom.c
++++ b/board/cargt/common/cargt_eeprom.c
+@@ -6,6 +6,8 @@
+ #include <command.h>
+ #include <dm.h>
+ #include <i2c.h>
++#include <vsprintf.h>
++#include <linux/delay.h>
+ #include <asm/io.h>
+ #include <cpu_func.h>
+ #include <u-boot/crc.h>
+@@ -112,15 +114,95 @@ int cargt_eeprom_get_cpn_string(struct cargt_eeprom *ep, char *cpn_buf, size_t b
+ 
+ uint8_t cargt_eeprom_get_dram_rank(struct cargt_eeprom *ep)
+ {
+-	/* Default to rank 1 when EEPROM is missing or older version */
++	/*
++	 * Blank/invalid EEPROM: fail-safe for unprovisioned units, which are
++	 * current production populated with 1-rank DRAM.
++	 */
+ 	if (!cargt_eeprom_is_valid(ep))
+ 		return 1;
+ 
+-	/* struct_ver >= 2: reserved[0] holds dram_rank; fall back to 1 */
++	/* struct_ver >= 2: reserved[0] holds dram_rank; fall back to the
++	 * legacy 2-rank default if it was never populated. */
+ 	if (ep->struct_ver >= 2)
+-		return ep->reserved[0] ? ep->reserved[0] : 1;
++		return ep->reserved[0] ? ep->reserved[0] : 2;
++
++	/*
++	 * struct_ver < 2 predates the rank field. Every unit produced before
++	 * this field existed was built with 2-rank DRAM, so a valid
++	 * older-format EEPROM must be assumed rank 2, NOT the rank-1
++	 * fail-safe above - otherwise already-fielded 2-rank units would be
++	 * misidentified as 1-rank the moment they run this firmware.
++	 */
++	return 2;
++}
+ 
+-	return 1;
++/*
++ * Corrects the rank/chip-select field of an already-provisioned EEPROM
++ * (mis-programmed at manufacturing, or intentionally set wrong for bench
++ * testing) and recomputes/rewrites the CRC so the corrected contents pass
++ * cargt_eeprom_is_valid() again. Refuses to touch a blank/invalid EEPROM -
++ * that case belongs to the normal provisioning flow, not a field repair.
++ *
++ * Writes only the two small fields that actually change (rank byte, and
++ * the CRC), each within a single I2C transaction, rather than rewriting
++ * the whole struct in one shot - a multi-byte write spanning the EEPROM's
++ * physical page boundary can wrap and corrupt data on many I2C EEPROM
++ * parts, and neither of these fields is wide enough to cross a page on
++ * any EEPROM page size in common use (8 bytes or larger).
++ */
++int cargt_eeprom_write_dram_rank(struct cargt_eeprom *ep, uint8_t rank)
++{
++	struct udevice *dev;
++	u32 crc, crc_be;
++	int ret;
++
++	if (!cargt_eeprom_is_valid(ep)) {
++		printf("%s: refusing to modify a blank/invalid EEPROM - use the"
++		       " normal provisioning flow instead\n", __func__);
++		return -EINVAL;
++	}
++
++	ret = cargt_eeprom_get_dev(&dev);
++	if (ret)
++		return ret;
++
++	if (ep->struct_ver < 2) {
++		u8 new_ver = 2;
++
++		printf("%s: bumping struct_ver from %u to 2 so the rank field"
++		       " takes effect\n", __func__, ep->struct_ver);
++		ret = dm_i2c_write(dev, offsetof(struct cargt_eeprom, struct_ver),
++				    &new_ver, sizeof(new_ver));
++		if (ret) {
++			printf("%s: struct_ver write failed, ret=%d\n", __func__, ret);
++			return ret;
++		}
++		ep->struct_ver = new_ver;
++		mdelay(10);
++	}
++
++	ep->reserved[0] = rank;
++	ret = dm_i2c_write(dev, offsetof(struct cargt_eeprom, reserved[0]),
++			    &rank, sizeof(rank));
++	if (ret) {
++		printf("%s: rank byte write failed, ret=%d\n", __func__, ret);
++		return ret;
++	}
++	mdelay(10);
++
++	crc = crc32(0, (void *)ep, offsetof(struct cargt_eeprom, crc32));
++	crc_be = cpu_to_be32(crc);
++	ret = dm_i2c_write(dev, offsetof(struct cargt_eeprom, crc32),
++			    (u8 *)&crc_be, sizeof(crc_be));
++	if (ret) {
++		printf("%s: crc32 write failed, ret=%d\n", __func__, ret);
++		return ret;
++	}
++	ep->crc32 = crc_be;
++	mdelay(10);
++
++	printf("%s: wrote dram_rank=%u, new CRC32=0x%08x\n", __func__, rank, crc);
++	return 0;
+ }
+ 
+ void cargt_eeprom_print_prod_info(struct cargt_eeprom *ep)
+@@ -174,3 +256,60 @@ int cargt_eeprom_is_valid(struct cargt_eeprom *ep)
+ 
+ 	return 1;
+ }
++
++static int do_cargt_eeprom(struct cmd_tbl *cmdtp, int flag, int argc, char *const argv[])
++{
++	struct cargt_eeprom ep;
++	int ret;
++
++	if (argc < 2)
++		return CMD_RET_USAGE;
++
++	ret = cargt_eeprom_read(&ep);
++	if (ret) {
++		printf("Failed to read EEPROM (ret=%d)\n", ret);
++		return CMD_RET_FAILURE;
++	}
++
++	if (!strcmp(argv[1], "read")) {
++		cargt_eeprom_print_prod_info(&ep);
++		return CMD_RET_SUCCESS;
++	}
++
++	if (!strcmp(argv[1], "setrank")) {
++		unsigned long rank;
++
++		if (argc < 3)
++			return CMD_RET_USAGE;
++
++		rank = simple_strtoul(argv[2], NULL, 10);
++		if (rank == 0 || rank > 2) {
++			printf("rank must be 1 or 2\n");
++			return CMD_RET_USAGE;
++		}
++
++		ret = cargt_eeprom_write_dram_rank(&ep, (uint8_t)rank);
++		if (ret)
++			return CMD_RET_FAILURE;
++
++		/* Read back over I2C (not just the in-memory copy) to prove
++		 * the write and the recomputed CRC actually landed correctly. */
++		ret = cargt_eeprom_read(&ep);
++		if (ret || !cargt_eeprom_is_valid(&ep)) {
++			printf("Read-back validation FAILED after write\n");
++			return CMD_RET_FAILURE;
++		}
++		cargt_eeprom_print_prod_info(&ep);
++		return CMD_RET_SUCCESS;
++	}
++
++	return CMD_RET_USAGE;
++}
++
++U_BOOT_CMD(
++	cargt_eeprom, 3, 0, do_cargt_eeprom,
++	"Cargt EEPROM inspect/repair utility",
++	"read              - print EEPROM production info\n"
++	"cargt_eeprom setrank <1|2> - set DRAM rank field, recompute CRC,\n"
++	"                    write back, and verify by re-reading over I2C"
++);
+diff --git a/board/cargt/common/cargt_eeprom.h b/board/cargt/common/cargt_eeprom.h
+index e1b7ecc48c3..6b5df99c72f 100644
+--- a/board/cargt/common/cargt_eeprom.h
++++ b/board/cargt/common/cargt_eeprom.h
+@@ -58,7 +58,10 @@ struct __packed cargt_eeprom
+ 	u8 date[9];				/* 24 - build date YYYYMMDD (null terminated) */
+ 	u16 dramsize_mbytes;	/* 33 - DRAM size in MBytes */
+ 	u16 dramspeed_mts;		/* 35 - DRAM speed in MT/s  */
+-	u8 reserved[7];			/* 37 - reserved */
++	u8 reserved[7];			/* 37 - reserved. NOTE: reserved[0] is used as
++					 * the DRAM rank/chip-select count by
++					 * cargt_eeprom_get_dram_rank() when
++					 * struct_ver >= 2 - do not repurpose it. */
+ 	u32 crc32;				/* 44 - CRC32 of this structure */
+ };
+ 
+@@ -74,5 +77,6 @@ int cargt_eeprom_get_cpn_string(struct cargt_eeprom *ep, char *cpn_buf, size_t b
+ uint16_t cargt_eeprom_get_dram_size_mb(struct cargt_eeprom *ep);
+ uint16_t cargt_eeprom_get_dram_speed_mts(struct cargt_eeprom *ep);
+ uint8_t cargt_eeprom_get_dram_rank(struct cargt_eeprom *ep);
++int cargt_eeprom_write_dram_rank(struct cargt_eeprom *ep, uint8_t rank);
+ 
+ #endif /* _CARGT_EEPROM_H_ */
+-- 
+2.34.1
+

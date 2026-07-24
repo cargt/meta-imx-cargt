@@ -1,0 +1,44 @@
+From cf9e2d04a9eeb3f2663d38bdc60b84320577fbdd Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Fri, 24 Jul 2026 11:38:49 -0500
+Subject: [PATCH 2/4] configs: imx8mp_00377: remove hardcoded FEC PHY address
+ override
+
+CFG_FEC_MXC_PHYADDR was unconditionally forcing PHY address 1
+regardless of what the devicetree said, fighting the 00365 carrier's
+MDIO-strapping devicetree fix (commit 77d34d6f6df) which correctly
+resolves each PHY's address from its "reg" property. Removing this
+leftover macro (imx91_00363.h/imx93_00363.h never had it) lets
+fec_mxc.c's device_get_phy_addr() use the devicetree value as
+intended.
+
+Confirmed on hardware: both eth0/eth1 now register with no PHY errors.
+
+Signed-off-by: Tim Carney <tim.carney@cargt.com>
+---
+ include/configs/imx8mp_00377.h | 9 +++++++--
+ 1 file changed, 7 insertions(+), 2 deletions(-)
+
+diff --git a/include/configs/imx8mp_00377.h b/include/configs/imx8mp_00377.h
+index cba05930f24..0ede2bbba7d 100644
+--- a/include/configs/imx8mp_00377.h
++++ b/include/configs/imx8mp_00377.h
+@@ -14,8 +14,13 @@
+ #define CFG_SYS_UBOOT_BASE	(QSPI0_AMBA_BASE + CONFIG_SYS_MMCSD_RAW_MODE_U_BOOT_SECTOR * 512)
+ 
+ #if defined(CONFIG_CMD_NET)
+-#define CFG_FEC_MXC_PHYADDR          1
+-
++/*
++ * No hardcoded CFG_FEC_MXC_PHYADDR here - the PHY address comes from the
++ * devicetree's "reg" property (see fec_mxc.c:device_get_phy_addr()), same
++ * as imx91_00363.h/imx93_00363.h. A hardcoded override here previously
++ * fought the 00365 carrier's MDIO-strapping DT fix (commit 77d34d6f6df)
++ * and always forced address 1 regardless of what the DT said.
++ */
+ #define PHY_ANEG_TIMEOUT 20000
+ 
+ #endif
+-- 
+2.34.1
+

@@ -1,0 +1,209 @@
+From 089a8fd7115a593bb9522b37996d6ea229af83d7 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Fri, 24 Jul 2026 11:38:41 -0500
+Subject: [PATCH 1/4] board: cargt: imx8mp_00377: fix I2C2/USB-C bring-up bugs
+ on 00365 carrier
+
+Bench validation on new-batch 00377/00365 boards surfaced several
+copy/paste bugs inherited from the imx8mp_evk.c reference this board
+was adapted from:
+
+- CONFIG_USB_TCPC ifdef/else branches were inverted: the real TCPC
+  port/USB init code was compiled only when CONFIG_USB_TCPC was
+  *disabled*, and a "not implemented" stub compiled in when it was
+  *enabled*. This silently disabled all TCPC/USB-C handling.
+
+- GPIO expander lookup used "gpio@21_4" (a second PCA9555 at I2C
+  address 0x21, present on the EVK reference) instead of "gpio@20_4"
+  (the only PCA9555 actually populated on the 00365 carrier, at
+  0x20), breaking the SS-mux select GPIO.
+
+- setup_pd_switch()/pd_switch_snk_enable() targeted a downstream
+  USB-C power-path/load-switch IC at I2C1 0x73 that the EVK carrier
+  populates but the 00365 carrier does not. Every boot logged
+  "setup_pd_switch: Can't find device id=0x73" probing a chip that
+  was never going to be there. Removed along with the
+  switch_setup_func wireup, since neither I2C bus on this board has
+  such a device in its devicetree.
+
+- board_usb_init()'s USB_INIT_DEVICE path returned early when
+  tcpc_setup_ufp_mode() failed to reach a confirmed CC/PD sink state,
+  which blocked DWC3 gadget bring-up (and therefore fastboot/uuu
+  flashing) entirely. CC/PD negotiation only matters for correct
+  SuperSpeed lane orientation on a real end-user connection; a
+  bench/lab USB cable in fastboot mode only needs plain USB2, so the
+  DWC3 gadget now still comes up with a warning instead of failing
+  the whole USB_INIT_DEVICE path.
+
+Confirmed on real Kingston and Micron-populated 00377/00365 hardware:
+TCPC now reads back correct Vendor/Product ID on both ports, the
+0x73 probe no longer appears, and fastboot/uuu flashing works over a
+bench USB connection without a confirmed CC/PD sink state.
+
+Signed-off-by: Tim Carney <tim.carney@cargt.com>
+---
+ board/cargt/imx8mp_00377/imx8mp_00377.c | 95 +++++++------------------
+ 1 file changed, 24 insertions(+), 71 deletions(-)
+
+diff --git a/board/cargt/imx8mp_00377/imx8mp_00377.c b/board/cargt/imx8mp_00377/imx8mp_00377.c
+index b1b1e5f4895..cb5a3ebb22f 100644
+--- a/board/cargt/imx8mp_00377/imx8mp_00377.c
++++ b/board/cargt/imx8mp_00377/imx8mp_00377.c
+@@ -128,64 +128,19 @@ int ft_board_setup(void *blob, struct bd_info *bd)
+ #endif
+ 
+ #ifdef CONFIG_USB_TCPC
+-/* USB_TCPC is not implemented in U-Boot for 00377 yet */
+-#else
+ struct tcpc_port port1;
+ struct tcpc_port port2;
+ 
+-static int setup_pd_switch(uint8_t i2c_bus, uint8_t addr)
+-{
+-	struct udevice *bus;
+-	struct udevice *i2c_dev = NULL;
+-	int ret;
+-	uint8_t valb;
+-
+-	ret = uclass_get_device_by_seq(UCLASS_I2C, i2c_bus, &bus);
+-	if (ret) {
+-		printf("%s: Can't find bus\n", __func__);
+-		return -EINVAL;
+-	}
+-
+-	ret = dm_i2c_probe(bus, addr, 0, &i2c_dev);
+-	if (ret) {
+-		printf("%s: Can't find device id=0x%x\n", __func__, addr);
+-		return -ENODEV;
+-	}
+-
+-	ret = dm_i2c_read(i2c_dev, 0xB, &valb, 1);
+-	if (ret) {
+-		printf("%s dm_i2c_read failed, err %d\n", __func__, ret);
+-		return -EIO;
+-	}
+-	valb |= 0x4; /* Set DB_EXIT to exit dead battery mode */
+-	ret = dm_i2c_write(i2c_dev, 0xB, (const uint8_t *)&valb, 1);
+-	if (ret) {
+-		printf("%s dm_i2c_write failed, err %d\n", __func__, ret);
+-		return -EIO;
+-	}
+-
+-	/* Set OVP threshold to 23V */
+-	valb = 0x6;
+-	ret = dm_i2c_write(i2c_dev, 0x8, (const uint8_t *)&valb, 1);
+-	if (ret) {
+-		printf("%s dm_i2c_write failed, err %d\n", __func__, ret);
+-		return -EIO;
+-	}
+-
+-	return 0;
+-}
+-
+-int pd_switch_snk_enable(struct tcpc_port *port)
+-{
+-	if (port == &port1) {
+-		debug("Setup pd switch on port 1\n");
+-		return setup_pd_switch(0, 0x73);
+-	} else {
+-		return -EINVAL;
+-	}
+-}
+-
+-/* Port2 is the power supply, port 1 does not support power */
++/*
++ * Port2 is the power supply, port 1 does not support power.
++ *
++ * Note: unlike the imx8mp_evk.c reference this is adapted from, the
++ * Cargt 00365 carrier board does not populate a downstream USB-C
++ * power-path/load-switch IC (the EVK's setup_pd_switch()/
++ * pd_switch_snk_enable() target). Neither I2C1 nor I2C2 has such a
++ * device in this board's device tree, so that EVK-specific hookup is
++ * intentionally omitted here.
++ */
+ struct tcpc_port_config port1_config = {
+ 	.i2c_bus = 1, /*i2c2*/
+ 	.addr = 0x51,
+@@ -194,7 +149,6 @@ struct tcpc_port_config port1_config = {
+ 	.max_snk_ma = 3000,
+ 	.max_snk_mw = 45000,
+ 	.op_snk_mv = 15000,
+-	.switch_setup_func = &pd_switch_snk_enable,
+ 	.disable_pd = true,
+ };
+ 
+@@ -258,9 +212,9 @@ static int setup_typec(void)
+ 	gpio_request(USB_TYPEC_EN, "typec_en");
+ 	gpio_direction_output(USB_TYPEC_EN, 0);
+ 
+-	ret = dm_gpio_lookup_name("gpio@21_4", &typec_sel_desc);
++	ret = dm_gpio_lookup_name("gpio@20_4", &typec_sel_desc);
+ 	if (ret) {
+-		printf("%s lookup gpio@21_4 failed ret = %d\n", __func__, ret);
++		printf("%s lookup gpio@20_4 failed ret = %d\n", __func__, ret);
+ 		return -ENODEV;
+ 	}
+ 
+@@ -371,18 +325,24 @@ int board_usb_init(int index, enum usb_init_type init)
+ 	if (index == 0 && init == USB_INIT_DEVICE) {
+ 		imx8m_usb_power(index, true);
+ #ifdef CONFIG_USB_TCPC
+-printf("USB_TCPC is not implemented in U-Boot for 00377 yet\n");
+-#else
+ 		ret = tcpc_setup_ufp_mode(&port1);
+ 		if (ret)
+-			return ret;
++			/*
++			 * Don't fail device-mode bring-up just because CC/PD
++			 * negotiation didn't land in a confirmed sink state.
++			 * That negotiation only matters for correct SuperSpeed
++			 * lane orientation on a real end-user connection;
++			 * fastboot/mfgtools only need plain USB2, so still
++			 * bring up the DWC3 gadget rather than blocking
++			 * flashing over a bench/lab cable.
++			 */
++			printf("%s: tcpc_setup_ufp_mode failed (%d), continuing without confirmed CC/PD sink state\n",
++			       __func__, ret);
+ #endif
+ 		dwc3_nxp_usb_phy_init(&dwc3_device_data);
+ 		return dwc3_uboot_init(&dwc3_device_data);
+ 	} else if (index == 0 && init == USB_INIT_HOST) {
+ #ifdef CONFIG_USB_TCPC
+-printf("USB_TCPC is not implemented in U-Boot for 00377 yet\n");
+-#else
+ 		ret = tcpc_setup_dfp_mode(&port1);
+ #endif
+ 		return ret;
+@@ -400,8 +360,6 @@ int board_usb_cleanup(int index, enum usb_init_type init)
+ 		imx8m_usb_power(index, false);
+ 	} else if (index == 0 && init == USB_INIT_HOST) {
+ #ifdef CONFIG_USB_TCPC
+-printf("USB_TCPC is not implemented in U-Boot for 00377 yet\n");
+-#else
+ 		ret = tcpc_disable_src_vbus(&port1);
+ #endif
+ 	}
+@@ -410,8 +368,6 @@ printf("USB_TCPC is not implemented in U-Boot for 00377 yet\n");
+ }
+ 
+ #ifdef CONFIG_USB_TCPC
+-/* USB_TCPC is not implemented in U-Boot for 00377 yet */
+-#else
+ /* Not used so far */
+ int board_typec_get_mode(int index)
+ {
+@@ -443,10 +399,7 @@ int board_init(void)
+ #endif
+ 
+ #ifdef CONFIG_USB_TCPC
+-printf("***************************************************\n");
+-printf("USB_TCPC is not implemented in U-Boot for 00377 yet\n");
+-printf("***************************************************\n");
+-	// setup_typec();
++	setup_typec();
+ #endif
+ 
+ #ifdef CONFIG_NAND_MXS
+-- 
+2.34.1
+

@@ -41,6 +41,10 @@ SRC_URI += "file://0002-Add-support-for-imx93_00363.patch \
             file://0027-imx93-cargt-Share-LPDDR4X-timing-files-across-all-i.patch \
             file://0028-configs-disable-HS400-support-in-i.MX93-Cargt-U-Boot.patch \
             file://0029-Modify-Serial-Number-output-to-be-decimal-as-well-as.patch \
+            file://0030-board-cargt-imx8mp_00377-fix-I2C2-USB-C-bring-up-bug.patch \
+            file://0031-configs-imx8mp_00377-remove-hardcoded-FEC-PHY-addres.patch \
+            file://0032-board-cargt-common-add-EEPROM-dram_rank-write-repair.patch \
+            file://0033-board-cargt-imx8mp_00377-vendor-neutral-DDR-dispatch.patch \
             "
 
 SRC_URI:remove = "file://0001-Add-Olimex-iMX8MP-SOM-EVB-IND.patch"
