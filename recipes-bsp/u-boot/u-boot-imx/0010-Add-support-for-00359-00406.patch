@@ -6,7 +6,7 @@ Subject: [PATCH] Add support for 00359-00406.
 Upstream-Status: Inappropriate [Cargt board specific]
 ---
  .../dts/imx93-cargt-00359-00406-u-boot.dtsi   |  203 ++
- arch/arm/dts/imx93-cargt-00359-00406.dts      |  258 +++
+ arch/arm/dts/imx93-cargt-00359-00406.dts      |  316 +++
  arch/arm/dts/imx93-cargt-00359.dts            |  285 +++
  arch/arm/mach-imx/imx9/Kconfig                |    5 +
  board/cargt/imx93_00359/Kconfig               |   41 +
@@ -20,7 +20,7 @@ Upstream-Status: Inappropriate [Cargt board specific]
  include/configs/imx93_00324.h                 |   21 +-
  include/configs/imx93_00359.h                 |  183 ++
  include/configs/imx93_00363.h                 |   20 +-
- 15 files changed, 5462 insertions(+), 15 deletions(-)
+ 15 files changed, 5520 insertions(+), 15 deletions(-)
  create mode 100644 arch/arm/dts/imx93-cargt-00359-00406-u-boot.dtsi
  create mode 100644 arch/arm/dts/imx93-cargt-00359-00406.dts
  create mode 100644 arch/arm/dts/imx93-cargt-00359.dts
@@ -248,7 +248,7 @@ new file mode 100644
 index 00000000000..b01aee7f57a
 --- /dev/null
 +++ b/arch/arm/dts/imx93-cargt-00359-00406.dts
-@@ -0,0 +1,258 @@
+@@ -0,0 +1,316 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright 2022 NXP
@@ -375,6 +375,46 @@ index 00000000000..b01aee7f57a
 +	status = "disabled";
 +};
 +
++&lpi2c3 {
++	#address-cells = <1>;
++	#size-cells = <0>;
++	clock-frequency = <100000>;
++	pinctrl-names = "default", "sleep";
++	pinctrl-0 = <&pinctrl_lpi2c3>;
++	pinctrl-1 = <&pinctrl_lpi2c3>;
++	status = "okay";
++
++	pca9555_21: pca9555@21 {
++		compatible = "nxp,pca9555";
++		pinctrl-0 = <&pinctrl_pca21>;
++		gpio-controller;
++		#gpio-cells = <2>;
++		reg = <0x21>;
++		interrupt-parent = <&gpio1>;
++		interrupts = <10 IRQ_TYPE_LEVEL_LOW>;
++	};
++
++	ptn5110: tcpc@51 {
++		compatible = "nxp,ptn5110";
++		reg = <0x51>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_ptn5110_51>;
++		interrupt-parent = <&gpio2>;
++		interrupts = <19 IRQ_TYPE_LEVEL_LOW>;
++		status = "okay";
++	};
++
++	ptn5110_2: tcpc@52 {
++		compatible = "nxp,ptn5110";
++		reg = <0x52>;
++		pinctrl-names = "default";
++		pinctrl-0 = <&pinctrl_ptn5110_52>;
++		interrupt-parent = <&gpio2>;
++		interrupts = <22 IRQ_TYPE_LEVEL_LOW>;
++		status = "okay";
++	};
++};
++
 +
 +
 +&iomuxc {
@@ -433,6 +473,24 @@ index 00000000000..b01aee7f57a
 +		fsl,pins = <
 +			MX93_PAD_GPIO_IO28__LPI2C3_SDA			0x40000b9e
 +			MX93_PAD_GPIO_IO29__LPI2C3_SCL			0x40000b9e
++		>;
++	};
++
++	pinctrl_pca21: pca21grp {
++		fsl,pins = <
++			MX93_PAD_PDM_BIT_STREAM1__GPIO1_IO10	0x31e
++		>;
++	};
++
++	pinctrl_ptn5110_51: ptn5110_51grp {
++		fsl,pins = <
++			MX93_PAD_GPIO_IO19__GPIO2_IO19		0x31e
++		>;
++	};
++
++	pinctrl_ptn5110_52: ptn5110_52grp {
++		fsl,pins = <
++			MX93_PAD_GPIO_IO22__GPIO2_IO22		0x31e
 +		>;
 +	};
 +
@@ -4527,7 +4585,7 @@ index 00000000000..6178e53473f
 +struct tcpc_port port2;
 +
 +struct tcpc_port_config port1_config = {
-+	.i2c_bus = 1, /*i2c2*/
++	.i2c_bus = 2, /*i2c3*/
 +	.addr = 0x51,
 +	.port_type = TYPEC_PORT_UFP,
 +	.max_snk_mv = 5000,
@@ -4539,7 +4597,7 @@ index 00000000000..6178e53473f
 +};
 +
 +struct tcpc_port_config port2_config = {
-+	.i2c_bus = 1, /*i2c2*/
++	.i2c_bus = 2, /*i2c3*/
 +	.addr = 0x52,
 +	.port_type = TYPEC_PORT_UFP,
 +	.max_snk_mv = 9000,
