@@ -27,6 +27,7 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0029-arm64-dts-imx93-cargt-00363-osm-som-Configure-Blueto.patch \
             file://0030-Add-support-for-second-RS-232-UART-lpuart7-in-device.patch \
             file://0031-Fix-MIPI-DSI-panel-init-ordering-host-clock-timing-a.patch \
+            file://0032-Add-00363-00428-board.patch \
             "
 
 SRC_URI += "file://cargt_router_kernel_config_mods.cfg \
@@ -37,6 +38,7 @@ SRC_URI += "file://cargt_router_kernel_config_mods.cfg \
             file://cargt_00365_kernel_config_mods.cfg \
             file://cargt_00377_kernel_config_mods.cfg \
             file://cargt_00406_kernel_config_mods.cfg \
+            file://cargt_00428_kernel_config_mods.cfg \
             file://cargt_t1l_kernel_config_mods.cfg \
             file://cargt_st7789t3_kernel_config_mods.cfg \
             "
@@ -49,6 +51,7 @@ DELTA_KERNEL_DEFCONFIG += "${@bb.utils.contains('MACHINE_FEATURES', 'cargt-route
             ${@bb.utils.contains('MACHINE_FEATURES', '00365', 'cargt_00365_kernel_config_mods.cfg','', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00377', 'cargt_00377_kernel_config_mods.cfg','', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00406', 'cargt_00406_kernel_config_mods.cfg','', d)} \
+            ${@bb.utils.contains('MACHINE_FEATURES', '00428', 'cargt_00428_kernel_config_mods.cfg','', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', 't1l', 'cargt_t1l_kernel_config_mods.cfg','', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', 'ST7789T3', 'cargt_st7789t3_kernel_config_mods.cfg','', d)} \
             "
