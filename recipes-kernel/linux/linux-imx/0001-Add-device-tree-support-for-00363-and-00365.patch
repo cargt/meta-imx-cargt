@@ -6,12 +6,12 @@ Subject: [PATCH] Add device tree support for 00363 and 00365.
 ---
  arch/arm64/boot/dts/freescale/Makefile        |   6 +
  ...x93-cargt-00363-00365-glt0557201280is1.dts |  15 +
- ...93-cargt-00363-00365-glt0557201280is1.dtsi |  94 ++++
+ ...93-cargt-00363-00365-glt0557201280is1.dtsi |  95 ++++
  ...x93-cargt-00363-00365-glt1011280800is1.dts |  15 +
  ...93-cargt-00363-00365-glt1011280800is1.dtsi | 154 ++++++
  .../dts/freescale/imx93-cargt-00363-00365.dts | 399 ++++++++++++++++
  .../freescale/imx93-cargt-00363-osm-som.dts   | 449 ++++++++++++++++++
- 7 files changed, 1132 insertions(+)
+ 7 files changed, 1133 insertions(+)
  create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dts
  create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dtsi
  create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt1011280800is1.dts
@@ -63,7 +63,7 @@ new file mode 100644
 index 000000000000..42f6cf4cdc2a
 --- /dev/null
 +++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dtsi
-@@ -0,0 +1,94 @@
+@@ -0,0 +1,95 @@
 + / {
 +	 pwm_backlight: pwm_backlight {
 +		compatible = "pwm-backlight";
@@ -123,6 +123,7 @@ index 000000000000..42f6cf4cdc2a
 +		compatible = "ilitek,ili2520";
 +		reg = <0x41>;
 +
++		pinctrl-names = "default";
 +		pinctrl-0 = <&pinctrl_touchscreen>;
 +		reset-gpios = <&pca9555_20 4 GPIO_ACTIVE_LOW>;
 +		interrupt-parent = <&gpio1>;
