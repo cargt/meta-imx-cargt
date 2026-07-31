@@ -42,18 +42,17 @@ diff --git a/arch/arm64/boot/dts/freescale/Makefile b/arch/arm64/boot/dts/freesc
 index 4d695bd1ec6a..76ca9f816864 100644
 --- a/arch/arm64/boot/dts/freescale/Makefile
 +++ b/arch/arm64/boot/dts/freescale/Makefile
-@@ -422,8 +422,9 @@ dtb-$(CONFIG_ARCH_MXC) += imx91-11x11-evk.dtb \
- 			  imx91-11x11-frdm-imx91s-fec.dtb \
- 			  imx91-11x11-frdm-imx91s-mt9m114.dtb \
- 			  imx91-11x11-frdm-imx91s-ld.dtb \
--			  imx91-11x11-frdm-imx91s-lpuart.dtb
--
-+                          imx91-11x11-frdm-imx91s-lpuart.dtb \
-+                          imx91-cargt-00363-osm-som.dtb \
-+                          imx91-cargt-00363-00365.dtb
- 
- imx93-11x11-evk-pmic-pf0900-dtbs := imx93-11x11-evk.dtb imx93-11x11-evk-pmic-pf0900.dtbo
- imx93-11x11-evk-pmic-pf0900-root-dtbs := imx93-11x11-evk-root.dtb imx93-11x11-evk-pmic-pf0900.dtbo
+@@ -452,7 +452,9 @@ dtb-$(CONFIG_ARCH_MXC) += imx93-cargt-00324-00326.dtb \
+ 				imx93-cargt-00363-00365.dtb \
+ 				imx93-cargt-00363-00365-glt0557201280is1.dtb \
+ 				imx93-cargt-00363-00365-glt1011280800is1.dtb \
+-				imx93-cargt-00363-00365-glt028240320is1.dtb
++				imx93-cargt-00363-00365-glt028240320is1.dtb \
++				imx91-cargt-00363-osm-som.dtb \
++				imx91-cargt-00363-00365.dtb
+
+ dtb-$(CONFIG_ARCH_MXC) += imx91-9x9-qsb.dtb \
+ 			  imx91-9x9-qsb-can1.dtb \
 diff --git a/arch/arm64/boot/dts/freescale/imx91-cargt-00363-00365.dts b/arch/arm64/boot/dts/freescale/imx91-cargt-00363-00365.dts
 new file mode 100644
 index 000000000000..5202517c4865

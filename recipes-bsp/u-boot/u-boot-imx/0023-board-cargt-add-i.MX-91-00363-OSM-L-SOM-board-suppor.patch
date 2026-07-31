@@ -74,7 +74,7 @@ diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
 index 75b123dd2f7..6311a6d1d55 100644
 --- a/arch/arm/dts/Makefile
 +++ b/arch/arm/dts/Makefile
-@@ -1195,6 +1195,8 @@ dtb-$(CONFIG_ARCH_IMX9) += \
+@@ -1192,6 +1192,8 @@ dtb-$(CONFIG_ARCH_IMX9) += \
  	imx91-9x9-qsb.dtb \
  	imx91-11x11-evk-spinand.dtb \
  	imx91-11x11-evk-tianma-wvga-panel.dtb \
@@ -82,7 +82,7 @@ index 75b123dd2f7..6311a6d1d55 100644
 +	imx91-cargt-00363-00365.dtb \
  	imx93-11x11-evk.dtb \
  	imx93-11x11-evk-pmic-pf0900.dtb \
- 	imx93-11x11-frdm.dtb \
+ 	imx93-14x14-evk.dtb \
 diff --git a/arch/arm/dts/imx91-cargt-00363-00365-u-boot.dtsi b/arch/arm/dts/imx91-cargt-00363-00365-u-boot.dtsi
 new file mode 100644
 index 00000000000..c7f971e1170
@@ -894,7 +894,7 @@ diff --git a/arch/arm/mach-imx/imx9/Kconfig b/arch/arm/mach-imx/imx9/Kconfig
 index 75b5ac694c3..29b26d1140b 100644
 --- a/arch/arm/mach-imx/imx9/Kconfig
 +++ b/arch/arm/mach-imx/imx9/Kconfig
-@@ -97,7 +97,12 @@ config TARGET_IMX93_00363
+@@ -82,7 +82,12 @@ config TARGET_IMX93_00363
  	bool "imx93_00363"
  	select IMX93
  	select IMX9_LPDDR4X
@@ -908,7 +908,7 @@ index 75b5ac694c3..29b26d1140b 100644
  config TARGET_IMX95_19X19_EVK
  	bool "imx95_19x19_evk"
  	select IMX95
-@@ -126,6 +131,7 @@ source "board/toradex/verdin-imx95/Kconfig"
+@@ -108,6 +113,7 @@ source "board/toradex/verdin-imx95/Kconfig"
  source "board/cargt/imx93_00324/Kconfig"
  source "board/cargt/imx93_00359/Kconfig"
  source "board/cargt/imx93_00363/Kconfig"
