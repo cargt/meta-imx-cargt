@@ -74,7 +74,7 @@ diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
 index 75b123dd2f7..6311a6d1d55 100644
 --- a/arch/arm/dts/Makefile
 +++ b/arch/arm/dts/Makefile
-@@ -1192,6 +1192,8 @@ dtb-$(CONFIG_ARCH_IMX9) += \
+@@ -1195,6 +1195,8 @@ dtb-$(CONFIG_ARCH_IMX9) += \
  	imx91-9x9-qsb.dtb \
  	imx91-11x11-evk-spinand.dtb \
  	imx91-11x11-evk-tianma-wvga-panel.dtb \
@@ -82,7 +82,7 @@ index 75b123dd2f7..6311a6d1d55 100644
 +	imx91-cargt-00363-00365.dtb \
  	imx93-11x11-evk.dtb \
  	imx93-11x11-evk-pmic-pf0900.dtb \
- 	imx93-14x14-evk.dtb \
+ 	imx93-11x11-frdm.dtb \
 diff --git a/arch/arm/dts/imx91-cargt-00363-00365-u-boot.dtsi b/arch/arm/dts/imx91-cargt-00363-00365-u-boot.dtsi
 new file mode 100644
 index 00000000000..c7f971e1170
