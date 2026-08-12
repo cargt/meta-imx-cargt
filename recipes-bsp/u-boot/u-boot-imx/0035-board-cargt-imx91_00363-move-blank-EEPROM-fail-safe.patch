@@ -1,0 +1,291 @@
+From 3c367fa0ffca6239f4ee0d0b2fd0879bd96ae5b3 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Wed, 12 Aug 2026 11:02:44 -0500
+Subject: [PATCH] board: cargt: imx91_00363: move blank-EEPROM fail-safe
+ bootstrap to 2400 MT/s
+
+The blank-EEPROM fail-safe path used a 512 MB/rank1/1600 MT/s timing
+chosen as a conservative "safe" common denominator across DRAM parts.
+On real Micron MT53E1G16D1ZW-046-populated 00363/00365 hardware this
+failed silently: ddr_init() reported success, but a burst write/
+readback test (write+verify a large range with no per-word delay,
+unlike a sparse/isolated access check) showed the majority of writes
+were being dropped under sustained traffic. Root cause was a DDRC
+density mismatch in the exported timing (NXP Config Tool's own
+project defaulted to a different DRAM density than what's actually
+on this board) - PHY training tunes electrical margins, not address
+decode, so it can't and didn't catch this.
+
+Regenerating the Config Tool export with the correct density fixed
+Config Tool's own stress test, but on real hardware the corrected
+export hung inside ddr_init() outright instead of training. Bisecting
+the diff between the working (wrong-density) and hanging (corrected)
+exports down to just the two refresh-timing fields still reproduced
+the hang with everything else held at the known-good (working)
+values, and a full line-by-line diff of the entire ~2000-line export
+confirmed no other field differed. There's no available theory for
+why a refresh-timing change alone causes ddr_init() to never return,
+and continuing to bisect register-by-register against proprietary
+DDRC/PHY fields with no visibility into their exact semantics is
+open-ended with no guaranteed convergence. 1600 MT/s is abandoned as
+a fail-safe speed on this board.
+
+2400 MT/s is what every DRAM part actually qualified on this platform
+(ISSI IS43LQ16256B, Micron MT53E1G16D1ZW-046) trains at, so the
+fail-safe bootstrap moves there instead - but both pre-existing 512MB
+candidates (plain and CAODT120) turned out to have the exact same two
+failure modes at 2400 MT/s: the plain variant trains but fails burst
+verification, and CAODT120 hangs inside ddr_init(). This isn't
+speed-specific after all; the 512MB size class itself is broken on
+this hardware in every variant available. Since a hang can't be
+recovered from at runtime and would permanently block the bootstrap
+loop from ever reaching the candidates below it, both are excluded
+entirely rather than left in as skippable. 1GB rank1 is the effective
+floor until the 512MB class is separately root-caused.
+
+bootstrap_dram_timing() mirrors the retry-with-verification pattern
+already used on imx8mp_00377: try each remaining known-good candidate
+(1GB rank1, 2GB rank1, 2GB rank2, all 2400 MT/s) in turn and keep the
+first that both trains and passes dram_burst_verify(). Unlike
+imx8mp_00377's two-point aliasing check, verification here is a real
+sustained write/readback over a fixed 16MB sample - the corruption
+this exists to catch only showed up under back-to-back traffic, not
+at sparse points, but scaling the verify to a candidate's full
+claimed size (up to 2GB) risked outrunning the uuu USB session's own
+transfer timeout. The failure signature appeared within the first few
+KB whenever present, so a bounded sample catches the same failure
+class without that cost.
+
+Also adds CONFIG_CARGT_IMX91_00363_FORCE_DRAM_BOOTSTRAP (off by
+default), mirroring CARGT_IMX8MP_00377_FORCE_DRAM_BOOTSTRAP, for a
+dedicated recovery/fail-safe build that ignores EEPROM DRAM
+parameters entirely and always bootstraps - covering an
+incorrectly-provisioned (not just blank) EEPROM. EEPROM contents are
+still read and printed for diagnostic visibility either way.
+
+Validated on real Micron-populated 00363/00365 hardware: blank-EEPROM
+boot now trains and verifies the 1GB rank1 candidate on the first
+attempt and boots cleanly through the BOOTROM/ATF handoff into
+U-Boot proper, ready for mfgtool/fastboot EEPROM programming.
+
+Signed-off-by: Tim Carney <tim.carney@cargt.com>
+Co-Authored-By: Claude Sonnet 5 <noreply@anthropic.com>
+---
+ board/cargt/imx91_00363/Kconfig           |  17 ++-
+ board/cargt/imx91_00363/spl-cargt.c       | 136 ++++++++++++++++++++--
+ configs/imx91-cargt-00363-00365_defconfig |   2 +-
+ 3 files changed, 145 insertions(+), 10 deletions(-)
+
+diff --git a/board/cargt/imx91_00363/Kconfig b/board/cargt/imx91_00363/Kconfig
+index 21a4b2b2140..5c430eeebbf 100644
+--- a/board/cargt/imx91_00363/Kconfig
++++ b/board/cargt/imx91_00363/Kconfig
+@@ -24,7 +24,7 @@ endchoice
+ 
+ choice
+ 	prompt "LPDDR4 failsafe timing (used when EEPROM is absent or blank)"
+-	default CARGT_IMX91_00363_FAILSAFE_DRAM_512MB_1600MTS
++	default CARGT_IMX91_00363_FAILSAFE_DRAM_512MB_RANK1
+ 	depends on CARGT_IMX91_00363_LPDDR4_TIMING_BY_EEPROM
+ 
+ config CARGT_IMX91_00363_FAILSAFE_DRAM_2GB_RANK2
+@@ -60,6 +60,21 @@ config CARGT_IMX91_00363_FAILSAFE_DRAM_512MB_RANK1_CAODT120
+ 
+ endchoice
+ 
++config CARGT_IMX91_00363_FORCE_DRAM_BOOTSTRAP
++	bool "Ignore EEPROM DRAM identification and always run the bootstrap retry sequence"
++	depends on CARGT_IMX91_00363_LPDDR4_TIMING_BY_EEPROM
++	default n
++	help
++	  Recovery/fail-safe build: skip the EEPROM-identified DRAM timing
++	  entirely and always try each known-good timing candidate until one
++	  trains and verifies clean, regardless of what the EEPROM reports
++	  (including a blank or incorrectly-provisioned EEPROM). EEPROM
++	  contents are still read and printed for diagnostic visibility.
++	  Intended for bringing up units of unknown or suspect provisioning
++	  far enough to read/write their EEPROM correctly, not for normal
++	  production builds - it always pays the cost of up to N training
++	  attempts.
++
+ config CARGT_IMX91_00363_MIN_SDRAM_SIZE_MB
+ 	int "Minimum required SDRAM size in MB (0 = no minimum)"
+ 	default 0
+diff --git a/board/cargt/imx91_00363/spl-cargt.c b/board/cargt/imx91_00363/spl-cargt.c
+index 920012320a0..9ed64ec45f2 100644
+--- a/board/cargt/imx91_00363/spl-cargt.c
++++ b/board/cargt/imx91_00363/spl-cargt.c
+@@ -135,6 +135,113 @@ static struct dram_timing_info *select_dram_timing(uint16_t size_mbytes,
+ 	}
+ }
+ 
++/*
++ * 1600 MT/s was tried as a conservative common denominator across DDR
++ * parts, but on real hardware it never got past either data corruption
++ * under sustained burst traffic (density-mismatched export) or an
++ * unexplained hang inside ddr_init() (density-matched export, isolated
++ * down to just its refresh-timing fields) — see bring-up notes. 2400
++ * MT/s is what every part on this platform (ISSI IS43LQ16256B, Micron
++ * MT53E1G16D1ZW-046) is actually qualified at.
++ *
++ * Both existing 512MB candidates turned out to have the exact same two
++ * failure modes at 2400 MT/s as the abandoned 1600 MT/s exports: the
++ * plain variant trains but fails burst verification (silent data
++ * corruption under sustained traffic), and the CAODT120 variant hangs
++ * inside ddr_init() outright. This isn't speed-specific after all — the
++ * 512MB size class itself is broken on this hardware in every variant
++ * available, and since a hang can't be recovered from at runtime, those
++ * two candidates block the bootstrap from ever reaching the working
++ * larger sizes below them. Deliberately excluded until that's root
++ * caused; 1GB is the effective floor for now. Try each remaining
++ * candidate in turn and keep whichever one actually holds up under a
++ * real burst write/readback (PHY training completing without error is
++ * not sufficient proof by itself — see dram_burst_verify()).
++ */
++struct dram_timing_candidate {
++	struct dram_timing_info *timing;
++	uint16_t size_mb;
++	uint8_t rank;
++	const char *desc;
++};
++
++/*
++ * Fixed sample size for dram_burst_verify(), independent of a candidate's
++ * claimed capacity. A tight word-by-word verify over a full 1GB/2GB
++ * candidate is ~2-4x slower than anything measured so far and risks
++ * outrunning the uuu USB session's own transfer timeout. The density/
++ * refresh-timing corruption this exists to catch showed up within the
++ * first few KB on real hardware, not deep into the address range, so a
++ * bounded sample catches the same failure class without the cost.
++ */
++#define DRAM_BURST_VERIFY_SIZE	(16 * 1024 * 1024)
++
++static const struct dram_timing_candidate dram_timing_candidates[] = {
++	{ &cargt_lpddr4_1gbyte_2400mts_timing,         1024, 1, "1 GB rank1 2400MTS" },
++	{ &cargt_lpddr4_2gbyte_2400mts_timing,         2048, 1, "2 GB rank1 2400MTS" },
++	{ &cargt_lpddr4_2gbyte_2400mts_rank2_timing,   2048, 2, "2 GB rank2 2400MTS" },
++};
++
++/*
++ * Tight burst write/readback across the given range, no per-word
++ * logging. Proven necessary because a bad config can still train
++ * successfully (ddr_init() returns 0) but silently drop most writes
++ * under sustained back-to-back traffic; a single-word or sparse test
++ * does not reveal it.
++ */
++static bool dram_burst_verify(phys_addr_t base, phys_size_t size)
++{
++	volatile u32 *p = (volatile u32 *)(ulong)base;
++	unsigned int words = (unsigned int)(size / sizeof(u32));
++	unsigned int i;
++
++	for (i = 0; i < words; i++)
++		p[i] = (u32)base + i * sizeof(u32);
++
++	for (i = 0; i < words; i++) {
++		if (p[i] != (u32)base + i * sizeof(u32))
++			return false;
++	}
++	return true;
++}
++
++/* Returns true and fills in *ptiming_out/*size_mb_out/*rank_out on success. */
++static bool bootstrap_dram_timing(struct dram_timing_info **ptiming_out,
++				   uint16_t *size_mb_out, uint8_t *rank_out)
++{
++	unsigned int ncandidates =
++		sizeof(dram_timing_candidates) / sizeof(dram_timing_candidates[0]);
++	unsigned int i;
++
++	printf("\tBootstrapping: trying each known DRAM timing until one verifies clean...\n");
++	for (i = 0; i < ncandidates; i++) {
++		const struct dram_timing_candidate *c = &dram_timing_candidates[i];
++
++		printf("\t  Attempt %u/%u: %s\n", i + 1, ncandidates, c->desc);
++
++		if (ddr_init(c->timing) != 0) {
++			printf("\t  Training failed, trying next candidate...\n");
++			continue;
++		}
++
++		if (!dram_burst_verify(CFG_SYS_SDRAM_BASE,
++					DRAM_BURST_VERIFY_SIZE)) {
++			printf("\t  Training reported success but sustained burst"
++			       " verification failed — rejecting and trying next candidate\n");
++			continue;
++		}
++
++		printf("\t  Success with: %s\n", c->desc);
++		*ptiming_out = c->timing;
++		*size_mb_out = c->size_mb;
++		*rank_out = c->rank;
++		return true;
++	}
++
++	printf("ERROR: DDR bootstrap failed on all known candidate timings.\n");
++	return false;
++}
++
+ void spl_dram_init(void)
+ {
+ 	struct dram_timing_info *ptiming = &failsafe_dram_timing;
+@@ -146,18 +253,23 @@ void spl_dram_init(void)
+ 	printf("Reading Cargt EEPROM over I2C...\n");
+ 	cargt_eeprom_read(&eeprom);
+ 	printf("Cargt EEPROM read complete.\n");
++	/* No-ops on invalid/blank EEPROM, so safe to call unconditionally. */
++	cargt_eeprom_print_prod_info(&eeprom);
+ 
+-	if (!cargt_eeprom_is_valid(&eeprom)) {
+-		printf("WARNING: EEPROM blank or invalid magic — using failsafe %u MB/%u/rank%u\n",
+-		       FAILSAFE_DRAM_SIZE_MB, FAILSAFE_DRAM_RATE_MTS, FAILSAFE_DRAM_RANK);
++	if (!IS_ENABLED(CONFIG_CARGT_IMX91_00363_FORCE_DRAM_BOOTSTRAP) &&
++	    cargt_eeprom_is_valid(&eeprom)) {
++		dram_size_mbytes = cargt_eeprom_get_dram_size_mb(&eeprom);
++		dram_rank        = cargt_eeprom_get_dram_rank(&eeprom);
++	} else {
++		if (IS_ENABLED(CONFIG_CARGT_IMX91_00363_FORCE_DRAM_BOOTSTRAP))
++			printf("\tFail-safe build: ignoring EEPROM DRAM parameters, always bootstrapping.\n");
++		else
++			printf("WARNING: EEPROM blank or invalid magic — using failsafe %u MB/%u/rank%u\n",
++			       FAILSAFE_DRAM_SIZE_MB, FAILSAFE_DRAM_RATE_MTS, FAILSAFE_DRAM_RANK);
+ 		printf("         Program EEPROM with correct DDR parameters after boot.\n");
+ 		dram_size_mbytes = FAILSAFE_DRAM_SIZE_MB;
+ 		dram_rank        = FAILSAFE_DRAM_RANK;
+ 		use_failsafe     = true;
+-	} else {
+-		cargt_eeprom_print_prod_info(&eeprom);
+-		dram_size_mbytes = cargt_eeprom_get_dram_size_mb(&eeprom);
+-		dram_rank        = cargt_eeprom_get_dram_rank(&eeprom);
+ 	}
+ 
+ #if CONFIG_CARGT_IMX91_00363_MIN_SDRAM_SIZE_MB > 0
+@@ -179,7 +291,15 @@ void spl_dram_init(void)
+ #endif /* CONFIG_CARGT_IMX91_00363_LPDDR4_TIMING_BY_EEPROM */
+ 
+ 	printf("DDR: %u MT/s\n", ptiming->fsp_msg[0].drate);
+-	ddr_init(ptiming);
++
++	if (use_failsafe) {
++		if (!bootstrap_dram_timing(&ptiming, &dram_size_mbytes, &dram_rank)) {
++			printf("ERROR: no known DRAM timing verified — DRAM is likely unusable.\n");
++			dram_size_mbytes = 0;
++		}
++	} else {
++		ddr_init(ptiming);
++	}
+ 
+ 	if (gd && gd->bd) {
+ 		gd->bd->bi_dram[0].start = CFG_SYS_SDRAM_BASE;
+diff --git a/configs/imx91-cargt-00363-00365_defconfig b/configs/imx91-cargt-00363-00365_defconfig
+index dcb8f8ce05c..16e14520cb0 100644
+--- a/configs/imx91-cargt-00363-00365_defconfig
++++ b/configs/imx91-cargt-00363-00365_defconfig
+@@ -194,6 +194,6 @@ CONFIG_SYS_EEPROM_SIZE=256
+ CONFIG_SYS_EEPROM_PAGE_WRITE_BITS=4
+ CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=100
+ CONFIG_CARGT_IMX91_00363_LPDDR4_TIMING_BY_EEPROM=y
+-CONFIG_CARGT_IMX91_00363_FAILSAFE_DRAM_512MB_1600MTS=y
++CONFIG_CARGT_IMX91_00363_FAILSAFE_DRAM_512MB_RANK1=y
+ CONFIG_CARGT_IMX91_00363_MIN_SDRAM_SIZE_MB=0
+ CONFIG_SAVED_DRAM_TIMING_BASE=0x2049C000
