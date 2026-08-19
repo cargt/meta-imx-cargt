@@ -28,6 +28,7 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0030-Add-support-for-second-RS-232-UART-lpuart7-in-device.patch \
             file://0031-Fix-MIPI-DSI-panel-init-ordering-host-clock-timing-a.patch \
             file://0032-Add-00363-00428-board.patch \
+            file://0033-arm64-dts-imx8mp-cargt-00377-osm-som-boost-uart1-clo.patch \
             "
 
 SRC_URI += "file://cargt_router_kernel_config_mods.cfg \
