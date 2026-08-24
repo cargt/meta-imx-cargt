@@ -24,5 +24,8 @@ echo "BBLAYERS += \"\${BSPDIR}/sources/meta-imx-cargt\"" >> conf/bblayers.conf
 echo "BBLAYERS += \"\${BSPDIR}/sources/meta-swupdate\"" >> conf/bblayers.conf
 echo "BBLAYERS += \"\${BSPDIR}/sources/meta-imx-frdm/meta-imx-sdk\"" >> conf/bblayers.conf
 
+echo "BBLAYERS += \"\${BSPDIR}/sources/meta-iotedge\"" >> conf/bblayers.conf
+echo "BBLAYERS += \"\${BSPDIR}/sources/meta-lts-mixins\"" >> conf/bblayers.conf
+
 echo ""
 echo "Cargt i.MX setup complete and it can generate Yocto images now."
