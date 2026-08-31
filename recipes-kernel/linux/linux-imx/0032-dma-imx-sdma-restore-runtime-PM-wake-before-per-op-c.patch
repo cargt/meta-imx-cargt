@@ -1,0 +1,88 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 30 Jul 2026 16:00:00 -0500
+Subject: [PATCH] dma: imx-sdma: restore runtime-PM wake before per-op clock
+ checks
+
+Upstream-Status: Pending
+
+The old sdma_pm_clk_enable(sdma, direct, enable) helper handled both
+the plain-clock SoCs and the pm_runtime SoCs in one place: for
+pm_runtime SoCs it called pm_runtime_get_sync()/pm_runtime_put_sync_
+suspend()/pm_runtime_put_autosuspend() around every channel operation
+(prep, alloc, config, submit), guaranteeing the SDMA controller was
+out of autosuspend before touching its registers.
+
+The refactor into separate sdma_clk_enable()/sdma_clk_disable() kept
+this behavior only for the non-pm_runtime clk_enable()/clk_disable()
+path (guarded by "if (!sdma->drvdata->pm_runtime)"). For pm_runtime
+SoCs -- imx8mp's sdma_imx8mp drvdata sets pm_runtime = true -- both
+functions are now unconditional no-ops. Nothing at any of these
+call sites re-activates the controller if it has autosuspended
+(pm_runtime_set_autosuspend_delay() configures an 8 second idle
+delay in sdma_probe()), so any DMA operation issued after 8+ seconds
+of SDMA idle time silently proceeds against a clock-gated controller.
+
+This matches the imx8mp-cargt-00377-00365 Bluetooth UART DMA failures
+investigated in this session: "We cannot prepare for the RX slave
+dma!" and other intermittent RX-DMA failures happen specifically when
+enough idle time has passed for the controller to autosuspend before
+a channel operation is attempted, and never happen on imx93 (which
+does not use this SDMA driver's pm_runtime path the same way) or on
+older kernels that still called pm_runtime_get_sync() per-operation.
+
+Fix: have sdma_clk_enable()/sdma_clk_disable() call
+pm_runtime_get_sync()/pm_runtime_put_autosuspend() for the pm_runtime
+case, restoring parity with the pre-refactor behavior.
+
+---
+ drivers/dma/imx-sdma.c | 14 ++++++++++----
+ 1 file changed, 12 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/dma/imx-sdma.c b/drivers/dma/imx-sdma.c
+index 0000000000000000000000000000000000000000..0000000000000000000000000000000000000000 100644
+--- a/drivers/dma/imx-sdma.c
++++ b/drivers/dma/imx-sdma.c
+@@ -736,28 +736,38 @@ static int sdma_clk_enable(struct sdma_engine *sdma)
+ {
+ 	int ret = 0;
+ 
+-	if (!sdma->drvdata->pm_runtime) {
++	if (sdma->drvdata->pm_runtime) {
++		ret = pm_runtime_get_sync(sdma->dev);
++		if (ret < 0) {
++			pm_runtime_put_noidle(sdma->dev);
++			return ret;
++		}
++		return 0;
++	} else {
+ 		ret = clk_enable(sdma->clk_ipg);
+ 		if (ret)
+ 			return ret;
+ 		ret = clk_enable(sdma->clk_ahb);
+ 		if (ret)
+ 			goto disable_clk_ipg;
+ 	}
+ 
+ 	return ret;
+ 
+ disable_clk_ipg:
+ 	clk_disable(sdma->clk_ipg);
+ 	dev_err(sdma->dev, "initialisation failed with %d\n", ret);
+ 
+ 	return ret;
+ }
+ 
+ static void sdma_clk_disable(struct sdma_engine *sdma)
+ {
+-	if (!sdma->drvdata->pm_runtime) {
++	if (sdma->drvdata->pm_runtime) {
++		pm_runtime_mark_last_busy(sdma->dev);
++		pm_runtime_put_autosuspend(sdma->dev);
++	} else {
+ 		clk_disable(sdma->clk_ipg);
+ 		clk_disable(sdma->clk_ahb);
+ 	}
+ }
+--
+2.34.1

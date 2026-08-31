@@ -1,0 +1,36 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 30 Jul 2026 17:00:00 -0500
+Subject: [PATCH] serial: imx: revert TXTL_DEFAULT to 2 (test)
+
+Upstream-Status: Inappropriate [debugging]
+
+TXTL_DEFAULT (the TX FIFO trigger level) changed from 2 (scarthgap,
+kernel 6.6.36) to 8 somewhere on the way to kernel 6.18.20. This is
+the one remaining non-cosmetic difference found in this driver
+between the two kernel versions during the imx8mp-cargt-00377-00365
+Bluetooth investigation that hasn't been tested. Reverting it here
+to test whether it has any effect on the persistent HCI_Reset/
+Opcode 0x1003 timeout and continuous "Frame reassembly failed"
+symptom on that board.
+
+---
+ drivers/tty/serial/imx.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index 0000000000000000000000000000000000000000..0000000000000000000000000000000000000000 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -1339,7 +1339,7 @@ static void imx_uart_clear_rx_errors(struct imx_port *sport)
+ 
+ 	sport->idle_counter = 0;
+ }
+ 
+-#define TXTL_DEFAULT 8
++#define TXTL_DEFAULT 2
+ #define RXTL_DEFAULT 8 /* 8 characters or aging timer */
+ #define RXTL_CONSOLE_DEFAULT 1
+
+--
+2.34.1

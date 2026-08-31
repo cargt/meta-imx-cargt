@@ -1,0 +1,63 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 30 Jul 2026 14:00:00 -0500
+Subject: [PATCH] serial: imx: fall back to PIO RX if DMA prep fails
+
+Upstream-Status: Pending
+
+imx_uart_startup() unconditionally calls imx_uart_enable_dma() after
+imx_uart_start_rx_dma() whenever dma_is_inited is set, completely
+ignoring imx_uart_start_rx_dma()'s return value. When the runtime RX
+DMA descriptor preparation fails (dmaengine_prep_dma_cyclic() returns
+NULL, logged as "We cannot prepare for the RX slave dma!"), no DMA
+transfer is ever submitted -- but because the dma_is_inited branch was
+still taken, the interrupt-driven RX fallback (UCR1_RRDYEN/UCR2_ATEN)
+in the else branch never gets enabled either. The port is left with no
+RX mechanism active at all: TX continues to work normally, but nothing
+is ever received, silently and permanently for that boot.
+
+This intermittent RX-DMA-prepare failure is the root cause of the
+imx8mp-cargt-00377-00365 Bluetooth bring-up failures investigated in
+this session: hci0 attaches and can always transmit (e.g. HCI_Reset),
+but never sees a response, because uart1's RX path is dead whenever
+this race hits, independent of baud rate, flow control, or DT
+bluetooth-node configuration.
+
+Fix: only take the DMA path if imx_uart_start_rx_dma() actually
+succeeds; otherwise fall back to the same interrupt-driven RX enable
+used when DMA was never initialized in the first place.
+
+---
+ drivers/tty/serial/imx.c | 3 +--
+ 1 file changed, 1 insertion(+), 2 deletions(-)
+
+diff --git a/drivers/tty/serial/imx.c b/drivers/tty/serial/imx.c
+index 0000000000000000000000000000000000000000..0000000000000000000000000000000000000000 100644
+--- a/drivers/tty/serial/imx.c
++++ b/drivers/tty/serial/imx.c
+@@ -1571,22 +1571,21 @@ static int imx_uart_startup(struct uart_port *port)
+ 	imx_uart_writel(sport, ucr2, UCR2);
+ 
+ 	/*
+ 	 * Enable modem status interrupts
+ 	 */
+ 	imx_uart_enable_ms(&sport->port);
+ 
+-	if (dma_is_inited) {
++	if (dma_is_inited && imx_uart_start_rx_dma(sport) == 0) {
+ 		/* Note: enable dma request after transfer start! */
+-		imx_uart_start_rx_dma(sport);
+ 		imx_uart_enable_dma(sport);
+ 	} else {
+ 		ucr1 = imx_uart_readl(sport, UCR1);
+ 		ucr1 |= UCR1_RRDYEN;
+ 		imx_uart_writel(sport, ucr1, UCR1);
+ 
+ 		ucr2 = imx_uart_readl(sport, UCR2);
+ 		ucr2 |= UCR2_ATEN;
+ 		imx_uart_writel(sport, ucr2, UCR2);
+ 	}
+ 
+ 	imx_uart_disable_loopback_rs485(sport);
+--
+2.34.1
