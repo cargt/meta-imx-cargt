@@ -1,0 +1,61 @@
+From: Claude <noreply@anthropic.com>
+Subject: [PATCH] drm/bridge: sec-dsim: config esc/byte clock before panel prepare
+
+sec_mipi_dsim_bridge_atomic_enable() calls drm_panel_prepare(dsim->panel)
+before sec_mipi_dsim_config_clkctrl(dsim). drm_panel_prepare() runs the
+panel driver's .prepare() callback, which for command-mode-capable
+panels (e.g. panel-ilitek-ili9881c.c, MIPI_DSI_MODE_LPM) sends real DCS
+commands over the DSI link immediately. Those low-power-mode command
+transactions need CLKCTRL_ESCCLKEN/CLKCTRL_BYTECLKEN (configured by
+sec_mipi_dsim_config_clkctrl()) already enabled, but that call happens
+*after* drm_panel_prepare() returns -- so every command-mode transaction
+times out waiting on its own hardware tx-done completion
+(sec_mipi_dsim_host_transfer()'s wait_for_completion_timeout() on
+ph_tx_done/pl_tx_done), since the DSIM hardware has no clock to
+complete the transfer with yet.
+
+sec_mipi_dsim_set_standby(dsim, true) (the actual continuous
+video-mode streaming enable, gating MDRESOL_MAINSTANDBY) is left where
+it is -- after drm_panel_enable() -- since that's a separate concern
+from the LP-mode command FIFO and is correctly deferred until the
+panel has actually been initialized via DCS.
+
+Confirmed pre-existing in NXP's own scarthgap-era (lf-6.6.y) copy of
+this file too, not a wrynose regression -- it was simply never
+exercised before, since the 5.5in MIPI DSI display
+(imx8mp-cargt-00377-00365-glt0557201280is1) had apparently never been
+booted with real hardware attached on any prior build.
+
+Upstream-Status: Pending
+Signed-off-by: Claude <noreply@anthropic.com>
+---
+ drivers/gpu/drm/bridge/sec-dsim.c | 14 +++++++++++---
+ 1 file changed, 11 insertions(+), 3 deletions(-)
+
+diff --git a/drivers/gpu/drm/bridge/sec-dsim.c b/drivers/gpu/drm/bridge/sec-dsim.c
+index 3e40f5acbc30..8511c902f662 100644
+--- a/drivers/gpu/drm/bridge/sec-dsim.c
++++ b/drivers/gpu/drm/bridge/sec-dsim.c
+@@ -1376,11 +1376,19 @@ static void sec_mipi_dsim_bridge_atomic_enable(struct drm_bridge *bridge,
+ 	/* initialize FIFO pointers */
+ 	sec_mipi_dsim_init_fifo_pointers(dsim);
+ 
+-	drm_panel_prepare(dsim->panel);
+-
+-	/* config esc clock, byte clock and etc */
++	/*
++	 * Cargt: config esc/byte clock *before* touching the panel --
++	 * drm_panel_prepare() sends DCS commands over the DSI link in LP
++	 * mode, which needs CLKCTRL_ESCCLKEN/CLKCTRL_BYTECLKEN already
++	 * enabled. With clkctrl configured afterward (as upstream had it),
++	 * every command-mode transaction times out waiting for its own
++	 * tx-done completion, since the hardware has no clock to complete
++	 * the transfer with yet.
++	 */
+ 	sec_mipi_dsim_config_clkctrl(dsim);
+ 
++	drm_panel_prepare(dsim->panel);
++
+ 	drm_panel_enable(dsim->panel);
+ 
+ 	/* enable data transfer of dsim */
