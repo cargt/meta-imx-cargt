@@ -8,8 +8,8 @@ Upstream-Status: Inappropriate [Cargt board specific]
 
 ---
  .../freescale/imx8mp-cargt-00377-00365.dts    | 26 +++++++++++++++++++
- .../freescale/imx8mp-cargt-00377-osm-som.dts  | 12 +++------
- 2 files changed, 30 insertions(+), 8 deletions(-)
+ .../freescale/imx8mp-cargt-00377-osm-som.dts  | 12 +++++-----
+ 2 files changed, 31 insertions(+), 7 deletions(-)
 
 diff --git a/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365.dts b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365.dts
 index ff2baaa7c32b..27e63996dea2 100644
@@ -59,25 +59,26 @@ diff --git a/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-osm-som.dts b/arch
 index 94dfc95900bb..1fca53b6119d 100644
 --- a/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-osm-som.dts
 +++ b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-osm-som.dts
-@@ -28,8 +28,8 @@ pinctrl_uart1: uart1grp {
+@@ -28,8 +28,9 @@ pinctrl_uart1: uart1grp {
  		fsl,pins = <
  			MX8MP_IOMUXC_UART1_RXD__UART1_DCE_RX	0x140
  			MX8MP_IOMUXC_UART1_TXD__UART1_DCE_TX	0x140
 -			MX8MP_IOMUXC_UART3_TXD__UART1_DTE_CTS	0x140
 -			MX8MP_IOMUXC_UART3_TXD__UART1_DCE_RTS	0x140
-+			MX8MP_IOMUXC_UART3_TXD__UART1_DCE_RTS	0x140 
-+		    MX8MP_IOMUXC_UART3_RXD__UART1_DCE_CTS	0x140 
++			MX8MP_IOMUXC_UART3_TXD__UART1_DCE_RTS	0x140
++		    MX8MP_IOMUXC_UART3_RXD__UART1_DCE_CTS	0x140
++			MX8MP_IOMUXC_SD1_DATA4__GPIO2_IO06	0x19
  		>;
  	};
  
-@@ -419,19 +419,15 @@ &uart1 {
+@@ -419,18 +419,15 @@ &uart1 {
  	/* Bluetooth IW612 */
  	pinctrl-names = "default";
  	pinctrl-0 = <&pinctrl_uart1>;
 -	fsl,uart-has-rtscts;
 +	uart-has-rtscts;
  	status = "okay";
--
+ 
 -	bluetooth {
 -		compatible = "nxp,88w8987-bt";
 -	};

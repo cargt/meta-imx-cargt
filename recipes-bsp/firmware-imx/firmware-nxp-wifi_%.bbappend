@@ -14,6 +14,24 @@ SRCREV = "${AUTOREV}"
 
 FILESEXTRAPATHS:prepend := "${THISDIR}/${BPN}:"
 
+# Upstream's lf-6.18.20_2.0.0 wifi_mod_para.conf strips the SDIW612 block down
+# to just cal_data_cfg=none, dropping ps_mode/auto_ds/host_mlme and the
+# explicit fw_name=nxp/sduart_nw61x_v1.bin.se that the older lf-6.6.3_1.0.0
+# branch shipped for this same chip. Without an explicit fw_name here, moal
+# falls back to this recipe's own module_conf_moal override (in
+# kernel-module-nxp-wlan_git.bbappend, meant for other cargt boards) which
+# forces the WLAN-only firmware instead of the IW612's combo (WiFi+BT)
+# firmware. On imx8mp-cargt-00377-00365 that leaves the shared combo
+# baseband uninitialized, so Bluetooth's own UART firmware download times out
+# and its RX line shows a garbled/periodic 500ms artifact indefinitely, even
+# though moal itself reports mlan0 up successfully. Restoring this block
+# (confirmed on hardware) fixes Bluetooth with no kernel/driver change needed.
+SRC_URI += "file://wifi_mod_para.conf"
+
+do_install:append() {
+    install -m 0644 ${UNPACKDIR}/wifi_mod_para.conf ${D}${nonarch_base_libdir}/firmware/nxp/wifi_mod_para.conf
+}
+
 # 0001-FwImage-update-firmware-to-mxm18505.p14.patch (a binary firmware blob
 # bump, not code) removed 2026-07-16: it targeted an old nxp/FwImage_*
 # directory layout that no longer exists in lf-6.18.20_2.0.0 (FwImage_* now
