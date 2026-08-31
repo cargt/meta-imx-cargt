@@ -28,6 +28,7 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0031-serial-imx-fall-back-to-PIO-RX-if-DMA-prep-fails.patch \
             file://0032-dma-imx-sdma-restore-runtime-PM-wake-before-per-op-c.patch \
             file://0033-serial-imx-revert-TXTL_DEFAULT-to-2-test.patch \
+            file://0034-drm-bridge-sec-dsim-config-esc-byte-clock-before-pa.patch \
             "
 
 # Re-audited 2026-07-16 while diagnosing "bluetooth doesn't come up on its own":

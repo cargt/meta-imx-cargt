@@ -8,10 +8,10 @@ Upstream-Status: Inappropriate [Cargt board specific]
 ---
  arch/arm64/boot/dts/freescale/Makefile        |   4 +
  ...8mp-cargt-00377-00365-glt0557201280is1.dts |  16 +
- ...mp-cargt-00377-00365-glt0557201280is1.dtsi | 120 +++++
+ ...mp-cargt-00377-00365-glt0557201280is1.dtsi | 132 +++++
  .../freescale/imx8mp-cargt-00377-00365.dts    | 466 +++++++++++++++++
  .../freescale/imx8mp-cargt-00377-osm-som.dts  | 497 ++++++++++++++++++
- 5 files changed, 1103 insertions(+)
+ 5 files changed, 1115 insertions(+)
  create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-glt0557201280is1.dts
  create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-glt0557201280is1.dtsi
  create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365.dts
@@ -58,7 +58,7 @@ new file mode 100644
 index 000000000000..8916704dd98f
 --- /dev/null
 +++ b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-glt0557201280is1.dtsi
-@@ -0,0 +1,120 @@
+@@ -0,0 +1,132 @@
 +/ {
 +	pwm_backlight: pwm_backlight {
 +		compatible = "pwm-backlight";
@@ -66,6 +66,17 @@ index 000000000000..8916704dd98f
 +		brightness-levels = <0 100>;
 +		num-interpolated-steps = <100>;
 +		default-brightness-level = <80>;
++		status = "okay";
++	};
++
++	reg_dsi_vdd: regulator-dsi-vdd {
++		compatible = "regulator-fixed";
++		regulator-name = "dsi_vdd";
++		regulator-min-microvolt = <3300000>;
++		regulator-max-microvolt = <3300000>;
++		gpio = <&pca9555_20 3 GPIO_ACTIVE_HIGH>;
++		enable-active-high;
++		regulator-always-on;
 +		status = "okay";
 +	};
 +};
@@ -167,8 +178,9 @@ index 000000000000..8916704dd98f
 +	panel@0 {
 +		compatible = "globaltech,glt0557201280is1", "ilitek,ili9881c";
 +		reg = <0>;
++		rotation = <90>;
 +		backlight = <&pwm_backlight>;
-+		reset-gpios = <&pca9555_20 3 GPIO_ACTIVE_LOW>;
++		power-supply = <&reg_dsi_vdd>;
 +		status = "okay";
 +
 +		port {
