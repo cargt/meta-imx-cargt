@@ -1,0 +1,52 @@
+From: Claude <noreply@anthropic.com>
+Subject: [PATCH] v4l2: video: fix negative array index when ISP node lacks id
+
+viv_find_compatible_nodes() left `id` at its -1 sentinel value whenever
+an ISP-compatible devicetree node was available but had no explicit
+"id" property, and viv_video_probe()'s bounds check only rejected
+video_id >= VIDEO_NODE_NUM, never negative values. That -1 flowed
+straight into file_list_lock[-1] and vdev->id, so any userspace open()
+of the resulting /dev/videoN node (e.g. udev's v4l_id) read one
+spinlock_t before the array into whatever kernel memory happened to
+be there, corrupting it and crashing (invalid access in
+video_open()'s spin_lock_irqsave, fault address varying per boot with
+KASLR). The crash then cascades into RCU stalls and a total system
+hang within a couple of minutes.
+
+isp_hw_probe() in isp_driver_of.c already defaults a missing "id" to 0
+for exactly this reason (`isp device id not found, use the default.`);
+do the same here, and reject negative ids defensively alongside the
+existing overflow check.
+
+Hit on imx8mp-cargt-00377-00365 with the -glt1011280800is1 and -hdmi
+board dts variants, both of which pull in
+imx8mp-cargt-00377-00365-os08a20.dtsi (`&isp_0 { status = "okay"; };`,
+no id property set).
+
+Signed-off-by: Claude <noreply@anthropic.com>
+Upstream-Status: Pending
+---
+ video/video.c | 3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/video/video.c b/video/video.c
+index 1111111..2222222 100644
+--- a/video/video.c
++++ b/video/video.c
+@@ -2079,6 +2079,7 @@ static inline int viv_find_compatible_nodes(struct dev_node *nodes, int size)
+ 			rc = fwnode_property_read_u32(
+ 					of_fwnode_handle(node), "id", &id);
+ 			if (rc) {
++				id = 0;
+ 				if (of_device_is_available(node))
+ 					avail = node;
+ 			} else if (of_device_is_available(node))
+@@ -2116,7 +2117,7 @@ static int viv_video_probe(struct platform_device *pdev)
+ 	for (i = 0; i < nodecount; i++) {
+ 		if (nodes[i].node) {
+ 			video_id = nodes[i].id ;
+-			if(video_id >= VIDEO_NODE_NUM) {
++			if (video_id < 0 || video_id >= VIDEO_NODE_NUM) {
+ 				pr_err("%s: id %d is too large (id > %d) \n",
+ 						__func__, video_id, VIDEO_NODE_NUM);
+ 				rc = -EINVAL;
