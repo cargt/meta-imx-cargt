@@ -1,0 +1,42 @@
+From 3905f524ad896cd5d9e93d9143733f18b4dacf3a Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Wed, 2 Sep 2026 13:48:26 -0500
+Subject: [PATCH 1/3] clk: imx93: drop CLK_SET_RATE_PARENT from media_disp_pix
+
+Upstream-Status: Pending
+
+media_disp_pix_root gained CLK_SET_RATE_PARENT somewhere between
+scarthgap (kernel 6.6.36, where this clock has no special flags at
+all) and wrynose (6.18.20). Combined with video_pll's PLL-table
+lookup switching to CLK_FRACN_GPPLL_NEAREST (nearest-match rounding
+instead of round-down), this means every time the LCDIF/DSI stack
+calls clk_set_rate() on media_disp_pix at modeset time (which
+happens on every atomic_enable, not just at boot), the request now
+propagates up and silently reprograms video_pll itself to whatever
+PLL table entry is nearest -- overriding any boot-time DT
+assigned-clock-rates pin every time the display enables.
+
+This is the first of three related fixes for DSI shearing on
+imx93-cargt-00363-00365; see the accompanying dw_mipi_dsi-imx.c and
+device-tree patches for the other two. All three are needed
+together -- confirmed on real hardware.
+---
+ drivers/clk/imx/clk-imx93.c | 2 +-
+ 1 file changed, 1 insertion(+), 1 deletion(-)
+
+diff --git a/drivers/clk/imx/clk-imx93.c b/drivers/clk/imx/clk-imx93.c
+index 1f4e7014af03..2d80d87a1b50 100644
+--- a/drivers/clk/imx/clk-imx93.c
++++ b/drivers/clk/imx/clk-imx93.c
+@@ -133,7 +133,7 @@ static const struct imx93_clk_root {
+ 	{ IMX93_CLK_MEDIA_AXI,		"media_axi_root",	0x2280,	FAST_SEL, },
+ 	{ IMX93_CLK_MEDIA_APB,		"media_apb_root",	0x2300,	LOW_SPEED_IO_SEL, },
+ 	{ IMX93_CLK_MEDIA_LDB,		"media_ldb_root",	0x2380,	VIDEO_SEL, CLK_SET_RATE_PARENT, PLAT_IMX93, },
+-	{ IMX93_CLK_MEDIA_DISP_PIX,	"media_disp_pix_root",	0x2400,	VIDEO_SEL, CLK_SET_RATE_PARENT, },
++	{ IMX93_CLK_MEDIA_DISP_PIX,	"media_disp_pix_root",	0x2400,	VIDEO_SEL, 0, },
+ 	{ IMX93_CLK_CAM_PIX,		"cam_pix_root",		0x2480,	VIDEO_SEL, },
+ 	{ IMX93_CLK_MIPI_TEST_BYTE,	"mipi_test_byte_root",	0x2500,	VIDEO_SEL, 0, PLAT_IMX93, },
+ 	{ IMX93_CLK_MIPI_PHY_CFG,	"mipi_phy_cfg_root",	0x2580,	VIDEO_SEL, 0, PLAT_IMX93, },
+-- 
+2.34.1
+

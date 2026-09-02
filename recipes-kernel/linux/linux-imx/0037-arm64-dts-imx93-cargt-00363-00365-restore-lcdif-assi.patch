@@ -1,0 +1,66 @@
+From 01f915cf9d20d26f3e91aec9128b3c16f3199c64 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Wed, 2 Sep 2026 13:49:46 -0500
+Subject: [PATCH 3/3] arm64: dts: imx93-cargt-00363-00365: restore lcdif
+ assigned-clocks for the 5.5in DSI panel
+
+Upstream-Status: Inappropriate [Cargt board specific]
+
+scarthgap's base imx93.dtsi had assigned-clocks/assigned-clock-parents
+directly on the &lcdif node (video_pll, media_disp_pix, media_axi,
+media_apb), and this board's own override only ever needed to set
+the rates on top of that. Wrynose's restructured imx91_93_common.dtsi
+dropped both properties from &lcdif entirely (moved a different,
+incomplete version onto &media_blk_ctrl instead), silently orphaning
+this rates-only override -- assigned-clock-rates with no
+assigned-clocks has no effect at all.
+
+Restore the full assigned-clocks/assigned-clock-parents list here so
+video_pll is actually pinned to 445333333Hz at boot, matching
+scarthgap's real achieved clock exactly (445333333/9 = 49481482Hz
+actual pixel clock, not the naive nominal 50MHz).
+
+Third of three related fixes for DSI shearing on this board; see the
+accompanying clk-imx93.c and dw_mipi_dsi-imx.c patches for the other
+two. All three are needed together -- confirmed on real hardware.
+media_blk_ctrl's own (incomplete, 3 assigned-clocks but only 2 rates)
+list is left untouched -- it never sets a rate for media_disp_pix and
+never references video_pll, so it doesn't conflict with this.
+---
+ ...93-cargt-00363-00365-glt0557201280is1.dtsi | 20 +++++++++++++++++++
+ 1 file changed, 20 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dtsi b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dtsi
+index ca0fdc2d49e8..b7d19402bcbe 100644
+--- a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dtsi
++++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dtsi
+@@ -22,6 +22,26 @@ reg_dsi_vdd: regulator-dsi-vdd {
+ 
+ &lcdif {
+ 	status = "okay";
++	/*
++	 * Cargt: assigned-clocks/assigned-clock-parents used to live on
++	 * this node in the shared base DTSI (scarthgap's imx93.dtsi) and
++	 * this override only ever needed to set the rates. Wrynose's
++	 * restructured base DTSI dropped both properties from &lcdif
++	 * entirely, silently orphaning this rates-only override -- restore
++	 * them here so video_pll actually gets pinned to the rate this
++	 * panel needs (matches scarthgap's real achieved clock exactly).
++	 * Needed alongside the clk-imx93.c/dw_mipi_dsi-imx.c fixes for this
++	 * board's DSI shearing bug -- confirmed all three are required
++	 * together on real hardware.
++	 */
++	assigned-clocks = <&clk IMX93_CLK_VIDEO_PLL>,
++			   <&clk IMX93_CLK_MEDIA_DISP_PIX>,
++			   <&clk IMX93_CLK_MEDIA_AXI>,
++			   <&clk IMX93_CLK_MEDIA_APB>;
++	assigned-clock-parents = <&clk IMX93_CLK_24M>,
++				  <&clk IMX93_CLK_VIDEO_PLL>,
++				  <&clk IMX93_CLK_SYS_PLL_PFD1>,
++				  <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>;
+ 	assigned-clock-rates = <445333333>, <148444444>, <400000000>, <133333333>;
+ };
+ 
+-- 
+2.34.1
+

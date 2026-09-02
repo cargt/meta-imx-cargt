@@ -29,6 +29,9 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0032-dma-imx-sdma-restore-runtime-PM-wake-before-per-op-c.patch \
             file://0033-serial-imx-revert-TXTL_DEFAULT-to-2-test.patch \
             file://0034-drm-bridge-sec-dsim-config-esc-byte-clock-before-pa.patch \
+            file://0035-clk-imx93-drop-CLK_SET_RATE_PARENT-from-media_disp_p.patch \
+            file://0036-drm-imx-dw_mipi_dsi-imx-round-pixel-clock-through-th.patch \
+            file://0037-arm64-dts-imx93-cargt-00363-00365-restore-lcdif-assi.patch \
             "
 
 # Re-audited 2026-07-16 while diagnosing "bluetooth doesn't come up on its own":
@@ -86,6 +89,33 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
 # The imx8mp-00377 patches (0006, 0020-0024) in particular are a strict sequential chain --
 # 0006 creates the base files, 0020/0021 modify them, 0022 reorganizes into new .dtsi files,
 # 0023/0024 build on that reorganization -- do not reorder relative to each other.
+
+# 2026-09-02: 0035/0036/0037 fix the long-standing DSI shearing bug on
+# imx93-cargt-00363-00365 (5.5in GLT0557201280IS1-CTP panel) that had been
+# paused since 2026-07-17. Two other real hypotheses were tested on hardware
+# and disproven along the way (not committed): the new unconditional
+# DRM_BUS_FLAG_PIXDATA_SAMPLE_NEGEDGE in dw-mipi-dsi.c's
+# dw_mipi_dsi_bridge_atomic_check() (new vs. scarthgap, but opting out of it
+# made no visible difference), and reversing the ili9881c panel driver's
+# .prepare()/.enable() MIPI-init split (made things strictly worse -- DCS
+# command FIFO write timeouts, display went fully black -- confirming
+# .prepare() genuinely is the right place for MIPI comms on this platform,
+# despite a stale/misleading code comment claiming otherwise).
+# All three of 0035-0037 are required together, confirmed on real hardware:
+#  - 0035 stops media_disp_pix's clk_set_rate() (called by lcdifv3_set_mode()
+#    on every atomic_enable) from silently reprogramming video_pll itself.
+#  - 0036 makes dw_mipi_dsi_mode_fixup() report the CRTC's adjusted mode
+#    clock as what the LCDIF pixel clock can actually achieve, not the
+#    DPHY's independent (and different) PLL-derived value -- without this,
+#    the CRTC timing generator and the real pixel clock drift out of phase
+#    across a line, which is what actually produced the shearing artifact.
+#  - 0037 restores this board's &lcdif assigned-clocks (silently orphaned by
+#    wrynose's DTSI restructuring -- assigned-clock-rates with no
+#    assigned-clocks does nothing), pinning video_pll to a specific rate at
+#    boot. Confirmed via a real hardware test that leaving video_pll at
+#    whatever wrynose's stock DT settles on (rather than this specific,
+#    scarthgap-matching rate) still shears even with 0035/0036 applied --
+#    all three fixes are genuinely required, not just the first two.
 
 # DELTA_KERNEL_DEFCONFIG is deprecated/unsupported as of wrynose meta-imx-bsp;
 # per-machine selection is now done by conditionally adding each .cfg to
