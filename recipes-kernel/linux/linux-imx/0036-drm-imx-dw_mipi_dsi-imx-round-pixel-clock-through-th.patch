@@ -1,0 +1,61 @@
+From 8e8fa11ced022e364477a528e9a3f68e93932434 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Wed, 2 Sep 2026 13:48:37 -0500
+Subject: [PATCH 2/3] drm/imx: dw_mipi_dsi-imx: round pixel clock through the
+ real LCDIF clock
+
+Upstream-Status: Pending
+
+dw_mipi_dsi_mode_fixup() was rewritten upstream to derive
+adjusted_mode->clock purely from the DPHY's PLL math
+(hs_clk_rate * lanes / bpp), never touching the actual LCDIF pixel
+clock hardware at all. scarthgap's older version always rounded the
+requested pixel clock through clk_round_rate(dsi->pixel_clk, ...)
+before using it.
+
+adjusted_mode->clock feeds drm_mode_set_crtcinfo(), which computes
+every CRTC hsync/vsync/blanking timing count downstream. If that
+value doesn't match the clock rate the hardware is actually driven
+at, the CRTC timing generator and the real pixel clock drift out of
+phase across each line -- producing a diagonal shearing artifact.
+The DPHY's PLL and the LCDIF's pixel clock are two independent clock
+domains (DPHY runs from mipi_phy_cfg_root/video_pll's DPHY-side PLL,
+LCDIF's pixel clock is media_disp_pix off the shared video_pll), so
+there is no reason the DPHY-derived value should match what the
+LCDIF can actually achieve -- confirmed on real hardware that they
+don't (49.5MHz actual vs. 50MHz nominal/DPHY-derived on this panel).
+
+Second of three related fixes for DSI shearing on
+imx93-cargt-00363-00365; see the accompanying clk-imx93.c and
+device-tree patches for the other two. All three are needed
+together -- confirmed on real hardware.
+---
+ drivers/gpu/drm/imx/dw_mipi_dsi-imx.c | 12 ++++++++++++
+ 1 file changed, 12 insertions(+)
+
+diff --git a/drivers/gpu/drm/imx/dw_mipi_dsi-imx.c b/drivers/gpu/drm/imx/dw_mipi_dsi-imx.c
+index 0fca33f54f6a..cbe51d9a6739 100644
+--- a/drivers/gpu/drm/imx/dw_mipi_dsi-imx.c
++++ b/drivers/gpu/drm/imx/dw_mipi_dsi-imx.c
+@@ -229,6 +229,18 @@ static bool dw_mipi_dsi_mode_fixup(void *priv_data,
+ 	}
+ 
+ 	pixel_clock_rate = phycfg.mipi_dphy.hs_clk_rate * dsi->lanes / bpp;
++	/*
++	 * Cargt: pixel_clock_rate above is derived purely from the DPHY's
++	 * PLL math, not from what the LCDIF pixel clock can actually
++	 * achieve. Round it through the real clock so adjusted_mode->clock
++	 * (used for all CRTC hsync/vsync/blanking timing math) matches the
++	 * clock rate the hardware is actually driven at -- a mismatch here
++	 * causes the CRTC timing generator and the real pixel clock to
++	 * drift out of phase across a line, producing a diagonal shearing
++	 * artifact. scarthgap's older mode_fixup always rounded through
++	 * clk_round_rate() for this reason; this rewrite dropped it.
++	 */
++	pixel_clock_rate = clk_round_rate(dsi->pixel_clk, pixel_clock_rate);
+ 	adjusted_mode->clock = pixel_clock_rate / MSEC_PER_SEC;
+ 
+ 	/* Workarounds for modes that need to round htotal up. */
+-- 
+2.34.1
+
