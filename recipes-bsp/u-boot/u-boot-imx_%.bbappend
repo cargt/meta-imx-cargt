@@ -27,6 +27,22 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}/files:"
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 SRC_URI += " \
+            file://dts/imx8mp-cargt-00377-00365.dts \
+            file://dts/imx8mp-cargt-00377-00365-u-boot.dtsi \
+            file://dts/imx8mp-cargt-00377-osm-som.dts \
+            file://dts/imx93-cargt-00363-00365.dts \
+            file://dts/imx93-cargt-00363-00365-u-boot.dtsi \
+            file://dts/imx93-cargt-00363-osm-som.dts \
+            file://dts/imx93-cargt-00363-osm-som-u-boot.dtsi \
+            file://dts/imx93-cargt-00324-00326.dts \
+            file://dts/imx93-cargt-00324-00326-u-boot.dtsi \
+            file://dts/imx93-cargt-00359-00406.dts \
+            file://dts/imx93-cargt-00359-00406-u-boot.dtsi \
+            file://dts/imx93-cargt-00359.dts \
+            file://dts/imx91-cargt-00363-00365.dts \
+            file://dts/imx91-cargt-00363-00365-u-boot.dtsi \
+            file://dts/imx91-cargt-00363-osm-som.dts \
+            file://dts/imx91-cargt-00363-osm-som-u-boot.dtsi \
             "
 
 SRC_URI += "file://0002-Add-support-for-imx93_00363.patch \
@@ -34,8 +50,6 @@ SRC_URI += "file://0002-Add-support-for-imx93_00363.patch \
             file://0004-Add-support-for-Cargt-00324-00326-SODIMM-SOM-on-carr.patch \
             file://0005-Autosave-env-when-defaults-are-set.patch \
             file://0006-Add-support-for-00377-00365.patch \
-            file://0007-Update-MDIO-addresses-for-Ethernet-PHYs-on-00365-boa.patch \
-            file://0008-Refactor-PCA9555-GPIO-configuration-and-update-USB-C.patch \
             file://0009-Add-support-for-loading-DDR-timing-from-EEPROM-for-C.patch \
             file://0010-Add-support-for-00359-00406.patch \
             file://0011-Update-defconfig-settings-for-DDR-selection-for-0032.patch \
@@ -44,7 +58,6 @@ SRC_URI += "file://0002-Add-support-for-imx93_00363.patch \
             file://0014-Update-USB-role-switch-mode-and-add-USB-port-auto-co.patch \
             file://0015-Add-USB-DWC3-gadget-support-and-remove-redundant-com.patch \
             file://0016-Add-common-LPDDR4X-timing-support-and-update-configurations.patch \
-            file://0017-Limit-SD-Card-access-to-104-MHz-and-3.3V.patch \
             file://0018-cargt-EEPROM-v2-dram_rank-support-and-generated-rank.patch \
             file://0019-ddr-imx-add-training-diagnostics-PMU-messages-DDRPHY.patch \
             file://0020-tools-add-LPDDR4X-timing-validation-scripts.patch \
@@ -60,6 +73,7 @@ SRC_URI += "file://0002-Add-support-for-imx93_00363.patch \
             file://0033-board-cargt-common-add-EEPROM-dram_rank-write-repair.patch \
             file://0034-board-cargt-imx8mp_00377-vendor-neutral-DDR-dispatch.patch \
             file://0035-configs-imx8mp_00377-set-explicit-SYS_MALLOC_F_LEN.patch \
+            file://0036-arch-arm-dts-register-Cargt-board-dtb-y-entries.patch \
             "
 
 SRC_URI:remove = "file://0001-Add-Olimex-iMX8MP-SOM-EVB-IND.patch"
