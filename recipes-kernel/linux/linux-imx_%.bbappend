@@ -17,6 +17,12 @@ SRC_URI += " \
             file://dts/freescale/imx93-cargt-00324.dtsi \
             file://dts/freescale/imx91-cargt-00363-00365.dts \
             file://dts/freescale/imx91-cargt-00363-osm-som.dts \
+            file://dts/freescale/imx93-cargt-00363-00365.dts \
+            file://dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dts \
+            file://dts/freescale/imx93-cargt-00363-00365-glt0557201280is1.dtsi \
+            file://dts/freescale/imx93-cargt-00363-00365-glt1011280800is1.dts \
+            file://dts/freescale/imx93-cargt-00363-00365-glt1011280800is1.dtsi \
+            file://dts/freescale/imx93-cargt-00363-osm-som.dts \
             "
 
 do_patch:append() {
@@ -25,31 +31,22 @@ do_patch:append() {
     fi
 }
 
-SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
-            file://0002-Add-support-for-Globaltech-GTG-panels.patch \
+SRC_URI += "file://0002-Add-support-for-Globaltech-GTG-panels.patch \
             file://0005-Move-ili9881c-panel-initialization-from-the-prepare-.patch \
             file://0006-Add-device-tree-files-for-00377.patch \
-            file://0009-Remove-restriction-for-1.8V-only-SD-Card-support-tha.patch \
-            file://0010-Correct-the-MDIO-address-of-ethphy2-due-to-changes-o.patch \
-            file://0011-Attach-LPUART5-to-the-Bluetooth-driver-for-00363.patch \
             file://0012-Improve-panel-initialization-error-handling-and-rese.patch \
             file://0013-Add-support-for-the-GLT028240320IS1-display-on-the-C.patch \
-            file://0019-Add-RTS-CTS-support-for-Bluetooth-UART-on-00363.patch \
             file://0020-Add-FlexCAN-support-and-update-UART-RTS-CTS-configur.patch \
             file://0021-Add-device-tree-support-for-i.MX8MP-00377-OSM-L-SOM-.patch \
             file://0022-Reorganize-device-tree-source-file-for-the-Cargt-i.M.patch \
             file://0023-Add-device-tree-support-for-OS08A20-camera-and-enabl.patch \
             file://0024-Add-HDMI-support-for-Cargt-i.MX8MP-00377-OSM-L-SOM-o.patch \
-            file://0025-Limit-the-maximum-frequency-for-the-SD-Card-to-104-M.patch \
-            file://0026-Limit-SD-Card-to-3.3V-only-on-00365-for-compatibilit.patch \
-            file://0029-arm64-dts-imx93-cargt-00363-osm-som-Configure-Blueto.patch \
             file://0031-serial-imx-fall-back-to-PIO-RX-if-DMA-prep-fails.patch \
             file://0032-dma-imx-sdma-restore-runtime-PM-wake-before-per-op-c.patch \
             file://0033-serial-imx-revert-TXTL_DEFAULT-to-2-test.patch \
             file://0034-drm-bridge-sec-dsim-config-esc-byte-clock-before-pa.patch \
             file://0035-clk-imx93-drop-CLK_SET_RATE_PARENT-from-media_disp_p.patch \
             file://0036-drm-imx-dw_mipi_dsi-imx-round-pixel-clock-through-th.patch \
-            file://0037-arm64-dts-imx93-cargt-00363-00365-restore-lcdif-assi.patch \
             file://0039-arm64-dts-freescale-register-Cargt-board-dtb-y-entri.patch \
             "
 
@@ -109,7 +106,9 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
 # 0006 creates the base files, 0020/0021 modify them, 0022 reorganizes into new .dtsi files,
 # 0023/0024 build on that reorganization -- do not reorder relative to each other.
 
-# 2026-09-02: 0035/0036/0037 fix the long-standing DSI shearing bug on
+# 2026-09-02: 0035/0036/0037 (0037 has since been extracted to the standalone
+# imx93-cargt-00363-00365-glt0557201280is1.dtsi file -- see the header comment
+# there for its half of this fix) fix the long-standing DSI shearing bug on
 # imx93-cargt-00363-00365 (5.5in GLT0557201280IS1-CTP panel) that had been
 # paused since 2026-07-17. Two other real hypotheses were tested on hardware
 # and disproven along the way (not committed): the new unconditional
