@@ -1,0 +1,3 @@
+&lcdif3 {
+	status = "okay";
+};
