@@ -9,12 +9,25 @@ python () {
 }
 
 do_configure:prepend() {
+    # Standalone device tree source files, extracted out of the numbered
+    # patches below so they get real git history/diffs instead of being
+    # buried in patch hunks -- see recipes-bsp/u-boot/u-boot-imx/files/dts/.
+    # do_patch's do_patch task is a python task here (generic patch.bbclass,
+    # not the kernel's shell-based do_patch override), so this copy is done
+    # in do_configure:prepend instead of do_patch:append.
+    if [ -d "${UNPACKDIR}/dts" ]; then
+        cp -a ${UNPACKDIR}/dts/. ${S}/arch/arm/dts/
+    fi
     if [ -f "${S}/.config" ]; then
         cp "${S}/.config" "${B}/.config"
     fi
 }
 
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}/files:"
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
+
+SRC_URI += " \
+            "
 
 SRC_URI += "file://0002-Add-support-for-imx93_00363.patch \
             file://0003-Update-u-boot-imx-to-boot-Cargt-Linux-image.patch \
