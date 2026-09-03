@@ -6,6 +6,15 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${BPN}:"
 # hunks. Installed into the kernel source tree after all patches have applied
 # (do_patch:append, below) -- see recipes-kernel/linux/linux-imx/files/dts/.
 SRC_URI += " \
+            file://dts/freescale/imx93-cargt-00359-00406.dts \
+            file://dts/freescale/imx93-cargt-00359.dts \
+            file://dts/freescale/imx93-cargt-00324-00326.dts \
+            file://dts/freescale/imx93-cargt-00324-00326-00375.dts \
+            file://dts/freescale/imx93-cargt-00324-00326-glt0701024600is2.dts \
+            file://dts/freescale/imx93-cargt-00324-00326-glt0701024600is2.dtsi \
+            file://dts/freescale/imx93-cargt-00324-00326-glt1011280800is1.dts \
+            file://dts/freescale/imx93-cargt-00324-00326-glt1011280800is1.dtsi \
+            file://dts/freescale/imx93-cargt-00324.dtsi \
             "
 
 do_patch:append() {
@@ -16,11 +25,8 @@ do_patch:append() {
 
 SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0002-Add-support-for-Globaltech-GTG-panels.patch \
-            file://0004-Add-device-tree-files-for-00324-00326.patch \
             file://0005-Move-ili9881c-panel-initialization-from-the-prepare-.patch \
             file://0006-Add-device-tree-files-for-00377.patch \
-            file://0007-Add-support-for-00359-00406.patch \
-            file://0008-Make-device-tree-changes-to-allow-00324-to-boot-with.patch \
             file://0009-Remove-restriction-for-1.8V-only-SD-Card-support-tha.patch \
             file://0010-Correct-the-MDIO-address-of-ethphy2-due-to-changes-o.patch \
             file://0011-Attach-LPUART5-to-the-Bluetooth-driver-for-00363.patch \
@@ -37,7 +43,6 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0027-arm64-dts-imx91-Add-CARGT-00363-OSM-L-SOM-and-00365-.patch \
             file://0028-arm64-dts-imx91-Update-shared-DMA-pool-configuration.patch \
             file://0029-arm64-dts-imx93-cargt-00363-osm-som-Configure-Blueto.patch \
-            file://0030-Add-support-for-second-RS-232-UART-lpuart7-in-device.patch \
             file://0031-serial-imx-fall-back-to-PIO-RX-if-DMA-prep-fails.patch \
             file://0032-dma-imx-sdma-restore-runtime-PM-wake-before-per-op-c.patch \
             file://0033-serial-imx-revert-TXTL_DEFAULT-to-2-test.patch \
@@ -45,7 +50,6 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0035-clk-imx93-drop-CLK_SET_RATE_PARENT-from-media_disp_p.patch \
             file://0036-drm-imx-dw_mipi_dsi-imx-round-pixel-clock-through-th.patch \
             file://0037-arm64-dts-imx93-cargt-00363-00365-restore-lcdif-assi.patch \
-            file://0038-arm64-dts-imx93-cargt-00324-00326-00375-fix-HaLow-M.patch \
             file://0039-arm64-dts-freescale-register-Cargt-board-dtb-y-entri.patch \
             "
 
