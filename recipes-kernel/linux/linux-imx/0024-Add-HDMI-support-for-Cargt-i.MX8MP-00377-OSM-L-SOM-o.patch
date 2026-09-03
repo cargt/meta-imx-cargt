@@ -7,25 +7,12 @@ Subject: [PATCH] Add HDMI support for Cargt i.MX8MP 00377 OSM-L SOM on 00365
 Upstream-Status: Inappropriate [Cargt board specific]
 
 ---
- arch/arm64/boot/dts/freescale/Makefile           |  1 +
  .../freescale/imx8mp-cargt-00377-00365-hdmi.dts  | 16 ++++++++++++++++
  .../freescale/imx8mp-cargt-00377-00365-hdmi.dtsi |  3 +++
- 3 files changed, 20 insertions(+)
+ 2 files changed, 19 insertions(+)
  create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-hdmi.dts
  create mode 100644 arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-hdmi.dtsi
 
-diff --git a/arch/arm64/boot/dts/freescale/Makefile b/arch/arm64/boot/dts/freescale/Makefile
-index 1a6584d3c1fb..87238f68aa8b 100644
---- a/arch/arm64/boot/dts/freescale/Makefile
-+++ b/arch/arm64/boot/dts/freescale/Makefile
-@@ -209,6 +209,7 @@ dtb-$(CONFIG_ARCH_MXC) += imx8mp-evk-revb4-rpmsg.dtb
- dtb-$(CONFIG_ARCH_MXC) += imx8mp-evk-revb4-rpmsg-lpv.dtb
- 
- dtb-$(CONFIG_ARCH_MXC) += imx8mp-cargt-00377-00365.dtb \
-+				imx8mp-cargt-00377-00365-hdmi.dtb \
- 				imx8mp-cargt-00377-00365-glt0557201280is1.dtb \
- 				imx8mp-cargt-00377-00365-glt1011280800is1.dtb 
- 
 diff --git a/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-hdmi.dts b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-hdmi.dts
 new file mode 100644
 index 000000000000..dc7df8ab0de7

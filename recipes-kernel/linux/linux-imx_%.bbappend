@@ -46,6 +46,7 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0036-drm-imx-dw_mipi_dsi-imx-round-pixel-clock-through-th.patch \
             file://0037-arm64-dts-imx93-cargt-00363-00365-restore-lcdif-assi.patch \
             file://0038-arm64-dts-imx93-cargt-00324-00326-00375-fix-HaLow-M.patch \
+            file://0039-arm64-dts-freescale-register-Cargt-board-dtb-y-entri.patch \
             "
 
 # Re-audited 2026-07-16 while diagnosing "bluetooth doesn't come up on its own":
