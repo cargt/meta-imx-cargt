@@ -23,6 +23,16 @@ SRC_URI += " \
             file://dts/freescale/imx93-cargt-00363-00365-glt1011280800is1.dts \
             file://dts/freescale/imx93-cargt-00363-00365-glt1011280800is1.dtsi \
             file://dts/freescale/imx93-cargt-00363-osm-som.dts \
+            file://dts/freescale/imx8mp-cargt-00377-00365.dts \
+            file://dts/freescale/imx8mp-cargt-00377-00365.dtsi \
+            file://dts/freescale/imx8mp-cargt-00377-00365-glt0557201280is1.dts \
+            file://dts/freescale/imx8mp-cargt-00377-00365-glt0557201280is1.dtsi \
+            file://dts/freescale/imx8mp-cargt-00377-00365-glt1011280800is1.dts \
+            file://dts/freescale/imx8mp-cargt-00377-00365-glt1011280800is1.dtsi \
+            file://dts/freescale/imx8mp-cargt-00377-00365-hdmi.dts \
+            file://dts/freescale/imx8mp-cargt-00377-00365-hdmi.dtsi \
+            file://dts/freescale/imx8mp-cargt-00377-00365-os08a20.dtsi \
+            file://dts/freescale/imx8mp-cargt-00377-osm-som.dts \
             "
 
 do_patch:append() {
@@ -33,14 +43,8 @@ do_patch:append() {
 
 SRC_URI += "file://0002-Add-support-for-Globaltech-GTG-panels.patch \
             file://0005-Move-ili9881c-panel-initialization-from-the-prepare-.patch \
-            file://0006-Add-device-tree-files-for-00377.patch \
             file://0012-Improve-panel-initialization-error-handling-and-rese.patch \
             file://0013-Add-support-for-the-GLT028240320IS1-display-on-the-C.patch \
-            file://0020-Add-FlexCAN-support-and-update-UART-RTS-CTS-configur.patch \
-            file://0021-Add-device-tree-support-for-i.MX8MP-00377-OSM-L-SOM-.patch \
-            file://0022-Reorganize-device-tree-source-file-for-the-Cargt-i.M.patch \
-            file://0023-Add-device-tree-support-for-OS08A20-camera-and-enabl.patch \
-            file://0024-Add-HDMI-support-for-Cargt-i.MX8MP-00377-OSM-L-SOM-o.patch \
             file://0031-serial-imx-fall-back-to-PIO-RX-if-DMA-prep-fails.patch \
             file://0032-dma-imx-sdma-restore-runtime-PM-wake-before-per-op-c.patch \
             file://0033-serial-imx-revert-TXTL_DEFAULT-to-2-test.patch \
@@ -86,25 +90,11 @@ SRC_URI += "file://0002-Add-support-for-Globaltech-GTG-panels.patch \
 # Fixes required along the way (upstream kernel restructuring between scarthgap/lf-6.6.y
 # and wrynose/lf-6.18.y, not bugs in our patches):
 #  - imx91: mu1/mu2 mailbox nodes were removed from imx91.dtsi entirely -- dropped the
-#    &mu1/&mu2 status="okay" overrides from patch 0027's osm-som.dts.
-#  - imx8mp: gpu_3d/gpu_2d/ml_vipsi labels were renamed to gpu3d/gpu2d/npu in imx8mp.dtsi
-#    (patches 0006, 0023). hdmi_pavi/hdmi/hdmiphy moved out of imx8mp.dtsi into an optional
-#    imx8mp-nxp-display.dtsi overlay (which also replaces lcdif1/lcdif2/lcdif3/mipi_dsi/
-#    lvds_bridge with NXP's downstream driver-stack versions) -- added
-#    #include "imx8mp-nxp-display.dtsi" to imx8mp-cargt-00377-00365.dtsi (patch 0022), which
-#    required deleting the overlay's default mipi_dsi "port" node (/delete-node/ port;) to
-#    avoid a duplicate-label conflict with our own port@0/port@1 DSI panel wiring (patch
-#    0006). Also fixed a real hunk-header/line-count bug introduced while making that edit
-#    (declared @@ -0,0 +1,118 @@ after adding 2 lines, silently truncating the file and
-#    dropping the closing brace for &mipi_dsi -- always recount when hand-editing a
-#    "new file" hunk). The camera "cameradev" wrapper node was removed and isi_1 was
-#    consolidated away (isi_0 now handles both CSI ports) -- dropped the &cameradev and
-#    &isi_1 overrides from patch 0023's os08a20.dtsi and moved status="okay" directly onto
-#    &isi_0.
-#
-# The imx8mp-00377 patches (0006, 0020-0024) in particular are a strict sequential chain --
-# 0006 creates the base files, 0020/0021 modify them, 0022 reorganizes into new .dtsi files,
-# 0023/0024 build on that reorganization -- do not reorder relative to each other.
+#    &mu1/&mu2 status="okay" overrides from the standalone imx91-cargt-00363-osm-som.dts.
+#  - imx8mp: gpu_3d/gpu_2d/ml_vipsi renames, the imx8mp-nxp-display.dtsi overlay split, and
+#    the cameradev/isi_1 consolidation -- these no longer live here since patches
+#    0006/0020-0024 were extracted to standalone files; see item 17 in
+#    docs/wrynose-bringup-status.md for the preserved substance.
 
 # 2026-09-02: 0035/0036/0037 (0037 has since been extracted to the standalone
 # imx93-cargt-00363-00365-glt0557201280is1.dtsi file -- see the header comment
