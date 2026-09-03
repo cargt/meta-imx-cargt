@@ -1,5 +1,18 @@
+FILESEXTRAPATHS:prepend := "${THISDIR}/${BPN}/files:"
 FILESEXTRAPATHS:prepend := "${THISDIR}/${BPN}:"
 
+# Standalone device tree source files, extracted out of the numbered patches
+# below so they get real git history/diffs instead of being buried in patch
+# hunks. Installed into the kernel source tree after all patches have applied
+# (do_patch:append, below) -- see recipes-kernel/linux/linux-imx/files/dts/.
+SRC_URI += " \
+            "
+
+do_patch:append() {
+    if [ -d "${UNPACKDIR}/dts/freescale" ]; then
+        cp -a ${UNPACKDIR}/dts/freescale/. ${S}/arch/arm64/boot/dts/freescale/
+    fi
+}
 
 SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0002-Add-support-for-Globaltech-GTG-panels.patch \
