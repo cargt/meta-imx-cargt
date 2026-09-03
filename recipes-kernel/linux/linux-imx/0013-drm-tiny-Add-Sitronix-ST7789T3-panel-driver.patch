@@ -1,27 +1,33 @@
-From d597cf2c1a9940db1457e052dc5b119a988fa136 Mon Sep 17 00:00:00 2001
+From d9e16ebbf506a2dcb290eae95bffa4126b637d2e Mon Sep 17 00:00:00 2001
 From: Tim Carney <tim.carney@cargt.com>
 Date: Wed, 22 Apr 2026 13:21:56 -0500
-Subject: [PATCH] Add support for the GLT028240320IS1 display on the Cargt
- 00365 carrier with the i.MX 93 00363 OSM-L SOM. This includes device tree and
- DRM driver support for Sitronix ST7789T3 display panels.
+Subject: [PATCH] drm/tiny: Add Sitronix ST7789T3 panel driver for the Cargt
+ GLT028240320IS1 display
+
+DRM driver and DT binding support for Sitronix ST7789T3 display
+panels, used on the Cargt 00365 carrier's GLT028240320IS1 2.8"
+320x240 panel. The device tree side of this originally-combined
+patch (imx93-cargt-00363-00365-glt028240320is1.dts/.dtsi) has since
+been extracted to recipes-kernel/linux/linux-imx/files/dts/freescale/
+as part of the wrynose-dts restructure; this patch now carries only
+the driver/binding content, mechanically split via git (checkout the
+original commit, `git rm` the two dts/dtsi files it added, amend,
+regenerate) rather than by hand, given this patch's history of
+hand-edit corruption.
 
 Upstream-Status: Inappropriate [Cargt board specific]
 ---
  .../bindings/display/sitronix,st7789t3.yaml   |  72 ++++
- ...mx93-cargt-00363-00365-glt028240320is1.dts |  13 +
- ...x93-cargt-00363-00365-glt028240320is1.dtsi |  89 +++++
  drivers/gpu/drm/tiny/Kconfig                  |  14 +
  drivers/gpu/drm/tiny/Makefile                 |   1 +
  drivers/gpu/drm/tiny/st7789t3.c               | 329 ++++++++++++++++++
- 6 files changed, 518 insertions(+)
+ 4 files changed, 416 insertions(+)
  create mode 100644 Documentation/devicetree/bindings/display/sitronix,st7789t3.yaml
- create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dts
- create mode 100644 arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dtsi
  create mode 100644 drivers/gpu/drm/tiny/st7789t3.c
 
 diff --git a/Documentation/devicetree/bindings/display/sitronix,st7789t3.yaml b/Documentation/devicetree/bindings/display/sitronix,st7789t3.yaml
 new file mode 100644
-index 000000000000..54378cf3d94a
+index 000000000000..197194f64235
 --- /dev/null
 +++ b/Documentation/devicetree/bindings/display/sitronix,st7789t3.yaml
 @@ -0,0 +1,72 @@
@@ -97,127 +103,13 @@ index 000000000000..54378cf3d94a
 +    };
 +
 +...
-diff --git a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dts b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dts
-new file mode 100644
-index 000000000000..cfa35a53cae6
---- /dev/null
-+++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dts
-@@ -0,0 +1,13 @@
-+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
-+/*
-+ * Copyright 2022 NXP
-+ */
-+
-+/dts-v1/;
-+
-+#include "imx93-cargt-00363-00365.dts"
-+#include "imx93-cargt-00363-00365-glt028240320is1.dtsi"
-+
-+/ {
-+	model = "Cargt i.MX93 00363 OSM-L SOM on 00365 carrier board with 2.8in SPI Display(GLT028240320IS1-CTP)";
-+};
-diff --git a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dtsi b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dtsi
-new file mode 100644
-index 000000000000..0fc49a49fe49
---- /dev/null
-+++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dtsi
-@@ -0,0 +1,88 @@
-+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
-+/*
-+ * Copyright 2022 NXP
-+ */
-+
-+/ {
-+	pwm_backlight: pwm_backlight {
-+		compatible = "pwm-backlight";
-+		pwms = <&tpm6 1 5000000 0>; // 200 Hz
-+		brightness-levels = <0 100>;
-+		num-interpolated-steps = <100>;
-+		default-brightness-level = <80>;
-+		status = "okay";
-+	};
-+};
-+
-+&lpspi8 {
-+	fsl,spi-num-chipselects = <1>;
-+	pinctrl-names = "default", "sleep";
-+	pinctrl-0 = <&pinctrl_lpspi8>;
-+	pinctrl-1 = <&pinctrl_lpspi8>;
-+	cs-gpios = <&gpio2 12 GPIO_ACTIVE_LOW>;
-+	status = "okay";
-+
-+	/delete-property/ dmas;
-+	/delete-property/ dma-names;
-+
-+	display@0{
-+		compatible = "gtdisplay,glt028240320IS1", "sitronix,st7789t3";
-+		reg = <0>;
-+		spi-max-frequency = <12000000>;
-+		dc-gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
-+		reset-gpios = <&pca9555_20 8 GPIO_ACTIVE_HIGH>;
-+		backlight = <&pwm_backlight>;
-+	};
-+};
-+
-+
-+&lpuart2 {
-+	status = "disabled";
-+};
-+
-+&tpm6 {
-+	pinctrl-names = "default";
-+	pinctrl-0 = <&pinctrl_backlight_pwm>;
-+	status = "okay";
-+};
-+
-+&lpi2c2 {
-+	focaltech_touch: touchscreen@38 {
-+		compatible = "focaltech,ft6236";
-+		reg = <0x38>;
-+		pinctrl-names = "default";
-+		pinctrl-0 = <&pinctrl_touch_io>;
-+		interrupt-parent = <&gpio2>;
-+		interrupts = <8 IRQ_TYPE_EDGE_FALLING>;
-+        touchscreen-size-x = <240>;
-+        touchscreen-size-y = <320>;
-+		touchscreen-inverted-y;
-+		reset-gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;
-+		wakeup-source;
-+      };
-+};
-+
-+&iomuxc {
-+	pinctrl_lpspi8: lpspi8grp {
-+		fsl,pins = <
-+			MX93_PAD_GPIO_IO12__GPIO2_IO12      0x3fe
-+			MX93_PAD_GPIO_IO13__LPSPI8_SIN      0x3fe
-+			MX93_PAD_GPIO_IO14__LPSPI8_SOUT     0x3fe
-+			MX93_PAD_GPIO_IO15__LPSPI8_SCK      0x3fe
-+            MX93_PAD_UART2_TXD__GPIO1_IO07      0x3fe // Data Command Switch
-+		>;
-+	};
-+
-+	pinctrl_backlight_pwm: backlight-pwmgrp {
-+		fsl,pins = <
-+			MX93_PAD_GPIO_IO23__TPM6_CH1		0x2
-+		>;
-+	};
-+
-+	pinctrl_touch_io: touchiogrp {
-+		fsl,pins = <
-+			MX93_PAD_UART2_RXD__GPIO1_IO06		0x3fe // RST
-+			MX93_PAD_GPIO_IO08__GPIO2_IO08		0x3fe // INT
-+		>;
-+	};
-+};
-\ No newline at end of file
 diff --git a/drivers/gpu/drm/tiny/Kconfig b/drivers/gpu/drm/tiny/Kconfig
-index f6889f649bc1..fbfbd6151f77 100644
+index f0e72d4b6a47..e71d96fa6f46 100644
 --- a/drivers/gpu/drm/tiny/Kconfig
 +++ b/drivers/gpu/drm/tiny/Kconfig
 @@ -215,3 +215,17 @@ config TINYDRM_SHARP_MEMORY
  	  * 4.40" Sharp Memory LCD (LS044Q7DH01)
-
+ 
  	  If M is selected the module will be called sharp_memory.
 +
 +config TINYDRM_ST7789T3
@@ -234,7 +126,7 @@ index f6889f649bc1..fbfbd6151f77 100644
 +
 +	  If M is selected the module will be called st7789t3.
 diff --git a/drivers/gpu/drm/tiny/Makefile b/drivers/gpu/drm/tiny/Makefile
-index 76dde89a044b..826dea30620e 100644
+index 48d30bf6152f..030ace827e45 100644
 --- a/drivers/gpu/drm/tiny/Makefile
 +++ b/drivers/gpu/drm/tiny/Makefile
 @@ -15,3 +15,4 @@ obj-$(CONFIG_TINYDRM_ILI9486)		+= ili9486.o
@@ -244,7 +136,7 @@ index 76dde89a044b..826dea30620e 100644
 +obj-$(CONFIG_TINYDRM_ST7789T3)		+= st7789t3.o
 diff --git a/drivers/gpu/drm/tiny/st7789t3.c b/drivers/gpu/drm/tiny/st7789t3.c
 new file mode 100644
-index 000000000000..b2728fc49757
+index 000000000000..bcb3d5df6b3f
 --- /dev/null
 +++ b/drivers/gpu/drm/tiny/st7789t3.c
 @@ -0,0 +1,329 @@
@@ -577,3 +469,6 @@ index 000000000000..b2728fc49757
 +MODULE_DESCRIPTION("Sitronix ST7789T3 DRM driver");
 +MODULE_AUTHOR("Tim Carney <tim.carney@cargt.com>");
 +MODULE_LICENSE("GPL");
+-- 
+2.34.1
+

@@ -33,6 +33,8 @@ SRC_URI += " \
             file://dts/freescale/imx8mp-cargt-00377-00365-hdmi.dtsi \
             file://dts/freescale/imx8mp-cargt-00377-00365-os08a20.dtsi \
             file://dts/freescale/imx8mp-cargt-00377-osm-som.dts \
+            file://dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dts \
+            file://dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dtsi \
             "
 
 do_patch:append() {
@@ -44,7 +46,7 @@ do_patch:append() {
 SRC_URI += "file://0002-Add-support-for-Globaltech-GTG-panels.patch \
             file://0005-Move-ili9881c-panel-initialization-from-the-prepare-.patch \
             file://0012-Improve-panel-initialization-error-handling-and-rese.patch \
-            file://0013-Add-support-for-the-GLT028240320IS1-display-on-the-C.patch \
+            file://0013-drm-tiny-Add-Sitronix-ST7789T3-panel-driver.patch \
             file://0031-serial-imx-fall-back-to-PIO-RX-if-DMA-prep-fails.patch \
             file://0032-dma-imx-sdma-restore-runtime-PM-wake-before-per-op-c.patch \
             file://0033-serial-imx-revert-TXTL_DEFAULT-to-2-test.patch \
