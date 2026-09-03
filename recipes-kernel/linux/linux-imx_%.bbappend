@@ -32,6 +32,7 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0035-clk-imx93-drop-CLK_SET_RATE_PARENT-from-media_disp_p.patch \
             file://0036-drm-imx-dw_mipi_dsi-imx-round-pixel-clock-through-th.patch \
             file://0037-arm64-dts-imx93-cargt-00363-00365-restore-lcdif-assi.patch \
+            file://0038-arm64-dts-imx93-cargt-00324-00326-00375-fix-HaLow-M.patch \
             "
 
 # Re-audited 2026-07-16 while diagnosing "bluetooth doesn't come up on its own":
@@ -116,6 +117,29 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
 #    whatever wrynose's stock DT settles on (rather than this specific,
 #    scarthgap-matching rate) still shears even with 0035/0036 applied --
 #    all three fixes are genuinely required, not just the first two.
+
+# 2026-09-03: 0038 fixes HaLow (00375/MM6108) SDIO enumeration on
+# imx93-cargt-00324-00326. Root-caused on real hardware: the base board
+# file's usdhc3_pwrseq/reg_usdhc3_vmmc nodes are wired for the *other*
+# (NXP/Cypress) M.2 module's WL_REG_ON/BT_REG_ON convention, but pca9555
+# pin 13 is actually the MM6108's own RESET_N -- any pwrseq re-toggling
+# RESET_N on every probe/retry cycle prevents SDIO enumeration entirely.
+# Just overriding vmmc-supply away from reg_usdhc3_vmmc (the old approach)
+# was not enough: both base nodes auto-probe on their compatible string
+# regardless of whether this overlay references them, so regulator-usdhc3
+# was still left claiming pin 13 (permanently deasserted/low, since nothing
+# ever called regulator_enable() on an unreferenced node) -- holding
+# RESET_N asserted the whole time. Fix deletes both nodes entirely (which
+# also required /delete-property/ mmc-pwrseq -- the SOM-level dtsi's
+# &usdhc3 override references usdhc3_pwrseq by phandle, so dtc fails to
+# link unless that property is dropped too) and adds vqmmc-supply
+# (required by the morse_sdio driver's mm6108_sdio@0 node) plus
+# non-removable (safe again now that pwrseq-driven card detect is gone).
+# Paired with the morse-firmware/driver version-alignment fix in
+# meta-morsemicro (firmware bumped to the 1.16 release line to match
+# morsemicro-driver's existing SRCREV 1.16.4 -- the two had drifted out of
+# sync, causing a MORSE_CMD_SEMVER_MAJOR mismatch hard-fail). Both fixes
+# together confirmed on real hardware: full wlan0 HaLow AP scan success.
 
 # DELTA_KERNEL_DEFCONFIG is deprecated/unsupported as of wrynose meta-imx-bsp;
 # per-machine selection is now done by conditionally adding each .cfg to
