@@ -15,6 +15,8 @@ SRC_URI += " \
             file://dts/freescale/imx93-cargt-00324-00326-glt1011280800is1.dts \
             file://dts/freescale/imx93-cargt-00324-00326-glt1011280800is1.dtsi \
             file://dts/freescale/imx93-cargt-00324.dtsi \
+            file://dts/freescale/imx91-cargt-00363-00365.dts \
+            file://dts/freescale/imx91-cargt-00363-osm-som.dts \
             "
 
 do_patch:append() {
@@ -40,8 +42,6 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0024-Add-HDMI-support-for-Cargt-i.MX8MP-00377-OSM-L-SOM-o.patch \
             file://0025-Limit-the-maximum-frequency-for-the-SD-Card-to-104-M.patch \
             file://0026-Limit-SD-Card-to-3.3V-only-on-00365-for-compatibilit.patch \
-            file://0027-arm64-dts-imx91-Add-CARGT-00363-OSM-L-SOM-and-00365-.patch \
-            file://0028-arm64-dts-imx91-Update-shared-DMA-pool-configuration.patch \
             file://0029-arm64-dts-imx93-cargt-00363-osm-som-Configure-Blueto.patch \
             file://0031-serial-imx-fall-back-to-PIO-RX-if-DMA-prep-fails.patch \
             file://0032-dma-imx-sdma-restore-runtime-PM-wake-before-per-op-c.patch \
