@@ -45,35 +45,33 @@ SRC_URI += " \
             file://dts/imx91-cargt-00363-osm-som-u-boot.dtsi \
             "
 
-SRC_URI += "file://0002-Add-support-for-imx93_00363.patch \
+SRC_URI += "file://0001-arch-arm-dts-register-Cargt-board-dtb-y-entries.patch \
+            file://0002-Add-support-for-imx93_00363.patch \
             file://0003-Update-u-boot-imx-to-boot-Cargt-Linux-image.patch \
             file://0004-Add-support-for-Cargt-00324-00326-SODIMM-SOM-on-carr.patch \
             file://0005-Autosave-env-when-defaults-are-set.patch \
             file://0006-Add-support-for-00377-00365.patch \
-            file://0009-Add-support-for-loading-DDR-timing-from-EEPROM-for-C.patch \
-            file://0010-Add-support-for-00359-00406.patch \
-            file://0011-Update-defconfig-settings-for-DDR-selection-for-0032.patch \
-            file://0012-Fix-preprocessor-definition-typo.patch \
-            file://0013-Add-Cargt-EEPROM-support-for-LPDDR4-timing-configura.patch \
-            file://0014-Update-USB-role-switch-mode-and-add-USB-port-auto-co.patch \
-            file://0015-Add-USB-DWC3-gadget-support-and-remove-redundant-com.patch \
-            file://0016-Add-common-LPDDR4X-timing-support-and-update-configurations.patch \
-            file://0018-cargt-EEPROM-v2-dram_rank-support-and-generated-rank.patch \
-            file://0019-ddr-imx-add-training-diagnostics-PMU-messages-DDRPHY.patch \
-            file://0020-tools-add-LPDDR4X-timing-validation-scripts.patch \
-            file://0021-cargt-imx93_00363-512MB-timing-variants-rank-2-overr.patch \
-            file://0022-cargt-imx93_00363-LPDDR4X-shared-timing-infra-all-va.patch \
-            file://0023-board-cargt-add-i.MX-91-00363-OSM-L-SOM-board-suppor.patch \
-            file://0027-imx93-cargt-Share-LPDDR4X-timing-files-across-all-i.patch \
-            file://0028-configs-disable-HS400-support-in-i.MX93-Cargt-U-Boot.patch \
-            file://0029-Modify-Serial-Number-output-to-be-decimal-as-well-as.patch \
-            file://0030-ddr-imx9-bound-DYN_REF-mode-register-polls-with-a-t.patch \
-            file://0031-board-cargt-imx8mp_00377-fix-I2C2-USB-C-bring-up-bug.patch \
-            file://0032-configs-imx8mp_00377-remove-hardcoded-FEC-PHY-addres.patch \
-            file://0033-board-cargt-common-add-EEPROM-dram_rank-write-repair.patch \
-            file://0034-board-cargt-imx8mp_00377-vendor-neutral-DDR-dispatch.patch \
-            file://0035-configs-imx8mp_00377-set-explicit-SYS_MALLOC_F_LEN.patch \
-            file://0036-arch-arm-dts-register-Cargt-board-dtb-y-entries.patch \
+            file://0007-Add-support-for-loading-DDR-timing-from-EEPROM-for-C.patch \
+            file://0008-Add-support-for-00359-00406.patch \
+            file://0009-Update-defconfig-settings-for-DDR-selection-for-0032.patch \
+            file://0010-Fix-preprocessor-definition-typo.patch \
+            file://0011-Add-Cargt-EEPROM-support-for-LPDDR4-timing-configura.patch \
+            file://0012-Update-USB-role-switch-mode-and-add-USB-port-auto-co.patch \
+            file://0013-Add-USB-DWC3-gadget-support-and-remove-redundant-com.patch \
+            file://0014-Add-common-LPDDR4X-timing-support-and-update-configurations.patch \
+            file://0015-cargt-EEPROM-v2-dram_rank-support-and-generated-rank.patch \
+            file://0016-ddr-imx-add-training-diagnostics-PMU-messages-DDRPHY.patch \
+            file://0017-tools-add-LPDDR4X-timing-validation-scripts.patch \
+            file://0018-cargt-imx93_00363-512MB-timing-variants-rank-2-overr.patch \
+            file://0019-cargt-imx93_00363-LPDDR4X-shared-timing-infra-all-va.patch \
+            file://0020-board-cargt-add-i.MX-91-00363-OSM-L-SOM-board-suppor.patch \
+            file://0021-imx93-cargt-Share-LPDDR4X-timing-files-across-all-i.patch \
+            file://0022-configs-disable-HS400-support-in-i.MX93-Cargt-U-Boot.patch \
+            file://0023-Modify-Serial-Number-output-to-be-decimal-as-well-as.patch \
+            file://0024-ddr-imx9-bound-DYN_REF-mode-register-polls-with-a-t.patch \
+            file://0025-board-cargt-imx8mp_00377-fix-I2C2-USB-C-bring-up-bug.patch \
+            file://0026-configs-imx8mp_00377-remove-hardcoded-FEC-PHY-addres.patch \
+            file://0027-board-cargt-common-add-EEPROM-dram_rank-write-repair.patch \
+            file://0028-board-cargt-imx8mp_00377-vendor-neutral-DDR-dispatch.patch \
+            file://0029-configs-imx8mp_00377-set-explicit-SYS_MALLOC_F_LEN.patch \
             "
-
-SRC_URI:remove = "file://0001-Add-Olimex-iMX8MP-SOM-EVB-IND.patch"
