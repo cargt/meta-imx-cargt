@@ -43,34 +43,37 @@ do_patch:append() {
     fi
 }
 
-SRC_URI += "file://0002-Add-support-for-Globaltech-GTG-panels.patch \
-            file://0005-Move-ili9881c-panel-initialization-from-the-prepare-.patch \
-            file://0012-Improve-panel-initialization-error-handling-and-rese.patch \
-            file://0013-drm-tiny-Add-Sitronix-ST7789T3-panel-driver.patch \
-            file://0031-serial-imx-fall-back-to-PIO-RX-if-DMA-prep-fails.patch \
-            file://0032-dma-imx-sdma-restore-runtime-PM-wake-before-per-op-c.patch \
-            file://0033-serial-imx-revert-TXTL_DEFAULT-to-2-test.patch \
-            file://0034-drm-bridge-sec-dsim-config-esc-byte-clock-before-pa.patch \
-            file://0035-clk-imx93-drop-CLK_SET_RATE_PARENT-from-media_disp_p.patch \
-            file://0036-drm-imx-dw_mipi_dsi-imx-round-pixel-clock-through-th.patch \
-            file://0039-arm64-dts-freescale-register-Cargt-board-dtb-y-entri.patch \
+SRC_URI += "file://0001-arm64-dts-freescale-register-Cargt-board-dtb-y-entri.patch \
+            file://0002-Add-support-for-Globaltech-GTG-panels.patch \
+            file://0003-Move-ili9881c-panel-initialization-from-the-prepare-.patch \
+            file://0004-Improve-panel-initialization-error-handling-and-rese.patch \
+            file://0005-drm-tiny-Add-Sitronix-ST7789T3-panel-driver.patch \
+            file://0006-serial-imx-fall-back-to-PIO-RX-if-DMA-prep-fails.patch \
+            file://0007-dma-imx-sdma-restore-runtime-PM-wake-before-per-op-c.patch \
+            file://0008-serial-imx-revert-TXTL_DEFAULT-to-2-test.patch \
+            file://0009-drm-bridge-sec-dsim-config-esc-byte-clock-before-pa.patch \
+            file://0010-clk-imx93-drop-CLK_SET_RATE_PARENT-from-media_disp_p.patch \
+            file://0011-drm-imx-dw_mipi_dsi-imx-round-pixel-clock-through-th.patch \
             "
 
 # Re-audited 2026-07-16 while diagnosing "bluetooth doesn't come up on its own":
-# 0011/0019/0029 were previously (mis)filed under "other boards/machines", but all three
-# actually target imx93-cargt-00363-osm-som.dts -- this board's own SOM file, not another
-# board.
+# (pre-Phase-9-renumbering) 0011/0019/0029 were previously (mis)filed under "other
+# boards/machines", but all three actually targeted imx93-cargt-00363-osm-som.dts --
+# this board's own SOM file, not another board. All three were later extracted to
+# standalone dts files (Group A) and no longer exist as numbered patches.
 #
 # Re-audited again (2026-07-16): 0002 adds the "globaltech,glt0557201280is1" ili9881c panel
 # variant that this board's own imx93-cargt-00363-00365-glt0557201280is1.dtsi actually uses.
-# 0005/0012 are generic ili9881c.c prepare/unprepare/enable refinements layered on top of
-# 0002's additions, not board-specific.
+# 0003/0004 (renumbered from 0005/0012 in Phase 9) are generic ili9881c.c
+# prepare/unprepare/enable refinements layered on top of 0002's additions, not board-specific.
 #
-# 0003-Add-support-for-Epson-RX8111-RTC.patch: NOT re-enabled, deleted as obsolete --
+# An old "Add-support-for-Epson-RX8111-RTC.patch" (formerly numbered 0003, before Phase 9
+# renumbering reused that number) was NOT re-enabled, deleted as obsolete --
 # drivers/rtc/rtc-rx8111.c plus its Kconfig/Makefile entries are already upstream in the
 # wrynose kernel tree (confirmed via kernel-source inspection and a live boot: "rtc-rx8111
-# 0-0032: registered as rtc0" using only patch 0001's existing rtc_i2c DT node + this
-# board's cargt_00363_kernel_config_mods.cfg CONFIG_RTC_DRV_RX8111=y, no patch needed).
+# 0-0032: registered as rtc0" using only the rtc_i2c DT node in this board's standalone
+# imx93-cargt-00363-00365.dts + this board's cargt_00363_kernel_config_mods.cfg
+# CONFIG_RTC_DRV_RX8111=y, no patch needed).
 #
 # 2026-07-17: user has hardware to bring up the remaining boards too (00324-00326,
 # 00359-00406, imx91 variant of 00363-00365, imx8mp-00377), so the rest of the original
@@ -94,13 +97,13 @@ SRC_URI += "file://0002-Add-support-for-Globaltech-GTG-panels.patch \
 #  - imx91: mu1/mu2 mailbox nodes were removed from imx91.dtsi entirely -- dropped the
 #    &mu1/&mu2 status="okay" overrides from the standalone imx91-cargt-00363-osm-som.dts.
 #  - imx8mp: gpu_3d/gpu_2d/ml_vipsi renames, the imx8mp-nxp-display.dtsi overlay split, and
-#    the cameradev/isi_1 consolidation -- these no longer live here since patches
-#    0006/0020-0024 were extracted to standalone files; see item 17 in
-#    docs/wrynose-bringup-status.md for the preserved substance.
+#    the cameradev/isi_1 consolidation -- these no longer live here since the old
+#    0006/0020-0024 patches (pre-Phase-9 numbering) were extracted to standalone files;
+#    see item 17 in docs/wrynose-bringup-status.md for the preserved substance.
 
-# 2026-09-02: 0035/0036/0037 (0037 has since been extracted to the standalone
-# imx93-cargt-00363-00365-glt0557201280is1.dtsi file -- see the header comment
-# there for its half of this fix) fix the long-standing DSI shearing bug on
+# 2026-09-02: the old 0035/0036/0037 (Phase 9 renumbered the surviving two to 0010/0011;
+# 0037 has since been extracted to the standalone imx93-cargt-00363-00365-glt0557201280is1.dtsi
+# file -- see the header comment there for its half of this fix) fix the long-standing DSI shearing bug on
 # imx93-cargt-00363-00365 (5.5in GLT0557201280IS1-CTP panel) that had been
 # paused since 2026-07-17. Two other real hypotheses were tested on hardware
 # and disproven along the way (not committed): the new unconditional
@@ -111,23 +114,25 @@ SRC_URI += "file://0002-Add-support-for-Globaltech-GTG-panels.patch \
 # command FIFO write timeouts, display went fully black -- confirming
 # .prepare() genuinely is the right place for MIPI comms on this platform,
 # despite a stale/misleading code comment claiming otherwise).
-# All three of 0035-0037 are required together, confirmed on real hardware:
-#  - 0035 stops media_disp_pix's clk_set_rate() (called by lcdifv3_set_mode()
+# All three (now 0010, 0011, and the standalone dtsi's own fix) are required together,
+# confirmed on real hardware:
+#  - 0010 stops media_disp_pix's clk_set_rate() (called by lcdifv3_set_mode()
 #    on every atomic_enable) from silently reprogramming video_pll itself.
-#  - 0036 makes dw_mipi_dsi_mode_fixup() report the CRTC's adjusted mode
+#  - 0011 makes dw_mipi_dsi_mode_fixup() report the CRTC's adjusted mode
 #    clock as what the LCDIF pixel clock can actually achieve, not the
 #    DPHY's independent (and different) PLL-derived value -- without this,
 #    the CRTC timing generator and the real pixel clock drift out of phase
 #    across a line, which is what actually produced the shearing artifact.
-#  - 0037 restores this board's &lcdif assigned-clocks (silently orphaned by
+#  - the old 0037 restores this board's &lcdif assigned-clocks (silently orphaned by
 #    wrynose's DTSI restructuring -- assigned-clock-rates with no
 #    assigned-clocks does nothing), pinning video_pll to a specific rate at
 #    boot. Confirmed via a real hardware test that leaving video_pll at
 #    whatever wrynose's stock DT settles on (rather than this specific,
-#    scarthgap-matching rate) still shears even with 0035/0036 applied --
+#    scarthgap-matching rate) still shears even with 0010/0011 applied --
 #    all three fixes are genuinely required, not just the first two.
 
-# 2026-09-03: 0038 fixes HaLow (00375/MM6108) SDIO enumeration on
+# 2026-09-03: the old 0038 (extracted to standalone files, no longer a numbered patch)
+# fixes HaLow (00375/MM6108) SDIO enumeration on
 # imx93-cargt-00324-00326. Root-caused on real hardware: the base board
 # file's usdhc3_pwrseq/reg_usdhc3_vmmc nodes are wired for the *other*
 # (NXP/Cypress) M.2 module's WL_REG_ON/BT_REG_ON convention, but pca9555
