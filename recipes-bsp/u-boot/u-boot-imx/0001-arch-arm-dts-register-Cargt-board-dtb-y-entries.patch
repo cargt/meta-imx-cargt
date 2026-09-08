@@ -1,0 +1,45 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 3 Sep 2026 00:00:00 -0500
+Subject: [PATCH] arch: arm: dts: register Cargt board dtb-y entries
+
+Consolidates the arch/arm/dts/Makefile hunks that used to be scattered
+across patches 0005 and 0023 into a single patch, now that those
+patches' device tree content has been extracted into standalone files
+under recipes-bsp/u-boot/u-boot-imx/files/dts/ instead. This is the
+only place those patches touched anything outside of dts/dtsi/board
+content.
+
+Net effect on the Makefile is identical to before this consolidation --
+verified via matching u-boot.dtb sha256sums against the pre-change
+baseline.
+
+Upstream-Status: Inappropriate [Cargt board specific]
+---
+ arch/arm/dts/Makefile | 5 +++++
+ 1 file changed, 5 insertions(+)
+
+diff --git a/arch/arm/dts/Makefile b/arch/arm/dts/Makefile
+index 947e1b24514..e6ced4c88f9 100644
+--- a/arch/arm/dts/Makefile
++++ b/arch/arm/dts/Makefile
+@@ -945,6 +945,7 @@ dtb-$(CONFIG_ARCH_IMX8M) += \
+ 	imx8mp-frdm.dtb \
+ 	imx8mp-icore-mx8mp-edimm2.2.dtb \
+ 	imx8mp-msc-sm2s.dtb \
++	imx8mp-cargt-00377-00365.dtb \
+ 	imx8mq-pico-pi.dtb \
+ 	imx8mq-kontron-pitx-imx8m.dtb \
+ 	imx8mq-librem5-r4.dtb
+@@ -958,6 +959,8 @@ dtb-$(CONFIG_ARCH_IMX9) += \
+ 	imx943-orangebox.dtb \
+ 	imx91-9x9-qsb.dtb \
+ 	imx91-11x11-frdm-imx91s.dtb \
++	imx91-cargt-00363-osm-som.dtb \
++	imx91-cargt-00363-00365.dtb \
+ 	imx93w-evk.dtb \
+ 	imx93w-frdm.dtb \
+ 	imx93-var-som-symphony.dtb
+--
+2.34.1
+

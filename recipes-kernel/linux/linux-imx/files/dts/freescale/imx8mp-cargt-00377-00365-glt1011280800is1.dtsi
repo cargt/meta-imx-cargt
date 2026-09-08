@@ -1,0 +1,133 @@
+/ {
+
+	reg_lvds_i2c_switch: regulator-lvds-i2c-switch {
+		compatible = "regulator-fixed";
+		regulator-name = "lvds_i2c_sw";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&pca9555_20 15 GPIO_ACTIVE_LOW>;
+		enable-active-low;
+		regulator-always-on;
+		status = "okay";
+	};
+
+	reg_lvds_vdd: regulator-lvds-vdd {
+		compatible = "regulator-fixed";
+		regulator-name = "lvds_vdd";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&pca9555_20 5 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-always-on;
+		vin-supply = <&reg_lvds_i2c_switch>;
+		status = "okay";
+	};
+
+	lvds_backlight: lvds_backlight {
+		compatible = "pwm-backlight";
+		pwms = <&pwm2 0 5000000 0>;
+		brightness-levels = <0 100>;
+		num-interpolated-steps = <100>;
+		default-brightness-level = <80>;
+		power-supply = <&reg_lvds_vdd>;
+		status = "okay";
+	};
+
+    lvds_panel {
+		compatible = "boe,ev121wxm-n10-1850";
+		backlight = <&lvds_backlight>;		
+		power-supply = <&DISPLAY_reg>;
+
+		port {
+			panel_lvds_in: endpoint {
+			};
+		};
+	};
+};
+
+&lcdif2 {
+	assigned-clocks = <&clk IMX8MP_CLK_MEDIA_DISP2_PIX>,
+				  <&clk IMX8MP_CLK_MEDIA_AXI>,
+				  <&clk IMX8MP_CLK_MEDIA_APB>;
+	assigned-clock-parents = <&clk IMX8MP_VIDEO_PLL1_OUT>,
+					  <&clk IMX8MP_SYS_PLL2_1000M>,
+					  <&clk IMX8MP_SYS_PLL1_800M>;
+	assigned-clock-rates = <74250000>, <500000000>, <200000000>;
+	status = "okay";
+};
+
+&ldb {
+	status = "okay";
+	vcc-supply = <&reg_lvds_vdd>;
+
+	lvds-channel@0 {
+		data-mapping = "jeida-24";
+		status = "okay";
+
+		/delete-node/ port@1;
+
+		port@1 {
+			reg = <1>;
+
+			lvds_out: endpoint {
+				remote-endpoint = <&panel_lvds_in>;
+			};
+		};
+	};
+};
+
+&ldb_phy {
+	status = "okay";
+};
+
+
+&i2c1 {
+	touchscreen@41 {
+		compatible = "ilitek,ili251x";
+		reg = <0x41>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_cap_touch>;
+		interrupt-parent = <&gpio5>;
+		interrupts = <8 IRQ_TYPE_EDGE_FALLING>;
+		reset-gpios = <&pca9555_20 6 GPIO_ACTIVE_LOW>;
+		status = "okay";
+	};
+};
+
+&i2c5 {
+	max25221: max25221@21 {
+		compatible = "maxim,max25221";
+		reg = <0x21>;
+		lcd-supply = <&reg_lvds_vdd>;
+		status = "okay";
+
+		regulators {
+			DISPLAY_reg: DISPLAY {
+                regulator-name = "DISPLAY";
+			};
+		};
+	};
+};
+
+&pwm2 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_pwm2>;
+	status = "okay";
+};
+
+&iomuxc {
+
+	pinctrl_pwm2: pwm2grp {
+		fsl,pins = <
+			MX8MP_IOMUXC_SAI5_RXD0__PWM2_OUT		0x116
+		>;
+	};
+
+	pinctrl_cap_touch: cap_touch {
+		fsl,pins = <
+			MX8MP_IOMUXC_ECSPI1_MISO__GPIO5_IO08		0x31e	/* nINT */
+		>;
+	};
+
+};
+

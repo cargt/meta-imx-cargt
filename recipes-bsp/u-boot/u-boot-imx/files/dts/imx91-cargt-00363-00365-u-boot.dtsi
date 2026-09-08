@@ -1,0 +1,50 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Copyright 2025 Cargt Inc.
+ */
+
+#include "imx91-cargt-00363-osm-som-u-boot.dtsi"
+
+&reg_usdhc2_vmmc {
+	u-boot,off-on-delay-us = <20000>;
+	bootph-pre-ram;
+};
+
+&pinctrl_usdhc2_reg {
+	bootph-pre-ram;
+};
+
+&pinctrl_usdhc2 {
+	bootph-pre-ram;
+};
+
+&pinctrl_usdhc2_gpio {
+	bootph-pre-ram;
+};
+
+&usdhc2 {
+	bootph-pre-ram;
+	fsl,signal-voltage-switch-extra-delay-ms = <8>;
+};
+
+&lpi2c2 {
+	bootph-pre-ram;
+};
+
+&pinctrl_lpi2c2 {
+	bootph-pre-ram;
+};
+
+&usbotg1 {
+	status = "okay";
+	extcon = <&ptn5110_51>;
+};
+
+&usbotg2 {
+	status = "okay";
+	extcon = <&ptn5110_52>;
+};
+
+&fec {
+	compatible = "fsl,imx91-fec", "fsl,imx93-fec", "fsl,imx8mq-fec";
+};
