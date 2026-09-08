@@ -1,0 +1,75 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2022 NXP
+ */
+
+ /dts-v1/;
+
+ #include <dt-bindings/usb/pd.h>
+ #include "imx93-cargt-00324-00326.dts"
+
+ / {
+	 model = "Cargt i.MX93 00324-00326 carrier board with 00375 WiFi HaLow (MM6108)";
+ };
+
+ &usdhc3 {
+	/*
+	 * Cargt: the base board file's usdhc3_pwrseq/regulator-usdhc3 nodes
+	 * are wired for the *other* (NXP/Cypress) M.2 module's WL_REG_ON/
+	 * BT_REG_ON convention -- for the MM6108, pin 13 is actually the
+	 * module's own RESET_N (schematic: WL_REG_ON -> W_DISABLE1# ->
+	 * M2_W_nDISABLE1 -> mm6108_nRST), not a VMMC power gate, and pin 10
+	 * is WAKE (BT_REG_ON -> W_DISABLE2# -> M2_W_nDISABLE2 ->
+	 * MM6108_WAKE), not a reset line.
+	 *
+	 * Both base nodes probe unconditionally as their own platform
+	 * devices regardless of whether this override references them
+	 * (regulator-fixed and mmc-pwrseq-simple both auto-bind on their
+	 * compatible string alone) -- overriding vmmc-supply away from
+	 * reg_usdhc3_vmmc, as this override used to do, does NOT stop
+	 * regulator-usdhc3 from still claiming pca9555 pin 13 and leaving
+	 * it permanently low (its default/disabled state, since nothing
+	 * ever calls regulator_enable() on an unreferenced node) -- holding
+	 * the MM6108's real RESET_N asserted the entire time. Deleted both
+	 * nodes below entirely rather than just overriding around them.
+	 *
+	 * Root-caused on real hardware (2026-09-03): with any pwrseq
+	 * re-toggling RESET_N on every probe/retry cycle, the module never
+	 * enumerates over SDIO at all -- RESET_N must be released once and
+	 * then held steady. Confirmed reliable across repeated manual
+	 * unbind/bind probe attempts with RESET_N simply left released
+	 * (no pwrseq referenced here at all). mm6108_sdio@0's own
+	 * reset-gpios property below is what the morse_sdio driver actually
+	 * requires to be present (a required, but read-only,
+	 * of_get_named_gpio() reference for logging/bookkeeping -- it
+	 * doesn't request exclusive ownership, so it doesn't conflict with
+	 * anything now that the two nodes below are gone).
+	 */
+	/delete-property/ mmc-pwrseq;
+	vmmc-supply = <&reg_vref_3v3>;
+	vqmmc-supply = <&reg_vref_1v8>;
+	non-removable;
+	/* Disable ADMA2: see https://community.morsemicro.com/t/mmc1-timeout-waiting-for-hardware-interrupt/130/1 */
+	sdhci-caps-mask = <0x0 0x00080000>;
+
+	/delete-node/ wifi_wake_host;
+
+	mm6108_sdio: mm6108_sdio@0 {
+		compatible = "morse,mm610x";
+		reset-gpios = <&pca9555 13 GPIO_ACTIVE_LOW>;
+		status = "okay";
+		reg = <2>;
+		bus-width = <4>;
+	};
+ };
+
+/delete-node/ &usdhc3_pwrseq;
+/delete-node/ &reg_usdhc3_vmmc;
+
+ &pca9555 {
+	 gpio-line-names =
+		 "pca9555-0","pca9555-1","pca9555-2","pca9555-3",
+		 "pca9555-4","pca9555-5","pca9555-6","pca9555-7",
+		 "pca9555-8","pca9555-9","pca9555-10","pca9555-11",
+		 "pca9555-12","MM_RESET","pca9555-14","pca9555-15";
+ };
