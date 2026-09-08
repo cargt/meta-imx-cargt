@@ -43,6 +43,7 @@ IMAGE_INSTALL += " \
     ppp modemmanager \
     u-boot-fw-utils \
     mosquitto \
+    cargt-python-nm-mqtt \
     libiio-tests \
     tmux \
     mc \
