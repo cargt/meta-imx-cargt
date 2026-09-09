@@ -14,9 +14,7 @@ LIC_FILES_CHKSUM = ""
 
 SRC_URI = "git://git@github.com/cargt/cargt-util-python-nm-mqtt.git;protocol=ssh;branch=main"
 
-# SRCREV = "${AUTOREV}"
-# Add system info topic and response e6d77ee475dd3273eb9aab213f0b8720d2f8f0fb
-SRCREV = "e6d77ee475dd3273eb9aab213f0b8720d2f8f0fb"
+SRCREV = "${AUTOREV}"
 
 S = "${WORKDIR}/git"
 
