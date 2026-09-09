@@ -12,9 +12,10 @@
 LICENSE = "CLOSED"
 LIC_FILES_CHKSUM = ""
 
-SRC_URI = "git://git@gitlab.com/cargt-internal/utils/cargt-python-nm-mqtt.git;protocol=ssh;branch=main"
+SRC_URI = "git://git@github.com/cargt/cargt-util-python-nm-mqtt.git;protocol=ssh;branch=main"
 
 SRCREV = "${AUTOREV}"
+
 S = "${WORKDIR}/git"
 
 inherit systemd
