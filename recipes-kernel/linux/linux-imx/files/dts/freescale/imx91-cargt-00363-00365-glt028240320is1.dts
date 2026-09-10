@@ -1,0 +1,13 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2022 NXP
+ */
+
+/dts-v1/;
+
+#include "imx91-cargt-00363-00365.dts"
+#include "imx91-cargt-00363-00365-glt028240320is1.dtsi"
+
+/ {
+	model = "Cargt i.MX91 00363 OSM-L SOM on 00365 carrier board with 2.8in SPI Display(GLT028240320IS1-CTP)";
+};

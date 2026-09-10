@@ -1,0 +1,14 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2022 NXP
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/usb/pd.h>
+#include "imx93-cargt-00324-00326.dts"
+#include "imx93-cargt-00324-00326-glt028240320is1.dtsi"
+
+/ {
+	model = "Cargt i.MX93 00326 carrier board with 2.8in SPI Display(GLT028240320IS1)";
+};
