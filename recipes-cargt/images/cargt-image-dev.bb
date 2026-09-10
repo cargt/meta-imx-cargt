@@ -67,7 +67,8 @@ IMAGE_INSTALL += " \
     swupdate swupdate-progress swupdate-www \
     board-version \
     v4l-utils \
-    libdrm-tests xrandr \
+    libdrm-tests \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'x11', 'xrandr', '', d)} \
 "
 
 CLINFO              ?= ""
