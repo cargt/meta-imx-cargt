@@ -47,8 +47,15 @@ PACKAGECONFIG:append:class-target:pn-qtwebengine   = " examples"
 PACKAGECONFIG:append:mx93-nxp-bsp:pn-qtbase = " gles2"
 PACKAGECONFIG:remove:mx93-nxp-bsp:pn-qtbase = "no-opengl linuxfb"
 
-# i.MX 91 has no GPU or display — strip wayland/opengl/vulkan from this headless SoC
-DISTRO_FEATURES:remove:mx91-nxp-bsp = "wayland opengl vulkan"
+# i.MX 91 has no GPU, so vulkan is always stripped, and x11 along with it
+# since weston-xwayland requires opengl. Most i.MX 91 boards are also headless,
+# so wayland/opengl are stripped too -- except imx91-cargt-00363-00365, which
+# supports the 00379 MikroBus SPI display via tinydrm/DRM-KMS. Weston itself is
+# unconditionally gated on the opengl DISTRO_FEATURE upstream (it always
+# DEPENDS on virtual/egl, even when actually rendering via pixman at runtime),
+# so opengl stays enabled there too -- satisfied by Mesa's llvmpipe software
+# rasterizer, not real GPU hardware (there still isn't any on this SoC).
+DISTRO_FEATURES:remove:mx91-nxp-bsp = "${@bb.utils.contains('MACHINE', 'imx91-cargt-00363-00365', 'vulkan x11', 'wayland opengl vulkan x11', d)}"
 PACKAGECONFIG:remove:mx91-nxp-bsp:pn-qtbase = "gles2"
 PACKAGECONFIG:append:mx91-nxp-bsp:pn-qtbase = " no-opengl linuxfb"
 
