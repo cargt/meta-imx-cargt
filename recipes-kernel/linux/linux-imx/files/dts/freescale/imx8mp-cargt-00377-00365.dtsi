@@ -7,6 +7,7 @@
 #include <dt-bindings/phy/phy-imx8-pcie.h>
 #include "imx8mp-cargt-00377-osm-som.dts"
 #include "imx8mp-nxp-display.dtsi"
+#include "imx8mp-nxp-capture.dtsi"
 
 / {
 	model = "Cargt i.MX8MP 00377 OSM-L SOM on 00365 carrier board";
