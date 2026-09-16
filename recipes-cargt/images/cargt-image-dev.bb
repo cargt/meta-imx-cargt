@@ -62,6 +62,7 @@ IMAGE_INSTALL += " \
     ${@bb.utils.contains('MACHINE_FEATURES', 'morsemicro', 'morsemicro-driver morsemicro-firmware morse-ctrl', 'nxp-wifi-systemd nxp-bluetooth-systemd', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'rdp', 'freerdp', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'vnc', 'neatvnc', '', d)} \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'camera', 'gstreamer1.0-plugins-good-video4linux2 gstreamer1.0-plugins-bad-waylandsink gstreamer1.0-plugins-base-videoconvertscale gstreamer1.0-plugins-base-compositor', '', d)} \
     ${@bb.utils.contains('MACHINE_FEATURES', 'nfc-click', 'libnfc-nci-linux', '', d)} \
     teleport \
     swupdate swupdate-progress swupdate-www \
