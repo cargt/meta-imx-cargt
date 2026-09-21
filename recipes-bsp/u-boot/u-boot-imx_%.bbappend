@@ -32,6 +32,8 @@ SRC_URI += " \
             file://dts/imx8mp-cargt-00377-osm-som.dts \
             file://dts/imx93-cargt-00363-00365.dts \
             file://dts/imx93-cargt-00363-00365-u-boot.dtsi \
+            file://dts/imx93-cargt-00363-00428.dts \
+            file://dts/imx93-cargt-00363-00428-u-boot.dtsi \
             file://dts/imx93-cargt-00363-osm-som.dts \
             file://dts/imx93-cargt-00363-osm-som-u-boot.dtsi \
             file://dts/imx93-cargt-00324-00326.dts \
@@ -74,4 +76,5 @@ SRC_URI += "file://0001-arch-arm-dts-register-Cargt-board-dtb-y-entries.patch \
             file://0027-board-cargt-common-add-EEPROM-dram_rank-write-repair.patch \
             file://0028-board-cargt-imx8mp_00377-vendor-neutral-DDR-dispatch.patch \
             file://0029-configs-imx8mp_00377-set-explicit-SYS_MALLOC_F_LEN.patch \
+            file://0030-cargt-imx93_00363-add-defconfig-for-00363-00428-boa.patch \
             "
