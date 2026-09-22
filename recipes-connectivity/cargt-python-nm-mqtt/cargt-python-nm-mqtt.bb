@@ -6,7 +6,7 @@ SRC_URI = "git://github.com/cargt/cargt-util-python-nm-mqtt.git;protocol=https;b
 PV = "1.0+git${SRCPV}"
 SRCREV = "${AUTOREV}"
 
-inherit systemd
+inherit systemd imx-cargt-component-version
 
 SYSTEMD_AUTO_ENABLE = "enable"
 SYSTEMD_SERVICE:${PN} = "cargt-python-nm-mqtt.service"
