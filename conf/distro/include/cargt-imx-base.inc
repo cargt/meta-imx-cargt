@@ -44,6 +44,13 @@ PACKAGECONFIG:append:pn-pulseaudio = " autospawn-for-root"
 PACKAGECONFIG:append:mx93-nxp-bsp:pn-qtbase = " gles2"
 PACKAGECONFIG:remove:mx93-nxp-bsp:pn-qtbase = "no-opengl linuxfb"
 
+# meta-swupdate's recipes-graphics/lvgl/lvgl_%.bbappend unconditionally does
+# `PACKAGECONFIG += "fbdev gridnav"`. That's meant for the upstream meta-oe
+# lvgl_9.4.0 recipe (which defines those PACKAGECONFIG flags), but the
+# wildcard also matches our own, unrelated lvgl_9.2.1.bb here, which defines
+# neither -- failing do_configure's invalid-packageconfig QA check.
+PACKAGECONFIG:remove:pn-lvgl = "fbdev gridnav"
+
 # i.MX 91 has no GPU, so vulkan is always stripped, and x11 along with it
 # since weston-xwayland requires opengl. Most i.MX 91 boards are also headless,
 # so wayland/opengl are stripped too -- except imx91-cargt-00363-00365, which
