@@ -41,9 +41,6 @@ PACKAGECONFIG:append:pn-perf = " jevents"
 
 PACKAGECONFIG:append:pn-pulseaudio = " autospawn-for-root"
 
-PACKAGECONFIG:append:class-target:pn-qtquick3d     = " examples"
-PACKAGECONFIG:append:class-target:pn-qtwebengine   = " examples"
-
 PACKAGECONFIG:append:mx93-nxp-bsp:pn-qtbase = " gles2"
 PACKAGECONFIG:remove:mx93-nxp-bsp:pn-qtbase = "no-opengl linuxfb"
 
