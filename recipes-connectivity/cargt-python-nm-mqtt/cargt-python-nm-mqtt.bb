@@ -5,7 +5,6 @@ SRC_URI = "git://github.com/cargt/cargt-util-python-nm-mqtt.git;protocol=https;b
 
 PV = "1.0+git${SRCPV}"
 SRCREV = "${AUTOREV}"
-S = "${WORKDIR}/git"
 
 inherit systemd
 
