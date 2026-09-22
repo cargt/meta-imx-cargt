@@ -18,7 +18,7 @@ Signed-off-by: Graham Taylor-Jones <graham.taylor-jones@cargt.com>
 
 diff --git a/configs/imx93-cargt-00363-00428_defconfig b/configs/imx93-cargt-00363-00428_defconfig
 new file mode 100644
-index 00000000000..0000000000000
+index 0000000000..1111111111
 --- /dev/null
 +++ b/configs/imx93-cargt-00363-00428_defconfig
 @@ -0,0 +1,219 @@
