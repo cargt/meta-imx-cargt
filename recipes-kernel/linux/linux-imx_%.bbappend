@@ -175,6 +175,7 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'cargt-router', 'file://car
             ${@bb.utils.contains('MACHINE_FEATURES', '00365', 'file://cargt_00365_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00377', 'file://cargt_00377_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00406', 'file://cargt_00406_kernel_config_mods.cfg', '', d)} \
+            ${@bb.utils.contains('MACHINE_FEATURES', '00428', 'file://cargt_00428_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', 't1l', 'file://cargt_t1l_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', 'ST7789T3', 'file://cargt_st7789t3_kernel_config_mods.cfg', '', d)} \
             "
