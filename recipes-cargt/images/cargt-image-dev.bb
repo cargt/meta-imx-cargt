@@ -46,6 +46,7 @@ IMAGE_INSTALL += " \
     u-boot-fw-utils \
     net-tools \
     mosquitto \
+    cargt-python-nm-mqtt \
     libiio-tests \
     tmux \
     mc \
