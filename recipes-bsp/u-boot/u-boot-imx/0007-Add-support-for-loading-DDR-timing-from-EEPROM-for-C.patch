@@ -6,20 +6,17 @@ Subject: [PATCH] Add support for loading DDR timing from EEPROM for Cargt
 
 Upstream-Status: Inappropriate [Cargt board specific]
 ---
- arch/arm/mach-imx/imx9/Kconfig            |   4 +-
- board/cargt/common/imx9_eeprom.c          | 153 ++++++++++++++++++++++
- board/cargt/common/imx9_eeprom.h          |  72 ++++++++++
- board/cargt/imx93_00324/Kconfig           |  22 +++-
- board/cargt/imx93_00324/Makefile          |   1 +
- board/cargt/imx93_00324/spl-cargt.c       |  54 +++++++-
- board/cargt/imx93_00363/Kconfig           |  29 ++--
- board/cargt/imx93_00363/Makefile          |   1 +
- board/cargt/imx93_00363/spl-cargt.c       |  54 +++++++-
- configs/imx93-cargt-00324-00326_defconfig |  10 +-
- configs/imx93-cargt-00363-00365_defconfig |  13 +-
- 11 files changed, 374 insertions(+), 39 deletions(-)
- create mode 100644 board/cargt/common/imx9_eeprom.c
- create mode 100644 board/cargt/common/imx9_eeprom.h
+
+ arch/arm/mach-imx/imx9/Kconfig      |    4 -
+ board/cargt/common/imx9_eeprom.c    |  153 +++++++++++++++++++++++++++++++++++
+ board/cargt/common/imx9_eeprom.h    |   72 ++++++++++++++++
+ board/cargt/imx93_00324/Kconfig     |   22 +++--
+ board/cargt/imx93_00324/Makefile    |    1 
+ board/cargt/imx93_00324/spl-cargt.c |   54 +++++++++++-
+ board/cargt/imx93_00363/Kconfig     |   29 ++++---
+ board/cargt/imx93_00363/Makefile    |    1 
+ board/cargt/imx93_00363/spl-cargt.c |   54 +++++++++++-
+ 9 files changed, 356 insertions(+), 34 deletions(-)
 
 diff --git a/arch/arm/mach-imx/imx9/Kconfig b/arch/arm/mach-imx/imx9/Kconfig
 index 1111111..2222222 100644
@@ -636,43 +633,3 @@ index 85ea365af37..1dc174c20d6 100644
  #if CONFIG_IS_ENABLED(DM_PMIC_PF0900)
  int power_init_board(void)
  {
-diff --git a/configs/imx93-cargt-00324-00326_defconfig b/configs/imx93-cargt-00324-00326_defconfig
-index f9dd7fd3dae..d0eeaeef337 100644
---- a/configs/imx93-cargt-00324-00326_defconfig
-+++ b/configs/imx93-cargt-00324-00326_defconfig
-@@ -207,6 +207,12 @@ CONFIG_SPL_GPIO_HOG=y
- CONFIG_SPL_DM_GPIO=y
- CONFIG_SPL_DM_GPIO_LOOKUP_LABEL=y
- 
-+CONFIG_CMD_EEPROM=y
-+CONFIG_SYS_I2C_EEPROM_BUS=1
-+CONFIG_SYS_EEPROM_SIZE=256
-+CONFIG_SYS_EEPROM_PAGE_WRITE_BITS=4
-+CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=100
-+
- #CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_BOARD_ID is not set
--CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_NAME=y
--CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME="cargt_lpddr4x_2gbyte_timing"
-+#CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_NAME is not set
-+CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_EEPROM=y
-diff --git a/configs/imx93-cargt-00363-00365_defconfig b/configs/imx93-cargt-00363-00365_defconfig
-index af3bf873b3e..e7778f00087 100644
---- a/configs/imx93-cargt-00363-00365_defconfig
-+++ b/configs/imx93-cargt-00363-00365_defconfig
-@@ -207,6 +207,13 @@ CONFIG_SPL_GPIO_HOG=y
- CONFIG_SPL_DM_GPIO=y
- CONFIG_SPL_DM_GPIO_LOOKUP_LABEL=y
- 
--#CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_BOARD_ID is not set
--CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_NAME=y
--CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME="cargt_lpddr4x_1gbyte_timing"
-+CONFIG_CMD_EEPROM=y
-+CONFIG_SYS_I2C_EEPROM_BUS=0
-+CONFIG_SYS_EEPROM_SIZE=256
-+CONFIG_SYS_EEPROM_PAGE_WRITE_BITS=4
-+CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=100
-+
-+# CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_BOARD_ID is not set
-+# CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_NAME is not set
-+# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME="cargt_lpddr4x_1gbyte_timing"
-+CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_EEPROM=y
