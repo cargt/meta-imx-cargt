@@ -18,6 +18,14 @@ do_configure:prepend() {
     if [ -d "${UNPACKDIR}/dts" ]; then
         cp -a ${UNPACKDIR}/dts/. ${S}/arch/arm/dts/
     fi
+    # Standalone board defconfigs, same rationale as the dts/ copy above --
+    # extracted out of the numbered patches so a config tweak is a plain
+    # one-line diff to a real file instead of a hand-edited patch hunk
+    # (hunk header/diffstat line counts have to be kept in sync by hand
+    # otherwise, a recurring source of "do_patch truncated the file" bugs).
+    if [ -d "${UNPACKDIR}/configs" ]; then
+        cp -a ${UNPACKDIR}/configs/. ${S}/configs/
+    fi
     if [ -f "${S}/.config" ]; then
         cp "${S}/.config" "${B}/.config"
     fi
@@ -46,6 +54,8 @@ SRC_URI += " \
             file://dts/imx91-cargt-00363-osm-som.dts \
             file://dts/imx91-cargt-00363-osm-som-u-boot.dtsi \
             "
+
+SRC_URI += "file://configs/imx93-cargt-00363-00428_defconfig"
 
 SRC_URI += "file://0001-arch-arm-dts-register-Cargt-board-dtb-y-entries.patch \
             file://0002-Add-support-for-imx93_00363.patch \
@@ -76,5 +86,4 @@ SRC_URI += "file://0001-arch-arm-dts-register-Cargt-board-dtb-y-entries.patch \
             file://0027-board-cargt-common-add-EEPROM-dram_rank-write-repair.patch \
             file://0028-board-cargt-imx8mp_00377-vendor-neutral-DDR-dispatch.patch \
             file://0029-configs-imx8mp_00377-set-explicit-SYS_MALLOC_F_LEN.patch \
-            file://0030-cargt-imx93_00363-add-defconfig-for-00363-00428-boa.patch \
             "
