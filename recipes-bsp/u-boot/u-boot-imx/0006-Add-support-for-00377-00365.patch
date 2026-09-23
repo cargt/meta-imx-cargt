@@ -5,11 +5,11 @@ Subject: [PATCH] Add support for 00377-00365.
 
 Upstream-Status: Inappropriate [Cargt board specific]
 ---
- board/cargt/imx8mp_00377/imx8mp_00377.c       |  33 +--
- board/cargt/imx8mp_00377/spl.c                |  18 +-
- configs/imx8mp-cargt-00377-00365_defconfig    |   2 +-
- include/configs/imx8mp_00377.h                |  14 +-
- 4 files changed, 29 insertions(+), 39 deletions(-)
+
+ board/cargt/imx8mp_00377/imx8mp_00377.c |   33 ++++++++++++++++---------------
+ board/cargt/imx8mp_00377/spl.c          |   18 ++---------------
+ include/configs/imx8mp_00377.h          |   14 ++++++++-----
+ 3 files changed, 27 insertions(+), 38 deletions(-)
 
 diff --git a/board/cargt/imx8mp_00377/imx8mp_00377.c b/board/cargt/imx8mp_00377/imx8mp_00377.c
 index 58f6d43c82a..b1b1e5f4895 100644
@@ -177,19 +177,6 @@ index 4dcb80517bf..95015d51643 100644
 -	printf("Jump to board_init_r\n");
  	board_init_r(NULL, 0);
  }
-diff --git a/configs/imx8mp-cargt-00377-00365_defconfig b/configs/imx8mp-cargt-00377-00365_defconfig
-index 88c528e3d56..5d1d101677a 100644
---- a/configs/imx8mp-cargt-00377-00365_defconfig
-+++ b/configs/imx8mp-cargt-00377-00365_defconfig
-@@ -34,7 +34,7 @@ CONFIG_OF_BOARD_FIXUP=y
- CONFIG_OF_BOARD_SETUP=y
- CONFIG_OF_SYSTEM_SETUP=y
- CONFIG_BOOTCOMMAND="run distro_bootcmd;run bsp_bootcmd"
--CONFIG_DEFAULT_FDT_FILE="imx8mp-cargt-00377-00365.dtb"
-+CONFIG_DEFAULT_FDT_FILE="boot/imx8mp-cargt-00377-00365.dtb"
- CONFIG_ARCH_MISC_INIT=y
- CONFIG_BOARD_EARLY_INIT_F=y
- CONFIG_BOARD_LATE_INIT=y
 diff --git a/include/configs/imx8mp_00377.h b/include/configs/imx8mp_00377.h
 index da00825398f..7d5109524c3 100644
 --- a/include/configs/imx8mp_00377.h
