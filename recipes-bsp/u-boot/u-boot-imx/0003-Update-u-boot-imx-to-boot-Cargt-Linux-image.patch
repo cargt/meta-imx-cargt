@@ -5,25 +5,10 @@ Subject: [PATCH] Update u-boot-imx to boot Cargt Linux image.
 
 Upstream-Status: Inappropriate [Cargt board specific]
 ---
- configs/imx93-cargt-00363-00365_defconfig |  4 ++--
- include/configs/imx93_00363.h             | 15 ++++++++-------
- 2 files changed, 10 insertions(+), 9 deletions(-)
 
-diff --git a/configs/imx93-cargt-00363-00365_defconfig b/configs/imx93-cargt-00363-00365_defconfig
-index 4ec46337de8..af3bf873b3e 100644
---- a/configs/imx93-cargt-00363-00365_defconfig
-+++ b/configs/imx93-cargt-00363-00365_defconfig
-@@ -30,8 +30,8 @@ CONFIG_FIT=y
- CONFIG_FIT_SIGNATURE=y
- CONFIG_DISTRO_DEFAULTS=y
- CONFIG_OF_SYSTEM_SETUP=y
--CONFIG_BOOTCOMMAND="run ext4boot"
--CONFIG_DEFAULT_FDT_FILE="boot/imx93-cargt-00363-00365-glt0557201280is1.dtb"
-+CONFIG_BOOTCOMMAND="run distro_bootcmd;run bsp_bootcmd"
-+CONFIG_DEFAULT_FDT_FILE="boot/imx93-cargt-00363-00365.dtb"
- CONFIG_SYS_CBSIZE=2048
- CONFIG_SYS_PBSIZE=2074
- CONFIG_ARCH_MISC_INIT=y
+ include/configs/imx93_00363.h |   15 ++++++++-------
+ 1 file changed, 8 insertions(+), 7 deletions(-)
+
 diff --git a/include/configs/imx93_00363.h b/include/configs/imx93_00363.h
 index 1cab1452a30..8e8e3fd46c5 100644
 --- a/include/configs/imx93_00363.h

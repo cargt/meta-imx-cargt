@@ -8,43 +8,31 @@ Subject: [PATCH] Add common LPDDR4X timing support and update configurations
 - Modified the default timing configurations in the defconfig files for various board versions to use the new 3200 MT/s and 3733 MT/s timing definitions.
 Upstream-Status: Inappropriate [Cargt board specific]
 ---
- board/cargt/imx93_00324/Kconfig               |    2 +-
- board/cargt/imx93_00324/Makefile              |    2 +-
- .../imx93_00324/cargt_lpddr4x_1gbyte_timing.c |    2 +-
- .../imx93_00324/cargt_lpddr4x_2gbyte_timing.c |    2 +-
- board/cargt/imx93_00324/spl-cargt.c           |   20 +-
- board/cargt/imx93_00359/Kconfig               |    2 +-
- board/cargt/imx93_00359/Makefile              |    2 +-
- .../imx93_00359/cargt_lpddr4x_1gbyte_timing.c |    2 +-
- .../imx93_00359/cargt_lpddr4x_2gbyte_timing.c |    2 +-
- board/cargt/imx93_00359/spl-cargt.c           |   20 +-
- board/cargt/imx93_00363/Kconfig               |    2 +-
- board/cargt/imx93_00363/Makefile              |    5 +-
- .../cargt_lpddr4x_1gbyte_3200mts_timing.c     | 1023 ++++++++++++++++
- ... => cargt_lpddr4x_1gbyte_3733mts_timing.c} | 1003 ++++------------
- .../cargt_lpddr4x_2gbyte_3200mts_timing.c     | 1023 ++++++++++++++++
- ... => cargt_lpddr4x_2gbyte_3733mts_timing.c} | 1027 +----------------
- .../imx93_00363/cargt_lpddr4x_3200mts_csr.c   |  119 ++
- .../imx93_00363/cargt_lpddr4x_3200mts_csr.h   |   11 +
- .../imx93_00363/cargt_lpddr4x_3733mts_csr.c   |  119 ++
- .../imx93_00363/cargt_lpddr4x_3733mts_csr.h   |   11 +
- .../cargt/imx93_00363/cargt_lpddr4x_common.c  |  993 ++++++++++++++++
- .../cargt/imx93_00363/cargt_lpddr4x_common.h  |   16 +
- board/cargt/imx93_00363/spl-cargt.c           |  115 +-
- configs/imx93-cargt-00324-00326_defconfig     |    2 +-
- configs/imx93-cargt-00359-00406_defconfig     |    2 +-
- configs/imx93-cargt-00363-00365_defconfig     |    2 +-
- 26 files changed, 3702 insertions(+), 1827 deletions(-)
- create mode 100644 board/cargt/imx93_00363/cargt_lpddr4x_1gbyte_3200mts_timing.c
- rename board/cargt/imx93_00363/{cargt_lpddr4x_1gbyte_timing.c => cargt_lpddr4x_1gbyte_3733mts_timing.c} (52%)
- create mode 100644 board/cargt/imx93_00363/cargt_lpddr4x_2gbyte_3200mts_timing.c
- rename board/cargt/imx93_00363/{cargt_lpddr4x_2gbyte_timing.c => cargt_lpddr4x_2gbyte_3733mts_timing.c} (51%)
- create mode 100644 board/cargt/imx93_00363/cargt_lpddr4x_3200mts_csr.c
- create mode 100644 board/cargt/imx93_00363/cargt_lpddr4x_3200mts_csr.h
- create mode 100644 board/cargt/imx93_00363/cargt_lpddr4x_3733mts_csr.c
- create mode 100644 board/cargt/imx93_00363/cargt_lpddr4x_3733mts_csr.h
- create mode 100644 board/cargt/imx93_00363/cargt_lpddr4x_common.c
- create mode 100644 board/cargt/imx93_00363/cargt_lpddr4x_common.h
+
+ board/cargt/imx93_00324/Kconfig                    |    2 
+ board/cargt/imx93_00324/Makefile                   |    2 
+ .../imx93_00324/cargt_lpddr4x_1gbyte_timing.c      |    2 
+ .../imx93_00324/cargt_lpddr4x_2gbyte_timing.c      |    2 
+ board/cargt/imx93_00324/spl-cargt.c                |   20 
+ board/cargt/imx93_00359/Kconfig                    |    2 
+ board/cargt/imx93_00359/Makefile                   |    2 
+ .../imx93_00359/cargt_lpddr4x_1gbyte_timing.c      |    2 
+ .../imx93_00359/cargt_lpddr4x_2gbyte_timing.c      |    2 
+ board/cargt/imx93_00359/spl-cargt.c                |   20 
+ board/cargt/imx93_00363/Kconfig                    |    2 
+ board/cargt/imx93_00363/Makefile                   |    5 
+ .../cargt_lpddr4x_1gbyte_3200mts_timing.c          | 1023 ++++++++++++++++++++
+ .../cargt_lpddr4x_1gbyte_3733mts_timing.c          | 1003 +++++---------------
+ .../cargt_lpddr4x_2gbyte_3200mts_timing.c          | 1023 ++++++++++++++++++++
+ .../cargt_lpddr4x_2gbyte_3733mts_timing.c          | 1027 --------------------
+ .../cargt/imx93_00363/cargt_lpddr4x_3200mts_csr.c  |  119 ++
+ .../cargt/imx93_00363/cargt_lpddr4x_3200mts_csr.h  |   11 
+ .../cargt/imx93_00363/cargt_lpddr4x_3733mts_csr.c  |  119 ++
+ .../cargt/imx93_00363/cargt_lpddr4x_3733mts_csr.h  |   11 
+ board/cargt/imx93_00363/cargt_lpddr4x_common.c     |  993 +++++++++++++++++++
+ board/cargt/imx93_00363/cargt_lpddr4x_common.h     |   16 
+ board/cargt/imx93_00363/spl-cargt.c                |  113 ++
+ 23 files changed, 3698 insertions(+), 1823 deletions(-)
 
 diff --git a/board/cargt/imx93_00324/Kconfig b/board/cargt/imx93_00324/Kconfig
 index 7a58dc139f0..85dbeab18b9 100644
@@ -6164,41 +6152,3 @@ diff --git a/board/cargt/imx93_00363/spl-cargt.c b/board/cargt/imx93_00363/spl-c
  	}
  #endif /* CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_NAME */
  
-diff --git a/configs/imx93-cargt-00324-00326_defconfig b/configs/imx93-cargt-00324-00326_defconfig
-index 5a242ea91db..fd416cfb9f8 100644
---- a/configs/imx93-cargt-00324-00326_defconfig
-+++ b/configs/imx93-cargt-00324-00326_defconfig
-@@ -215,5 +215,5 @@ CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=100
- 
- # CONFIG_CARGT_IMX93_00324_LPDDR4X_TIMING_BY_BOARD_ID is not set
- # CONFIG_CARGT_IMX93_00324_LPDDR4X_TIMING_BY_NAME is not set
--# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME="cargt_lpddr4x_1gbyte_timing"
-+# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME="cargt_lpddr4x_1gbyte_3733mts_timing"
- CONFIG_CARGT_IMX93_00324_LPDDR4X_TIMING_BY_EEPROM=y
-\ No newline at end of file
-diff --git a/configs/imx93-cargt-00359-00406_defconfig b/configs/imx93-cargt-00359-00406_defconfig
-index ef64cb8eda6..414a18cc252 100644
---- a/configs/imx93-cargt-00359-00406_defconfig
-+++ b/configs/imx93-cargt-00359-00406_defconfig
-@@ -215,5 +215,5 @@ CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=100
- 
- # CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_BY_BOARD_ID is not set
- # CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_BY_NAME is not set
--# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME="cargt_lpddr4x_1gbyte_timing"
-+# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME="cargt_lpddr4x_1gbyte_3733mts_timing"
- CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_BY_EEPROM=y
-\ No newline at end of file
-diff --git a/configs/imx93-cargt-00363-00365_defconfig b/configs/imx93-cargt-00363-00365_defconfig
-index e7778f00087..c29edce11d9 100644
---- a/configs/imx93-cargt-00363-00365_defconfig
-+++ b/configs/imx93-cargt-00363-00365_defconfig
-@@ -215,5 +215,5 @@ CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=100
- 
- # CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_BOARD_ID is not set
- # CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_NAME is not set
--# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME="cargt_lpddr4x_1gbyte_timing"
-+# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME="cargt_lpddr4x_1gbyte_3200mts_timing"
- CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_EEPROM=y
--- 
-2.34.1
-
