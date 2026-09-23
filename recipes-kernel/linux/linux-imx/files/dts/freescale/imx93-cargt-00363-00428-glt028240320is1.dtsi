@@ -29,8 +29,10 @@
 		compatible = "gtdisplay,glt028240320IS1", "sitronix,st7789t3";
 		reg = <0>;
 		spi-max-frequency = <12000000>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_display_rst>;
 		dc-gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
-		reset-gpios = <&pca9555_20 8 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio2 11 GPIO_ACTIVE_HIGH>;
 		backlight = <&pwm_backlight>;
 	};
 };
@@ -76,6 +78,12 @@
 	pinctrl_backlight_pwm: backlight-pwmgrp {
 		fsl,pins = <
 			MX93_PAD_GPIO_IO23__TPM6_CH1		0x2
+		>;
+	};
+
+	pinctrl_display_rst: displayrstgrp {
+		fsl,pins = <
+			MX93_PAD_GPIO_IO11__GPIO2_IO11		0x3fe // UBUS_RST
 		>;
 	};
 
