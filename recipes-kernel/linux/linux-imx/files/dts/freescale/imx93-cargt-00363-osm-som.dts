@@ -116,6 +116,23 @@
 	"gpio1-20","gpio1-21","gpio1-22","gpio1-23", 	// 20-23
 	"gpio1-24","gpio1-25","gpio1-26","gpio1-27", 	// 24-27
 	"gpio1-28","gpio1-29","gpio1-30","gpio1-31"; 	// 28-31
+
+	/*
+	 * PMIC_IRQ_B (pmic@25's interrupt line, MX93_PAD_PDM_BIT_STREAM1__GPIO1_IO10)
+	 * comes up with GDIR already set to output from before Linux boots (SoC
+	 * POR default or the M33/ELE firmware stage - not U-Boot, its board code
+	 * never touches this pin). gpiochip_lock_as_irq() reads live hardware
+	 * direction at request time for this non-sleeping SoC-native gpiochip and
+	 * refuses to use an output-configured line for IRQ, so pca9450's probe
+	 * fails with -EIO ("tried to flag a GPIO set as output for IRQ"). Hog it
+	 * to input here, at gpiochip registration time, well before pmic@25 probes.
+	 */
+	pmic-irq-hog {
+		gpio-hog;
+		gpios = <10 GPIO_ACTIVE_LOW>;
+		input;
+		line-name = "PMIC_IRQ_B";
+	};
 };
 
 &gpio2{
