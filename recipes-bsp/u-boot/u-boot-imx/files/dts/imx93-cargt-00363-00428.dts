@@ -43,18 +43,6 @@
  };
   
   
- &flexcan1 {
-	 pinctrl-names = "default";
-	 pinctrl-0 = <&pinctrl_flexcan1>;
-	 status = "okay";
- };
-  
- &flexcan2 {
-	 pinctrl-names = "default";
-	 pinctrl-0 = <&pinctrl_flexcan2>;
-	 status = "okay";
- };
-  
  &lpi2c2 {
 	 #address-cells = <1>;
 	 #size-cells = <0>;
@@ -308,19 +296,6 @@
 		 >;
 	 };
  
-	 pinctrl_flexcan1: flexcan1grp {
-		 fsl,pins = <
-			 MX93_PAD_PDM_CLK__CAN1_TX				0x139e
-			 MX93_PAD_PDM_BIT_STREAM0__CAN1_RX		0x139e
-		 >;
-	 };
-  
-	 pinctrl_flexcan2: flexcan2grp {
-		 fsl,pins = <
-			 MX93_PAD_GPIO_IO25__CAN2_TX			0x139e
-			 MX93_PAD_GPIO_IO27__CAN2_RX			0x139e
-		 >;
-	 };
   
  
   
