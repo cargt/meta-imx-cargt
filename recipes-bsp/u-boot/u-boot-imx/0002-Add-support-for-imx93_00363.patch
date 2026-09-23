@@ -62,11 +62,11 @@ Upstream-Status: Inappropriate [Cargt board specific]
  board/cargt/imx93_00363/Makefile              |   14 +
  .../imx93_00363/cargt_lpddr4x_1gbyte_timing.c | 1544 +++++++++++++
  .../imx93_00363/cargt_lpddr4x_2gbyte_timing.c | 2004 +++++++++++++++++
- board/cargt/imx93_00363/imx93_00363.c         |  271 +++
+ board/cargt/imx93_00363/imx93_00363.c         |  288 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
  board/cargt/imx93_00363/spl-cargt.c           |  361 +++
  configs/imx93-cargt-00363-00365_defconfig     |  214 ++
  include/configs/imx93_00363.h                 |  177 ++
- 61 files changed, 12382 insertions(+), 1 deletion(-)
+ 61 files changed, 12399 insertions(+), 1 deletion(-)
  create mode 100644 board/cargt/common/Makefile
  create mode 100644 board/cargt/common/arm_sleep.c
  create mode 100644 board/cargt/common/cadmus.c
@@ -11847,7 +11847,7 @@ new file mode 100644
 index 00000000000..da743c12396
 --- /dev/null
 +++ b/board/cargt/imx93_00363/imx93_00363.c
-@@ -0,0 +1,271 @@
+@@ -0,0 +1,288 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright 2022 NXP
@@ -11867,6 +11867,7 @@ index 00000000000..da743c12396
 +#include "../common/tcpc.h"
 +#include <dm/device.h>
 +#include <dm/uclass.h>
++#include <dm/ofnode.h>
 +#include <usb.h>
 +#include <dwc3-uboot.h>
 +#include <asm/gpio.h>
@@ -11937,15 +11938,31 @@ index 00000000000..da743c12396
 +	.disable_pd = true,
 +};
 +
++/*
++ * Carrier boards without a second USB-C port (e.g. 00363-00428) don't
++ * describe a second TCPC in the devicetree. Probing for it
++ * unconditionally logs a scary-looking (though currently harmless)
++ * "tcpc port2 init failed" error, and relies on the I2C driver's
++ * error path staying well-behaved on a missing device -- a class of
++ * bug that has already caused a silent BL33 hang on another board.
++ * Only probe port2 when the DT actually declares it.
++ */
++static bool port2_present(void)
++{
++	return ofnode_valid(ofnode_path("/soc@0/bus@44000000/i2c@44350000/tcpc@52"));
++}
++
 +static int setup_typec(void)
 +{
-+	int ret;
++	int ret = 0;
 +
-+	debug("tcpc_init port 2\n");
-+	ret = tcpc_init(&port2, port2_config, NULL);
-+	if (ret) {
-+		printf("%s: tcpc port2 init failed, err=%d\n",
-+		       __func__, ret);
++	if (port2_present()) {
++		debug("tcpc_init port 2\n");
++		ret = tcpc_init(&port2, port2_config, NULL);
++		if (ret) {
++			printf("%s: tcpc port2 init failed, err=%d\n",
++			       __func__, ret);
++		}
 +	}
 +
 +	debug("tcpc_init port 1\n");
