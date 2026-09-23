@@ -1,23 +1,23 @@
-From d0a56f09dc42220ab289e2810729af5aa1fdcf10 Mon Sep 17 00:00:00 2001
+From cb855fa3bcfaf3482dbe9bc1100feb4cfb8273d1 Mon Sep 17 00:00:00 2001
 From: Graham Taylor-Jones <graham.taylor-jones@cargt.com>
 Date: Tue, 28 Jul 2026 13:05:56 -0500
 Subject: [PATCH] Add dts and config for 00363-00428 board
 
 ---
- .../dts/imx93-cargt-00363-00428-u-boot.dtsi   | 207 +++++++++
- arch/arm/dts/imx93-cargt-00363-00428.dts      | 346 ++++++++++++++++++++
- configs/imx93-cargt-00363-00428_defconfig     | 219 ++++++++++
- 3 files changed, 772 insertions(+)
+ .../dts/imx93-cargt-00363-00428-u-boot.dtsi   | 199 +++++++++++++++
+ arch/arm/dts/imx93-cargt-00363-00428.dts      | 239 ++++++++++++++++++
+ configs/imx93-cargt-00363-00428_defconfig     | 219 ++++++++++++++++
+ 3 files changed, 657 insertions(+)
  create mode 100644 arch/arm/dts/imx93-cargt-00363-00428-u-boot.dtsi
  create mode 100644 arch/arm/dts/imx93-cargt-00363-00428.dts
  create mode 100644 configs/imx93-cargt-00363-00428_defconfig
 
 diff --git a/arch/arm/dts/imx93-cargt-00363-00428-u-boot.dtsi b/arch/arm/dts/imx93-cargt-00363-00428-u-boot.dtsi
 new file mode 100644
-index 00000000000..708e1759552
+index 00000000000..b2cf771ef80
 --- /dev/null
 +++ b/arch/arm/dts/imx93-cargt-00363-00428-u-boot.dtsi
-@@ -0,0 +1,207 @@
+@@ -0,0 +1,199 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright 2022 NXP
@@ -161,14 +161,8 @@ index 00000000000..708e1759552
 +	bootph-pre-ram;
 +};
 +
-+&fec {
-+	phy-reset-gpios = <&pca9555_20 1 GPIO_ACTIVE_LOW>;
-+	phy-reset-duration = <15>;
-+	phy-reset-post-delay = <100>;
-+};
-+
 +&ethphy1 {
-+	reset-gpios = <&pca9555_20 0 GPIO_ACTIVE_HIGH>;
++	reset-gpios = <&gpio1 14 GPIO_ACTIVE_LOW>;
 +	reset-assert-us = <15000>;
 +	reset-deassert-us = <100000>;
 +};
@@ -183,12 +177,10 @@ index 00000000000..708e1759552
 +
 +&usbotg1 {
 +	status = "okay";
-+	//extcon = <&ptn5110>;
 +};
 +
 +&usbotg2 {
 +	status = "okay";
-+	//extcon = <&ptn5110_2>;
 +};
 +
 +&s4muap {
@@ -227,10 +219,10 @@ index 00000000000..708e1759552
 +};
 diff --git a/arch/arm/dts/imx93-cargt-00363-00428.dts b/arch/arm/dts/imx93-cargt-00363-00428.dts
 new file mode 100644
-index 00000000000..cec9ef36df4
+index 00000000000..7a50a303045
 --- /dev/null
 +++ b/arch/arm/dts/imx93-cargt-00363-00428.dts
-@@ -0,0 +1,346 @@
+@@ -0,0 +1,239 @@
 +// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 +/*
 + * Copyright 2022 NXP
@@ -240,15 +232,15 @@ index 00000000000..cec9ef36df4
 +
 + #include <dt-bindings/usb/pd.h>
 + #include "imx93-cargt-00363-osm-som.dts"
-+  
-+  / {
++
++ / {
 +	 model = "Cargt i.MX93 00363 OSM-L SOM on 00428 carrier board";
-+ 
++
 +	 aliases {
 +		 rtc0 = &rtc_i2c;
 +		 rtc1 = &bbnsm_rtc;
 +	 };
-+ 
++
 +	 reg_carrier_pwr_en: regulator-carrier-pwr-en {
 +		 compatible = "regulator-fixed";
 +		 pinctrl-names = "default";
@@ -260,23 +252,21 @@ index 00000000000..cec9ef36df4
 +		 off-on-delay-us = <12000>;
 +		 enable-active-high;
 +		 regulator-boot-on;
-+		 regulator-always-on;		
++		 regulator-always-on;
++	 };
++
++	 reg_usb2_vbus: regulator-usb2-vbus {
++		 pinctrl-names = "default";
++		 pinctrl-0 = <&pinctrl_usb2_vbus>;
++		 compatible = "regulator-fixed";
++		 regulator-name = "USB2_VBUS_EN";
++		 regulator-min-microvolt = <5000000>;
++		 regulator-max-microvolt = <5000000>;
++		 gpio = <&gpio2 9 GPIO_ACTIVE_HIGH>;
++		 enable-active-high;
 +	 };
 + };
-+  
-+  
-+ &flexcan1 {
-+	 pinctrl-names = "default";
-+	 pinctrl-0 = <&pinctrl_flexcan1>;
-+	 status = "okay";
-+ };
-+  
-+ &flexcan2 {
-+	 pinctrl-names = "default";
-+	 pinctrl-0 = <&pinctrl_flexcan2>;
-+	 status = "okay";
-+ };
-+  
++
 + &lpi2c2 {
 +	 #address-cells = <1>;
 +	 #size-cells = <0>;
@@ -285,29 +275,22 @@ index 00000000000..cec9ef36df4
 +	 pinctrl-0 = <&pinctrl_lpi2c2>;
 +	 pinctrl-1 = <&pinctrl_lpi2c2>;
 +	 status = "okay";
-+ 
-+	 pca9555_20: pca9555@20 {
-+		 compatible = "nxp,pca9555";
-+		 gpio-controller;
-+		 #gpio-cells = <2>;
-+		 reg = <0x20>;
-+	 };
-+ 
++
 +	 ptn5110: tcpc@51 {
 +		 compatible = "nxp,ptn5110";
 +		 reg = <0x51>;
 +		 pinctrl-names = "default";
 +		 pinctrl-0 = <&pinctrl_ptn5110_51>;
 +		 interrupt-parent = <&gpio2>;
-+		 interrupts = <9 IRQ_TYPE_LEVEL_LOW>;	
++		 interrupts = <10 IRQ_TYPE_LEVEL_LOW>;
 +		 status = "okay";
-+ 
++
 +		 port {
 +			 typec1_dr_sw: endpoint {
 +				 remote-endpoint = <&usb1_drd_sw>;
 +			 };
 +		 };
-+ 
++
 +		 typec1_con: connector {
 +			 compatible = "usb-c-connector";
 +			 label = "USB-C";
@@ -321,37 +304,8 @@ index 00000000000..cec9ef36df4
 +			 self-powered;
 +		 };
 +	 };
-+ 
-+	 ptn5110_2: tcpc@52 {
-+		 compatible = "nxp,ptn5110";
-+		 reg = <0x52>;
-+		 pinctrl-names = "default";
-+		 pinctrl-0 = <&pinctrl_ptn5110_52>;
-+		 interrupt-parent = <&gpio2>;
-+		 interrupts = <10 IRQ_TYPE_LEVEL_LOW>;
-+		 status = "okay";
-+ 
-+		 port {
-+			 typec2_dr_sw: endpoint {
-+				 remote-endpoint = <&usb2_drd_sw>;
-+			 };
-+		 };
-+ 
-+		 typec2_con: connector {
-+			 compatible = "usb-c-connector";
-+			 label = "USB-C";
-+			 power-role = "dual";
-+			 data-role = "dual";
-+			 try-power-role = "sink";
-+			 source-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
-+			 sink-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)
-+					 PDO_VAR(5000, 20000, 3000)>;
-+			 op-sink-microwatt = <15000000>;
-+			 self-powered;
-+		 };
-+	 };
 + };
-+ 
++
 + &lpi2c3 {
 +	 #address-cells = <1>;
 +	 #size-cells = <0>;
@@ -361,26 +315,26 @@ index 00000000000..cec9ef36df4
 +	 pinctrl-1 = <&pinctrl_lpi2c3>;
 +	 status = "okay";
 +  };
-+  
++
 + &lpi2c6 {
 +	 status = "okay";
 + };
-+ 
++
 + &eqos {
 +	 pinctrl-names = "default";
-+	 pinctrl-0 = <&pinctrl_eqos>;
++	 pinctrl-0 = <&pinctrl_eqos>, <&pinctrl_eth_rst>;
 +	 phy-mode = "rgmii-id";
 +	 phy-handle = <&ethphy1>;
-+	 snps,reset-gpios = <&pca9555_20 0 GPIO_ACTIVE_HIGH>;
++	 snps,reset-gpios = <&gpio1 14 GPIO_ACTIVE_LOW>;
 +	 snps,reset-delays-us = <10 20 200000>;
 +	 status = "okay";
-+ 
++
 +	 mdio {
 +		 compatible = "snps,dwmac-mdio";
 +		 #address-cells = <1>;
 +		 #size-cells = <0>;
 +		 clock-frequency = <5000000>;
-+ 
++
 +		 ethphy1: ethernet-phy@0 {
 +			 compatible = "ethernet-phy-ieee802.3-c22";
 +			 reg = <0>;
@@ -388,31 +342,7 @@ index 00000000000..cec9ef36df4
 +		 };
 +	 };
 + };
-+ 
-+ &fec {
-+	 pinctrl-names = "default";
-+	 pinctrl-0 = <&pinctrl_fec>;
-+	 phy-mode = "rgmii-id";
-+	 phy-handle = <&ethphy2>;
-+	 fsl,magic-packet;
-+	 phy-reset-gpios = <&pca9555_20 1 GPIO_ACTIVE_LOW>;
-+	 phy-reset-duration = <10>;
-+	 phy-reset-post-delay = <150>;
-+	 status = "okay";
-+ 
-+	 mdio {
-+		 #address-cells = <1>;
-+		 #size-cells = <0>;
-+		 clock-frequency = <5000000>;
-+ 
-+		 ethphy2: ethernet-phy@0 {
-+			 compatible = "ethernet-phy-ieee802.3-c22";
-+			 reg = <0>;
-+			 eee-broken-1000t;
-+		 };
-+	 };
-+ };
-+  
++
 + &usbotg1 {
 +	  dr_mode = "otg";
 +	  hnp-disable;
@@ -423,59 +353,50 @@ index 00000000000..cec9ef36df4
 +	  samsung,picophy-pre-emp-curr-control = <3>;
 +	  samsung,picophy-dc-vol-level-adjust = <7>;
 +	  status = "okay";
-+  
++
 +	  port {
 +		  usb1_drd_sw: endpoint {
 +			  remote-endpoint = <&typec1_dr_sw>;
 +		  };
 +	  };
 + };
-+  
++
 + &usbotg2 {
-+	  dr_mode = "otg";
-+	  hnp-disable;
-+	  srp-disable;
-+	  adp-disable;
-+	  usb-role-switch;
++	  dr_mode = "host";
 +	  disable-over-current;
++	  vbus-supply = <&reg_usb2_vbus>;
 +	  samsung,picophy-pre-emp-curr-control = <3>;
 +	  samsung,picophy-dc-vol-level-adjust = <7>;
 +	  status = "okay";
-+  
-+	  port {
-+		  usb2_drd_sw: endpoint {
-+			  remote-endpoint = <&typec2_dr_sw>;
-+		  };
-+	  };
 + };
-+ 
++
 + &adc1 {
 +	 status = "okay";
 + };
-+ 
++
 + &epxp {
 +	 status = "disabled";
 + };
-+ 
++
 + &lcdif {
 +	 status = "disabled";
 +	 assigned-clock-rates = <445333333>, <148444444>, <400000000>, <133333333>;
 + };
-+ 
++
 + &ldb {
 +	 status = "disabled";
 + };
-+ 
++
 + &dphy {
 +	 status = "disabled";
 + };
-+ 
++
 + &dsi {
 +	 status = "disabled";
 + };
-+ 
++
 + &iomuxc {
-+	 
++
 +	 pinctrl_eqos: eqosgrp {
 +		 fsl,pins = <
 +			 MX93_PAD_ENET1_MDC__ENET_QOS_MDC						0x57e
@@ -494,90 +415,53 @@ index 00000000000..cec9ef36df4
 +			 MX93_PAD_ENET1_TX_CTL__ENET_QOS_RGMII_TX_CTL			0x57e
 +		 >;
 +	 };
-+ 
-+	 pinctrl_fec: fecgrp {
++
++	 pinctrl_eth_rst: ethrstgrp {
 +		 fsl,pins = <
-+			 MX93_PAD_ENET2_MDC__ENET1_MDC			0x57e
-+			 MX93_PAD_ENET2_MDIO__ENET1_MDIO			0x57e
-+			 MX93_PAD_ENET2_RD0__ENET1_RGMII_RD0		0x57e
-+			 MX93_PAD_ENET2_RD1__ENET1_RGMII_RD1		0x57e
-+			 MX93_PAD_ENET2_RD2__ENET1_RGMII_RD2		0x57e
-+			 MX93_PAD_ENET2_RD3__ENET1_RGMII_RD3		0x57e
-+			 MX93_PAD_ENET2_RXC__ENET1_RGMII_RXC		0x5fe
-+			 MX93_PAD_ENET2_RX_CTL__ENET1_RGMII_RX_CTL	0x57e
-+			 MX93_PAD_ENET2_TD0__ENET1_RGMII_TD0		0x57e
-+			 MX93_PAD_ENET2_TD1__ENET1_RGMII_TD1		0x57e
-+			 MX93_PAD_ENET2_TD2__ENET1_RGMII_TD2		0x57e
-+			 MX93_PAD_ENET2_TD3__ENET1_RGMII_TD3		0x57e
-+			 MX93_PAD_ENET2_TXC__ENET1_RGMII_TXC		0x5fe
-+			 MX93_PAD_ENET2_TX_CTL__ENET1_RGMII_TX_CTL	0x57e
++			 MX93_PAD_SAI1_RXD0__GPIO1_IO14			0x31e /* ETH_A_RST */
 +		 >;
 +	 };
-+ 
++
 +	 pinctrl_lpi2c2: lpi2c2grp {
 +		 fsl,pins = <
 +			 MX93_PAD_I2C2_SDA__LPI2C2_SDA			0x40000b9e
 +			 MX93_PAD_I2C2_SCL__LPI2C2_SCL			0x40000b9e
 +		 >;
 +	 };
-+  
++
 +	 pinctrl_lpi2c3: lpi2c3grp {
 +		 fsl,pins = <
 +			 MX93_PAD_GPIO_IO28__LPI2C3_SDA			0x40000b9e
 +			 MX93_PAD_GPIO_IO29__LPI2C3_SCL			0x40000b9e
 +		 >;
 +	 };
-+ 
++
 +	 pinctrl_pca21: pca21grp {
 +		 fsl,pins = <
 +			 MX93_PAD_PDM_BIT_STREAM1__GPIO1_IO10 	0x31e
 +		 >;
 +	 };
-+ 
-+	 pinctrl_flexcan1: flexcan1grp {
++
++	 pinctrl_ptn5110_51: ptn5110_51grp {
 +		 fsl,pins = <
-+			 MX93_PAD_PDM_CLK__CAN1_TX				0x139e
-+			 MX93_PAD_PDM_BIT_STREAM0__CAN1_RX		0x139e
-+		 >;
-+	 };
-+  
-+	 pinctrl_flexcan2: flexcan2grp {
-+		 fsl,pins = <
-+			 MX93_PAD_GPIO_IO25__CAN2_TX			0x139e
-+			 MX93_PAD_GPIO_IO27__CAN2_RX			0x139e
-+		 >;
-+	 };
-+  
-+	 pinctrl_sai1: sai1grp {
-+		 fsl,pins = <
-+			  MX93_PAD_SAI1_TXC__SAI1_TX_BCLK		0x31e
-+			  MX93_PAD_SAI1_TXFS__SAI1_TX_SYNC		0x31e
-+			  MX93_PAD_SAI1_TXD0__SAI1_TX_DATA00		0x31e
-+			  MX93_PAD_SAI1_RXD0__SAI1_MCLK			0x31e
-+		 >;
-+	  };
-+	  
-+	  pinctrl_ptn5110_51: ptn5110_51grp {
-+		 fsl,pins = <
-+			  MX93_PAD_GPIO_IO09__GPIO2_IO09			0x31e
++			  MX93_PAD_GPIO_IO10__GPIO2_IO10			0x31e
 +		 >;
 +	  };
 +
-+	  pinctrl_ptn5110_52: ptn5110_52grp {
++	  pinctrl_usb2_vbus: usb2vbusgrp {
 +		 fsl,pins = <
-+			 MX93_PAD_GPIO_IO10__GPIO2_IO10			0x31e
++			 MX93_PAD_GPIO_IO09__GPIO2_IO09			0x31e /* USB2_VBUS_EN */
 +		 >;
 +	  };
-+ 
++
 +	  pinctrl_reg_carrer_pwr_en: carrerpwrengrp {
 +		 fsl,pins = <
 +			 MX93_PAD_PDM_BIT_STREAM1__GPIO1_IO10		0x31e
 +		 >;
 +	 };
-+ 
++
 + };
-+  
-\ No newline at end of file
++
 diff --git a/configs/imx93-cargt-00363-00428_defconfig b/configs/imx93-cargt-00363-00428_defconfig
 new file mode 100644
 index 00000000000..d9df69d5f4e
@@ -803,6 +687,3 @@ index 00000000000..d9df69d5f4e
 +# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_NAME is not set
 +CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_EEPROM=y
 +CONFIG_CARGT_IMX93_00363_MIN_SDRAM_SIZE_MB=1024
--- 
-2.53.0
-
