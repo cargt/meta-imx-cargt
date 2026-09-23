@@ -12,8 +12,8 @@ customized.
 Upstream-Status: Inappropriate [Cargt board specific]
 Signed-off-by: Graham Taylor-Jones <graham.taylor-jones@cargt.com>
 ---
- configs/imx93-cargt-00363-00428_defconfig | 220 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
- 1 file changed, 220 insertions(+)
+ configs/imx93-cargt-00363-00428_defconfig | 221 +++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 221 insertions(+)
  create mode 100644 configs/imx93-cargt-00363-00428_defconfig
 
 diff --git a/configs/imx93-cargt-00363-00428_defconfig b/configs/imx93-cargt-00363-00428_defconfig
@@ -21,7 +21,7 @@ new file mode 100644
 index 0000000000..1111111111
 --- /dev/null
 +++ b/configs/imx93-cargt-00363-00428_defconfig
-@@ -0,0 +1,220 @@
+@@ -0,0 +1,221 @@
 +CONFIG_ARM=y
 +CONFIG_ARCH_IMX9=y
 +CONFIG_TEXT_BASE=0x80200000
@@ -43,6 +43,7 @@ index 0000000000..1111111111
 +CONFIG_SPL_SERIAL=y
 +CONFIG_SPL_DRIVERS_MISC=y
 +CONFIG_SPL_STACK=0x20519dd0
++CONFIG_SPL_HAVE_INIT_STACK=y
 +CONFIG_SPL=y
 +CONFIG_CMD_DEKBLOB=y
 +CONFIG_SPL_IMX_ROMAPI_LOADADDR=0x88000000
