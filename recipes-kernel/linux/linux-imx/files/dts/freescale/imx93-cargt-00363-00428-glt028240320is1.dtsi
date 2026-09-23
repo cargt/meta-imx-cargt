@@ -1,0 +1,96 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2022 NXP
+ */
+
+/ {
+	pwm_backlight: pwm_backlight {
+		compatible = "pwm-backlight";
+		pwms = <&tpm6 1 5000000 0>; // 200 Hz
+		brightness-levels = <0 100>;
+		num-interpolated-steps = <100>;
+		default-brightness-level = <80>;
+		status = "okay";
+	};
+};
+
+&lpspi8 {
+	fsl,spi-num-chipselects = <1>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&pinctrl_lpspi8>;
+	pinctrl-1 = <&pinctrl_lpspi8>;
+	cs-gpios = <&gpio2 12 GPIO_ACTIVE_LOW>;
+	status = "okay";
+
+	/delete-property/ dmas;
+	/delete-property/ dma-names;
+
+	display@0{
+		compatible = "gtdisplay,glt028240320IS1", "sitronix,st7789t3";
+		reg = <0>;
+		spi-max-frequency = <12000000>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_display_rst>;
+		dc-gpios = <&gpio1 7 GPIO_ACTIVE_HIGH>;
+		reset-gpios = <&gpio2 11 GPIO_ACTIVE_HIGH>;
+		backlight = <&pwm_backlight>;
+	};
+};
+
+
+&lpuart2 {
+	status = "disabled";
+};
+
+&tpm6 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_backlight_pwm>;
+	status = "okay";
+};
+
+&lpi2c2 {
+	focaltech_touch: touchscreen@38 {
+		compatible = "focaltech,ft6236";
+		reg = <0x38>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_touch_io>;
+		interrupt-parent = <&gpio2>;
+		interrupts = <8 IRQ_TYPE_EDGE_FALLING>;
+        touchscreen-size-x = <240>;
+        touchscreen-size-y = <320>;
+		touchscreen-inverted-y;
+		reset-gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;
+		wakeup-source;
+      };
+};
+
+&iomuxc {
+	pinctrl_lpspi8: lpspi8grp {
+		fsl,pins = <
+			MX93_PAD_GPIO_IO12__GPIO2_IO12      0x3fe
+			MX93_PAD_GPIO_IO13__LPSPI8_SIN      0x3fe
+			MX93_PAD_GPIO_IO14__LPSPI8_SOUT     0x3fe
+			MX93_PAD_GPIO_IO15__LPSPI8_SCK      0x3fe
+            MX93_PAD_UART2_TXD__GPIO1_IO07      0x3fe // Data Command Switch
+		>;
+	};
+
+	pinctrl_backlight_pwm: backlight-pwmgrp {
+		fsl,pins = <
+			MX93_PAD_GPIO_IO23__TPM6_CH1		0x2
+		>;
+	};
+
+	pinctrl_display_rst: displayrstgrp {
+		fsl,pins = <
+			MX93_PAD_GPIO_IO11__GPIO2_IO11		0x3fe // UBUS_RST
+		>;
+	};
+
+	pinctrl_touch_io: touchiogrp {
+		fsl,pins = <
+			MX93_PAD_UART2_RXD__GPIO1_IO06		0x3fe // RST
+			MX93_PAD_GPIO_IO08__GPIO2_IO08		0x3fe // INT
+		>;
+	};
+};

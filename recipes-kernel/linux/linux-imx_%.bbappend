@@ -27,6 +27,11 @@ SRC_URI += " \
             file://dts/freescale/imx93-cargt-00363-00365-glt1011280800is1.dts \
             file://dts/freescale/imx93-cargt-00363-00365-glt1011280800is1.dtsi \
             file://dts/freescale/imx93-cargt-00363-osm-som.dts \
+            file://dts/freescale/imx93-cargt-00363-00428.dts \
+            file://dts/freescale/imx93-cargt-00363-00428-glt028240320is1.dts \
+            file://dts/freescale/imx93-cargt-00363-00428-glt028240320is1.dtsi \
+            file://dts/freescale/imx93-cargt-00363-00428-glt0557201280is1.dts \
+            file://dts/freescale/imx93-cargt-00363-00428-glt0557201280is1.dtsi \
             file://dts/freescale/imx8mp-cargt-00377-00365.dts \
             file://dts/freescale/imx8mp-cargt-00377-00365.dtsi \
             file://dts/freescale/imx8mp-cargt-00377-00365-glt0557201280is1.dts \
@@ -170,6 +175,7 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'cargt-router', 'file://car
             ${@bb.utils.contains('MACHINE_FEATURES', '00365', 'file://cargt_00365_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00377', 'file://cargt_00377_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00406', 'file://cargt_00406_kernel_config_mods.cfg', '', d)} \
+            ${@bb.utils.contains('MACHINE_FEATURES', '00428', 'file://cargt_00428_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', 't1l', 'file://cargt_t1l_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', 'ST7789T3', 'file://cargt_st7789t3_kernel_config_mods.cfg', '', d)} \
             "
