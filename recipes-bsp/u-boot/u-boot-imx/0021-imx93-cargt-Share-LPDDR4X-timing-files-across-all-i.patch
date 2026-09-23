@@ -40,161 +40,88 @@ support the full range of DDR configurations via EEPROM.
 Signed-off-by: Tim Carney <tim.carney@cargt.com>
 Upstream-Status: Inappropriate [Cargt board specific]
 ---
- board/cargt/imx93_00324/Kconfig               |   30 +-
- board/cargt/imx93_00324/Makefile              |   16 +-
- .../imx93_00324/cargt_lpddr4x_1gbyte_timing.c | 1544 -------------
- .../imx93_00324/cargt_lpddr4x_2gbyte_timing.c | 2004 -----------------
- board/cargt/imx93_00324/spl-cargt.c           |  368 ++-
- board/cargt/imx93_00359/Kconfig               |   30 +-
- board/cargt/imx93_00359/Makefile              |   18 +-
- .../imx93_00359/cargt_lpddr4x_1gbyte_timing.c | 1544 -------------
- .../imx93_00359/cargt_lpddr4x_2gbyte_timing.c | 2004 -----------------
- board/cargt/imx93_00359/spl-cargt.c           |  368 ++-
- board/cargt/imx93_00363/Kconfig               |   38 +-
- board/cargt/imx93_00363/Makefile              |   22 +-
- board/cargt/imx93_00363/spl-cargt.c           |   22 +-
- board/cargt/imx93_common/Kconfig              |   37 +
- board/cargt/imx93_common/Makefile             |   24 +
- .../README.ddr-timing                         |    0
- .../cargt_lpddr4x_1gbyte_3200mts_timing.c     |    0
- .../cargt_lpddr4x_1gbyte_3733mts_timing.c     |    0
- .../cargt_lpddr4x_2gbyte_3200mts_timing.c     |    0
- .../cargt_lpddr4x_2gbyte_3733mts_timing.c     |    0
- .../cargt_lpddr4x_3200mts_csr.c               |    0
- .../cargt_lpddr4x_3200mts_csr.h               |    0
- .../cargt_lpddr4x_3733mts_csr.c               |    0
- .../cargt_lpddr4x_3733mts_csr.h               |    0
- .../cargt_lpddr4x_512mb_3200mts_timing.c      |    0
- .../cargt_lpddr4x_512mb_3733mts_timing.c      |    0
- .../cargt_lpddr4x_common.c                    |    0
- .../cargt_lpddr4x_common.h                    |    0
- .../cargt_lpddr4x_fsp0_cfg_shared.c           |    0
- .../cargt_lpddr4x_timing_shared.c             |    0
- .../cargt_lpddr4x_timing_shared.h             |    0
- .../lpddr4x_1gbyte_3200_rank1_generated.c     |    0
- .../lpddr4x_1gbyte_3733_rank1_generated.c     |    0
- .../lpddr4x_2gbyte_3200_rank1_generated.c     |    0
- .../lpddr4x_2gbyte_3200_rank2_generated.c     |    0
- .../lpddr4x_2gbyte_3733_rank1_generated.c     |    0
- .../lpddr4x_2gbyte_3733_rank2_generated.c     |    0
- .../lpddr4x_512mbyte_3200_rank1_generated.c   |    0
- .../lpddr4x_512mbyte_3733_rank1_generated.c   |    0
- .../include/ddrc_cfg_1g_3733_elements.inc     |    0
- .../include/ddrc_cfg_2g_r1_elements.inc       |    0
- .../include/ddrc_cfg_512mb_3733_elements.inc  |    0
- .../include/ddrphy_cfg_1g_3200_elements.inc   |    0
- .../include/ddrphy_cfg_1g_3733_elements.inc   |    0
- .../include/ddrphy_cfg_2g_3200_elements.inc   |    0
- .../include/ddrphy_cfg_2g_3733_elements.inc   |    0
- .../ddrphy_cfg_512mb_3200_elements.inc        |    0
- .../ddrphy_cfg_512mb_3733_elements.inc        |    0
- .../include/dram_fsp_cfg_1g_3733_elements.inc |    0
- .../dram_fsp_cfg_512mb_3733_elements.inc      |    0
- .../include/fsp0_2d_cfg_1g_3200_elements.inc  |    0
- .../include/fsp0_2d_cfg_1g_3733_elements.inc  |    0
- .../include/fsp0_2d_cfg_2g_3200_elements.inc  |    0
- .../fsp0_2d_cfg_2g_3200_r1_elements.inc       |    0
- .../include/fsp0_2d_cfg_2g_3733_elements.inc  |    0
- .../fsp0_2d_cfg_2g_3733_r1_elements.inc       |    0
- .../fsp0_2d_cfg_512mb_3200_elements.inc       |    0
- .../fsp0_2d_cfg_512mb_3733_elements.inc       |    0
- .../include/fsp0_cfg_1g_3733_elements.inc     |    0
- .../include/fsp0_cfg_2g_3200_r1_elements.inc  |    0
- .../include/fsp0_cfg_2g_3733_elements.inc     |    0
- .../include/fsp0_cfg_2g_3733_r1_elements.inc  |    0
- .../include/fsp0_cfg_512mb_3733_elements.inc  |    0
- .../include/fsp1_cfg_1g_3733_elements.inc     |    0
- .../include/fsp1_cfg_2g_r1_elements.inc       |    0
- .../include/fsp1_cfg_512mb_3733_elements.inc  |    0
- .../include/fsp2_cfg_1g_3733_elements.inc     |    0
- .../include/fsp2_cfg_2g_r1_elements.inc       |    0
- .../include/fsp2_cfg_512mb_3733_elements.inc  |    0
- .../include/phy_pie_1g_3200_elements.inc      |    0
- .../include/phy_pie_1g_3733_elements.inc      |    0
- .../include/phy_pie_2g_3200_elements.inc      |    0
- .../include/phy_pie_2g_3733_elements.inc      |    0
- .../include/phy_pie_512mb_3200_elements.inc   |    0
- .../include/phy_pie_512mb_3733_elements.inc   |    0
- .../cargt_lpddr4x_1gbyte_3200mts_timing.c     |    0
- .../cargt_lpddr4x_1gbyte_3733mts_timing.c     |    0
- .../cargt_lpddr4x_2gbyte_3200mts_timing.c     |    0
- .../cargt_lpddr4x_2gbyte_3733mts_timing.c     |    0
- .../cargt_lpddr4x_timing_shared.h             |    0
- configs/imx93-cargt-00324-00326_defconfig     |    9 +-
- configs/imx93-cargt-00359-00406_defconfig     |    9 +-
- configs/imx93-cargt-00363-00365_defconfig     |    9 +-
- 83 files changed, 789 insertions(+), 7307 deletions(-)
- delete mode 100644 board/cargt/imx93_00324/cargt_lpddr4x_1gbyte_timing.c
- delete mode 100644 board/cargt/imx93_00324/cargt_lpddr4x_2gbyte_timing.c
- delete mode 100644 board/cargt/imx93_00359/cargt_lpddr4x_1gbyte_timing.c
- delete mode 100644 board/cargt/imx93_00359/cargt_lpddr4x_2gbyte_timing.c
- create mode 100644 board/cargt/imx93_common/Kconfig
- create mode 100644 board/cargt/imx93_common/Makefile
- rename board/cargt/{imx93_00363 => imx93_common}/README.ddr-timing (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/cargt_lpddr4x_1gbyte_3200mts_timing.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/cargt_lpddr4x_1gbyte_3733mts_timing.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/cargt_lpddr4x_2gbyte_3200mts_timing.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/cargt_lpddr4x_2gbyte_3733mts_timing.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/cargt_lpddr4x_3200mts_csr.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/cargt_lpddr4x_3200mts_csr.h (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/cargt_lpddr4x_3733mts_csr.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/cargt_lpddr4x_3733mts_csr.h (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/cargt_lpddr4x_512mb_3200mts_timing.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/cargt_lpddr4x_512mb_3733mts_timing.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/cargt_lpddr4x_common.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/cargt_lpddr4x_common.h (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/cargt_lpddr4x_fsp0_cfg_shared.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/cargt_lpddr4x_timing_shared.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/cargt_lpddr4x_timing_shared.h (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/generated_timings_for_reference/lpddr4x_1gbyte_3200_rank1_generated.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/generated_timings_for_reference/lpddr4x_1gbyte_3733_rank1_generated.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/generated_timings_for_reference/lpddr4x_2gbyte_3200_rank1_generated.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/generated_timings_for_reference/lpddr4x_2gbyte_3200_rank2_generated.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/generated_timings_for_reference/lpddr4x_2gbyte_3733_rank1_generated.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/generated_timings_for_reference/lpddr4x_2gbyte_3733_rank2_generated.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/generated_timings_for_reference/lpddr4x_512mbyte_3200_rank1_generated.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/generated_timings_for_reference/lpddr4x_512mbyte_3733_rank1_generated.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/ddrc_cfg_1g_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/ddrc_cfg_2g_r1_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/ddrc_cfg_512mb_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/ddrphy_cfg_1g_3200_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/ddrphy_cfg_1g_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/ddrphy_cfg_2g_3200_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/ddrphy_cfg_2g_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/ddrphy_cfg_512mb_3200_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/ddrphy_cfg_512mb_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/dram_fsp_cfg_1g_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/dram_fsp_cfg_512mb_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp0_2d_cfg_1g_3200_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp0_2d_cfg_1g_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp0_2d_cfg_2g_3200_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp0_2d_cfg_2g_3200_r1_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp0_2d_cfg_2g_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp0_2d_cfg_2g_3733_r1_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp0_2d_cfg_512mb_3200_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp0_2d_cfg_512mb_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp0_cfg_1g_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp0_cfg_2g_3200_r1_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp0_cfg_2g_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp0_cfg_2g_3733_r1_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp0_cfg_512mb_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp1_cfg_1g_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp1_cfg_2g_r1_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp1_cfg_512mb_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp2_cfg_1g_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp2_cfg_2g_r1_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/fsp2_cfg_512mb_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/phy_pie_1g_3200_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/phy_pie_1g_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/phy_pie_2g_3200_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/phy_pie_2g_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/phy_pie_512mb_3200_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/include/phy_pie_512mb_3733_elements.inc (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/optimized_timings_for_reference/cargt_lpddr4x_1gbyte_3200mts_timing.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/optimized_timings_for_reference/cargt_lpddr4x_1gbyte_3733mts_timing.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/optimized_timings_for_reference/cargt_lpddr4x_2gbyte_3200mts_timing.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/optimized_timings_for_reference/cargt_lpddr4x_2gbyte_3733mts_timing.c (100%)
- rename board/cargt/{imx93_00363 => imx93_common}/optimized_timings_for_reference/cargt_lpddr4x_timing_shared.h (100%)
+
+ board/cargt/imx93_00324/Kconfig                    |   30 
+ board/cargt/imx93_00324/Makefile                   |   16 
+ .../imx93_00324/cargt_lpddr4x_1gbyte_timing.c      | 1544 ---------------
+ .../imx93_00324/cargt_lpddr4x_2gbyte_timing.c      | 2004 --------------------
+ board/cargt/imx93_00324/spl-cargt.c                |  368 +++-
+ board/cargt/imx93_00359/Kconfig                    |   30 
+ board/cargt/imx93_00359/Makefile                   |   18 
+ .../imx93_00359/cargt_lpddr4x_1gbyte_timing.c      | 1544 ---------------
+ .../imx93_00359/cargt_lpddr4x_2gbyte_timing.c      | 2004 --------------------
+ board/cargt/imx93_00359/spl-cargt.c                |  368 +++-
+ board/cargt/imx93_00363/Kconfig                    |   38 
+ board/cargt/imx93_00363/Makefile                   |   22 
+ board/cargt/imx93_00363/spl-cargt.c                |   22 
+ board/cargt/imx93_common/Kconfig                   |   37 
+ board/cargt/imx93_common/Makefile                  |   24 
+ board/cargt/imx93_common/README.ddr-timing         |    0 
+ .../cargt_lpddr4x_1gbyte_3200mts_timing.c          |    0 
+ .../cargt_lpddr4x_1gbyte_3733mts_timing.c          |    0 
+ .../cargt_lpddr4x_2gbyte_3200mts_timing.c          |    0 
+ .../cargt_lpddr4x_2gbyte_3733mts_timing.c          |    0 
+ .../cargt/imx93_common/cargt_lpddr4x_3200mts_csr.c |    0 
+ .../cargt/imx93_common/cargt_lpddr4x_3200mts_csr.h |    0 
+ .../cargt/imx93_common/cargt_lpddr4x_3733mts_csr.c |    0 
+ .../cargt/imx93_common/cargt_lpddr4x_3733mts_csr.h |    0 
+ .../cargt_lpddr4x_512mb_3200mts_timing.c           |    0 
+ .../cargt_lpddr4x_512mb_3733mts_timing.c           |    0 
+ board/cargt/imx93_common/cargt_lpddr4x_common.c    |    0 
+ board/cargt/imx93_common/cargt_lpddr4x_common.h    |    0 
+ .../imx93_common/cargt_lpddr4x_fsp0_cfg_shared.c   |    0 
+ .../imx93_common/cargt_lpddr4x_timing_shared.c     |    0 
+ .../imx93_common/cargt_lpddr4x_timing_shared.h     |    0 
+ .../lpddr4x_1gbyte_3200_rank1_generated.c          |    0 
+ .../lpddr4x_1gbyte_3733_rank1_generated.c          |    0 
+ .../lpddr4x_2gbyte_3200_rank1_generated.c          |    0 
+ .../lpddr4x_2gbyte_3200_rank2_generated.c          |    0 
+ .../lpddr4x_2gbyte_3733_rank1_generated.c          |    0 
+ .../lpddr4x_2gbyte_3733_rank2_generated.c          |    0 
+ .../lpddr4x_512mbyte_3200_rank1_generated.c        |    0 
+ .../lpddr4x_512mbyte_3733_rank1_generated.c        |    0 
+ .../include/ddrc_cfg_1g_3733_elements.inc          |    0 
+ .../include/ddrc_cfg_2g_r1_elements.inc            |    0 
+ .../include/ddrc_cfg_512mb_3733_elements.inc       |    0 
+ .../include/ddrphy_cfg_1g_3200_elements.inc        |    0 
+ .../include/ddrphy_cfg_1g_3733_elements.inc        |    0 
+ .../include/ddrphy_cfg_2g_3200_elements.inc        |    0 
+ .../include/ddrphy_cfg_2g_3733_elements.inc        |    0 
+ .../include/ddrphy_cfg_512mb_3200_elements.inc     |    0 
+ .../include/ddrphy_cfg_512mb_3733_elements.inc     |    0 
+ .../include/dram_fsp_cfg_1g_3733_elements.inc      |    0 
+ .../include/dram_fsp_cfg_512mb_3733_elements.inc   |    0 
+ .../include/fsp0_2d_cfg_1g_3200_elements.inc       |    0 
+ .../include/fsp0_2d_cfg_1g_3733_elements.inc       |    0 
+ .../include/fsp0_2d_cfg_2g_3200_elements.inc       |    0 
+ .../include/fsp0_2d_cfg_2g_3200_r1_elements.inc    |    0 
+ .../include/fsp0_2d_cfg_2g_3733_elements.inc       |    0 
+ .../include/fsp0_2d_cfg_2g_3733_r1_elements.inc    |    0 
+ .../include/fsp0_2d_cfg_512mb_3200_elements.inc    |    0 
+ .../include/fsp0_2d_cfg_512mb_3733_elements.inc    |    0 
+ .../include/fsp0_cfg_1g_3733_elements.inc          |    0 
+ .../include/fsp0_cfg_2g_3200_r1_elements.inc       |    0 
+ .../include/fsp0_cfg_2g_3733_elements.inc          |    0 
+ .../include/fsp0_cfg_2g_3733_r1_elements.inc       |    0 
+ .../include/fsp0_cfg_512mb_3733_elements.inc       |    0 
+ .../include/fsp1_cfg_1g_3733_elements.inc          |    0 
+ .../include/fsp1_cfg_2g_r1_elements.inc            |    0 
+ .../include/fsp1_cfg_512mb_3733_elements.inc       |    0 
+ .../include/fsp2_cfg_1g_3733_elements.inc          |    0 
+ .../include/fsp2_cfg_2g_r1_elements.inc            |    0 
+ .../include/fsp2_cfg_512mb_3733_elements.inc       |    0 
+ .../include/phy_pie_1g_3200_elements.inc           |    0 
+ .../include/phy_pie_1g_3733_elements.inc           |    0 
+ .../include/phy_pie_2g_3200_elements.inc           |    0 
+ .../include/phy_pie_2g_3733_elements.inc           |    0 
+ .../include/phy_pie_512mb_3200_elements.inc        |    0 
+ .../include/phy_pie_512mb_3733_elements.inc        |    0 
+ .../cargt_lpddr4x_1gbyte_3200mts_timing.c          |    0 
+ .../cargt_lpddr4x_1gbyte_3733mts_timing.c          |    0 
+ .../cargt_lpddr4x_2gbyte_3200mts_timing.c          |    0 
+ .../cargt_lpddr4x_2gbyte_3733mts_timing.c          |    0 
+ .../cargt_lpddr4x_timing_shared.h                  |    0 
+ 80 files changed, 777 insertions(+), 7292 deletions(-)
 
 diff --git a/board/cargt/imx93_00324/Kconfig b/board/cargt/imx93_00324/Kconfig
 index 85dbeab18b9..b5816e3389f 100644
@@ -8788,83 +8715,3 @@ diff --git a/board/cargt/imx93_00363/optimized_timings_for_reference/cargt_lpddr
 similarity index 100%
 rename from board/cargt/imx93_00363/optimized_timings_for_reference/cargt_lpddr4x_timing_shared.h
 rename to board/cargt/imx93_common/optimized_timings_for_reference/cargt_lpddr4x_timing_shared.h
-diff --git a/configs/imx93-cargt-00324-00326_defconfig b/configs/imx93-cargt-00324-00326_defconfig
-index fd416cfb9f8..878f3768338 100644
---- a/configs/imx93-cargt-00324-00326_defconfig
-+++ b/configs/imx93-cargt-00324-00326_defconfig
-@@ -37,7 +37,7 @@ CONFIG_SYS_PBSIZE=2074
- CONFIG_ARCH_MISC_INIT=y
- CONFIG_BOARD_EARLY_INIT_F=y
- CONFIG_BOARD_LATE_INIT=y
--CONFIG_SPL_MAX_SIZE=0x26000
-+CONFIG_SPL_MAX_SIZE=0x27000
- CONFIG_SPL_HAS_BSS_LINKER_SECTION=y
- CONFIG_SPL_BSS_START_ADDR=0x2051a000
- CONFIG_SPL_BSS_MAX_SIZE=0x2000
-@@ -213,7 +213,6 @@ CONFIG_SYS_EEPROM_SIZE=256
- CONFIG_SYS_EEPROM_PAGE_WRITE_BITS=4
- CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=100
- 
--# CONFIG_CARGT_IMX93_00324_LPDDR4X_TIMING_BY_BOARD_ID is not set
--# CONFIG_CARGT_IMX93_00324_LPDDR4X_TIMING_BY_NAME is not set
--# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME="cargt_lpddr4x_1gbyte_3733mts_timing"
--CONFIG_CARGT_IMX93_00324_LPDDR4X_TIMING_BY_EEPROM=y
-\ No newline at end of file
-+# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_BOARD_ID is not set
-+# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_NAME is not set
-+CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_EEPROM=y
-\ No newline at end of file
-diff --git a/configs/imx93-cargt-00359-00406_defconfig b/configs/imx93-cargt-00359-00406_defconfig
-index 414a18cc252..4b7c612ba47 100644
---- a/configs/imx93-cargt-00359-00406_defconfig
-+++ b/configs/imx93-cargt-00359-00406_defconfig
-@@ -37,7 +37,7 @@ CONFIG_SYS_PBSIZE=2074
- CONFIG_ARCH_MISC_INIT=y
- CONFIG_BOARD_EARLY_INIT_F=y
- CONFIG_BOARD_LATE_INIT=y
--CONFIG_SPL_MAX_SIZE=0x26000
-+CONFIG_SPL_MAX_SIZE=0x27000
- CONFIG_SPL_HAS_BSS_LINKER_SECTION=y
- CONFIG_SPL_BSS_START_ADDR=0x2051a000
- CONFIG_SPL_BSS_MAX_SIZE=0x2000
-@@ -213,7 +213,6 @@ CONFIG_SYS_EEPROM_SIZE=256
- CONFIG_SYS_EEPROM_PAGE_WRITE_BITS=4
- CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=100
- 
--# CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_BY_BOARD_ID is not set
--# CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_BY_NAME is not set
--# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME="cargt_lpddr4x_1gbyte_3733mts_timing"
--CONFIG_CARGT_IMX93_00359_LPDDR4X_TIMING_BY_EEPROM=y
-\ No newline at end of file
-+# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_BOARD_ID is not set
-+# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_NAME is not set
-+CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_EEPROM=y
-\ No newline at end of file
-diff --git a/configs/imx93-cargt-00363-00365_defconfig b/configs/imx93-cargt-00363-00365_defconfig
-index 3fd8ad9ddd8..0ec6729957e 100644
---- a/configs/imx93-cargt-00363-00365_defconfig
-+++ b/configs/imx93-cargt-00363-00365_defconfig
-@@ -37,7 +37,7 @@ CONFIG_SYS_PBSIZE=2074
- CONFIG_ARCH_MISC_INIT=y
- CONFIG_BOARD_EARLY_INIT_F=y
- CONFIG_BOARD_LATE_INIT=y
--CONFIG_SPL_MAX_SIZE=0x26000
-+CONFIG_SPL_MAX_SIZE=0x27000
- CONFIG_SPL_HAS_BSS_LINKER_SECTION=y
- CONFIG_SPL_BSS_START_ADDR=0x2051a000
- CONFIG_SPL_BSS_MAX_SIZE=0x2000
-@@ -213,8 +213,7 @@ CONFIG_SYS_EEPROM_SIZE=256
- CONFIG_SYS_EEPROM_PAGE_WRITE_BITS=4
- CONFIG_SYS_EEPROM_PAGE_WRITE_DELAY_MS=100
- 
--# CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_BOARD_ID is not set
--# CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_NAME is not set
--# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_FILENAME="cargt_lpddr4x_1gbyte_3200mts_timing"
--CONFIG_CARGT_IMX93_00363_LPDDR4X_TIMING_BY_EEPROM=y
-+# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_BOARD_ID is not set
-+# CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_NAME is not set
-+CONFIG_CARGT_IMX93_LPDDR4X_TIMING_BY_EEPROM=y
- CONFIG_CARGT_IMX93_00363_MIN_SDRAM_SIZE_MB=1024
--- 
-2.34.1
-
