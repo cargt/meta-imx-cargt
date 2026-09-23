@@ -18,6 +18,14 @@ do_configure:prepend() {
     if [ -d "${UNPACKDIR}/dts" ]; then
         cp -a ${UNPACKDIR}/dts/. ${S}/arch/arm/dts/
     fi
+    # Standalone board defconfigs, same rationale as the dts/ copy above --
+    # extracted out of the numbered patches so a config tweak is a plain
+    # one-line diff to a real file instead of a hand-edited patch hunk
+    # (hunk header/diffstat line counts have to be kept in sync by hand
+    # otherwise, a recurring source of "do_patch truncated the file" bugs).
+    if [ -d "${UNPACKDIR}/configs" ]; then
+        cp -a ${UNPACKDIR}/configs/. ${S}/configs/
+    fi
     if [ -f "${S}/.config" ]; then
         cp "${S}/.config" "${B}/.config"
     fi
@@ -32,6 +40,8 @@ SRC_URI += " \
             file://dts/imx8mp-cargt-00377-osm-som.dts \
             file://dts/imx93-cargt-00363-00365.dts \
             file://dts/imx93-cargt-00363-00365-u-boot.dtsi \
+            file://dts/imx93-cargt-00363-00428.dts \
+            file://dts/imx93-cargt-00363-00428-u-boot.dtsi \
             file://dts/imx93-cargt-00363-osm-som.dts \
             file://dts/imx93-cargt-00363-osm-som-u-boot.dtsi \
             file://dts/imx93-cargt-00324-00326.dts \
@@ -44,6 +54,8 @@ SRC_URI += " \
             file://dts/imx91-cargt-00363-osm-som.dts \
             file://dts/imx91-cargt-00363-osm-som-u-boot.dtsi \
             "
+
+SRC_URI += "file://configs/imx93-cargt-00363-00428_defconfig"
 
 SRC_URI += "file://0001-arch-arm-dts-register-Cargt-board-dtb-y-entries.patch \
             file://0002-Add-support-for-imx93_00363.patch \
