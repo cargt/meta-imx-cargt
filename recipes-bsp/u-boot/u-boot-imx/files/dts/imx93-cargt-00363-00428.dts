@@ -246,10 +246,6 @@
 	 status = "okay";
  };
  
- &epxp {
-	 status = "disabled";
- };
- 
  &lcdif {
 	 status = "disabled";
 	 assigned-clock-rates = <445333333>, <148444444>, <400000000>, <133333333>;
