@@ -15,8 +15,8 @@ verified via matching dtb sha256sums against the pre-change baseline.
 
 Upstream-Status: Inappropriate [Cargt board specific]
 ---
- arch/arm64/boot/dts/freescale/Makefile | 22 +++++++++++++++++++++-
- 1 file changed, 21 insertions(+), 1 deletion(-)
+ arch/arm64/boot/dts/freescale/Makefile | 25 +++++++++++++++++++++++-
+ 1 file changed, 24 insertions(+), 1 deletion(-)
 
 diff --git a/arch/arm64/boot/dts/freescale/Makefile b/arch/arm64/boot/dts/freescale/Makefile
 index bb6bc733c7e5..f915fcc679c9 100644
@@ -46,7 +46,7 @@ index bb6bc733c7e5..f915fcc679c9 100644
 
  imx93-11x11-evk-pmic-pf0900-dtbs := imx93-11x11-evk.dtb imx93-11x11-evk-pmic-pf0900.dtbo
  imx93-11x11-evk-pmic-pf0900-root-dtbs := imx93-11x11-evk-root.dtb imx93-11x11-evk-pmic-pf0900.dtbo
-@@ -849,6 +856,18 @@ dtb-${CONFIG_ARCH_MXC} += imx8qxp-mek-max9286-rpmsg.dtb
+@@ -849,6 +856,21 @@ dtb-${CONFIG_ARCH_MXC} += imx8qxp-mek-max9286-rpmsg.dtb
  dtb-$(CONFIG_ARCH_MXC) += imx93-tqma9352-mba93xxca.dtb
  dtb-$(CONFIG_ARCH_MXC) += imx93-tqma9352-mba93xxla.dtb
  dtb-$(CONFIG_ARCH_MXC) += imx93-var-som-symphony.dtb
@@ -60,7 +60,10 @@ index bb6bc733c7e5..f915fcc679c9 100644
 +				imx93-cargt-00363-00365.dtb \
 +				imx93-cargt-00363-00365-glt0557201280is1.dtb \
 +				imx93-cargt-00363-00365-glt1011280800is1.dtb \
-+				imx93-cargt-00363-00365-glt028240320is1.dtb
++				imx93-cargt-00363-00365-glt028240320is1.dtb \
++				imx93-cargt-00363-00428.dtb \
++				imx93-cargt-00363-00428-glt0557201280is1.dtb \
++				imx93-cargt-00363-00428-glt028240320is1.dtb
 +
  dtb-$(CONFIG_ARCH_MXC) += imx91-9x9-qsb.dtb \
  			  imx91-9x9-qsb-can1.dtb \
