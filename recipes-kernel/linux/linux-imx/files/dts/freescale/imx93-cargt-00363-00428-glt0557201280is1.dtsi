@@ -11,6 +11,26 @@
 	
 &lcdif {
 	status = "okay";
+	/*
+	 * Cargt: assigned-clocks/assigned-clock-parents used to live on
+	 * this node in the shared base DTSI (scarthgap's imx93.dtsi) and
+	 * this override only ever needed to set the rates. Wrynose's
+	 * restructured base DTSI dropped both properties from &lcdif
+	 * entirely, silently orphaning this rates-only override -- restore
+	 * them here so video_pll actually gets pinned to the rate this
+	 * panel needs (matches scarthgap's real achieved clock exactly).
+	 * Needed alongside the clk-imx93.c/dw_mipi_dsi-imx.c fixes for this
+	 * board's DSI shearing bug -- confirmed all three are required
+	 * together on real hardware.
+	 */
+	assigned-clocks = <&clk IMX93_CLK_VIDEO_PLL>,
+			   <&clk IMX93_CLK_MEDIA_DISP_PIX>,
+			   <&clk IMX93_CLK_MEDIA_AXI>,
+			   <&clk IMX93_CLK_MEDIA_APB>;
+	assigned-clock-parents = <&clk IMX93_CLK_24M>,
+				  <&clk IMX93_CLK_VIDEO_PLL>,
+				  <&clk IMX93_CLK_SYS_PLL_PFD1>,
+				  <&clk IMX93_CLK_SYS_PLL_PFD1_DIV2>;
 	assigned-clock-rates = <445333333>, <148444444>, <400000000>, <133333333>;
 };
 
