@@ -79,25 +79,12 @@
 	bootph-pre-ram;
 };
 
-&reg_usdhc2_vmmc {
-	u-boot,off-on-delay-us = <20000>;
-	bootph-pre-ram;
-};
-
 &pinctrl_uart1 {
 	bootph-pre-ram;
 	bootph-some-ram;
 };
 
 &pinctrl_usdhc1 {
-	bootph-pre-ram;
-};
-
-&pinctrl_usdhc2_gpio {
-	bootph-pre-ram;
-};
-
-&pinctrl_usdhc2 {
 	bootph-pre-ram;
 };
 
@@ -140,11 +127,6 @@
 
 &usdhc1 {
 	bootph-pre-ram;
-};
-
-&usdhc2 {
-	bootph-pre-ram;
-	fsl,signal-voltage-switch-extra-delay-ms = <8>;
 };
 
 &lpi2c1 {
