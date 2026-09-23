@@ -8,7 +8,7 @@
 		status = "okay";
 	};
 };
-	
+
 &lcdif {
 	status = "okay";
 	/*
@@ -37,7 +37,7 @@
 &dphy {
 	status = "okay";
 };
-	
+
 &dsi {
 	#address-cells = <1>;
 	#size-cells = <0>;
@@ -47,8 +47,9 @@
 		compatible = "globaltech,glt0557201280is1", "ilitek,ili9881c";
 		reg = <0>;
 		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_dsi_vdd_en>;
 		rotation = <90>;
-		reset-gpios = <&pca9555_20 3 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio1 12 GPIO_ACTIVE_LOW>;
 		backlight = <&pwm_backlight>;
 		status = "okay";
 
@@ -77,8 +78,9 @@
 		compatible = "ilitek,ili2520";
 		reg = <0x41>;
 
+		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_touchscreen>;
-		reset-gpios = <&pca9555_20 4 GPIO_ACTIVE_LOW>;
+		reset-gpios = <&gpio2 4 GPIO_ACTIVE_LOW>;
 		interrupt-parent = <&gpio1>;
 		interrupts = <11 IRQ_TYPE_LEVEL_LOW>;
 		touchscreen-swapped-x-y;
@@ -100,15 +102,21 @@
 &iomuxc {
 
 	pinctrl_backlight_pwm: backlight-pwmgrp {
-		fsl,pins = <			    
+		fsl,pins = <
 		MX93_PAD_GPIO_IO22__TPM5_CH1		0x2
 	>;
+	};
+
+	pinctrl_dsi_vdd_en: dsivddengrp {
+		fsl,pins = <
+			MX93_PAD_SAI1_TXC__GPIO1_IO12			0x31e // DSI_VDD_EN / panel RESET
+		>;
 	};
 
 	pinctrl_touchscreen: touchscreengrp {
 		fsl,pins = <
 			MX93_PAD_SAI1_TXFS__GPIO1_IO11			0x31e // DSICT_nINT
-		>;	
+			MX93_PAD_GPIO_IO04__GPIO2_IO04			0x31e // DSICT_nRST
+		>;
 	};
 };
-
