@@ -1,0 +1,1 @@
+FILESEXTRAPATHS:prepend:imx93-cargt-00363-00428 := "${THISDIR}/${BPN}:"
