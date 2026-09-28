@@ -1,0 +1,211 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Mon, 28 Sep 2026 00:00:00 -0500
+Subject: [PATCH] boards: cargt00414: make EVK bus expander and RTC optional
+
+boards/cargt00414 is created from boards/mcimx95evk by the recipe
+(do_patch prefunc) before this patch is applied. The 00414 SOM uses the
+same PF09 + PF5301 + PF5302 PMIC set on LPI2C1 as the EVK, but has no
+PCAL6408A bus expander (0x20) and no PCA2131 RTC (0x53). The EVK board
+code treats both as mandatory: a failed PCAL6408A probe skips the PMIC
+init and fails SM boot.
+
+Probe both devices and continue without them when absent:
+ - PCAL6408A/PCA2131 init failures are no longer fatal
+ - GPIO1-10 (EVK expander IRQ) is only armed when the expander exists;
+   on the 00414 that pad (PDM_BIT_STREAM1) goes to OSM GPIO_B_3
+ - bus expander mask updates become no-ops without the expander
+ - expander-backed controls and the PCA2131 board RTC return
+   SM_ERR_NOT_SUPPORTED when the device is absent
+
+The PF09 interrupt, routed through the expander on the EVK, is wired to
+GPIO_IO35 on the 00414 and is not handled yet.
+
+Upstream-Status: Inappropriate [board-specific]
+---
+diff --git a/boards/cargt00414/sm/brd_sm.h b/boards/cargt00414/sm/brd_sm.h
+index 25e9570..055992f 100755
+--- a/boards/cargt00414/sm/brd_sm.h
++++ b/boards/cargt00414/sm/brd_sm.h
+@@ -62,7 +62,7 @@
+ /* Defines */
+ 
+ /*! Board name string */
+-#define BRD_SM_NAME  "i.MX95 EVK"
++#define BRD_SM_NAME  "Cargt i.MX95 00414"
+ 
+ /*! Board attributes */
+ #define BRD_SM_ATTR  0x0
+diff --git a/boards/cargt00414/sm/brd_sm_bbm.c b/boards/cargt00414/sm/brd_sm_bbm.c
+index e4b2db8..f053c31 100755
+--- a/boards/cargt00414/sm/brd_sm_bbm.c
++++ b/boards/cargt00414/sm/brd_sm_bbm.c
+@@ -68,7 +68,11 @@ int32_t BRD_SM_BbmRtcWrite(uint32_t addr, uint32_t numVal,
+     int32_t status = SM_ERR_SUCCESS;
+ 
+     /* Check read size */
+-    if (numVal > 24U)
++    if (!g_pca2131Present)
++    {
++        status = SM_ERR_NOT_SUPPORTED;
++    }
++    else if (numVal > 24U)
+     {
+         status = SM_ERR_INVALID_PARAMETERS;
+     }
+@@ -102,7 +106,11 @@ int32_t BRD_SM_BbmRtcRead(uint32_t addr, uint32_t numVal, uint32_t *val)
+     int32_t status = SM_ERR_SUCCESS;
+ 
+     /* Check read size */
+-    if (numVal > 24U)
++    if (!g_pca2131Present)
++    {
++        status = SM_ERR_NOT_SUPPORTED;
++    }
++    else if (numVal > 24U)
+     {
+         status = SM_ERR_INVALID_PARAMETERS;
+     }
+@@ -206,6 +214,10 @@ int32_t BRD_SM_BbmRtcTimeSet(uint32_t rtcId, uint64_t val, bool ticks)
+     {
+         status = DEV_SM_BbmRtcTimeSet(rtcId, val, ticks);
+     }
++    else if (!g_pca2131Present)
++    {
++        status = SM_ERR_NOT_SUPPORTED;
++    }
+     else
+     {
+         uint32_t year, month, day, hour, min, sec, hun, weekday;
+@@ -298,6 +310,10 @@ int32_t BRD_SM_BbmRtcTimeGet(uint32_t rtcId, uint64_t *val, bool ticks)
+     {
+         status = DEV_SM_BbmRtcTimeGet(rtcId, val, ticks);
+     }
++    else if (!g_pca2131Present)
++    {
++        status = SM_ERR_NOT_SUPPORTED;
++    }
+     else
+     {
+         uint32_t year, month, day, hour, min, sec, hun, weekday;
+@@ -368,6 +384,10 @@ int32_t BRD_SM_BbmRtcStateGet(uint32_t rtcId, uint32_t *state)
+     {
+         status = DEV_SM_BbmRtcStateGet(rtcId, state);
+     }
++    else if (!g_pca2131Present)
++    {
++        status = SM_ERR_NOT_SUPPORTED;
++    }
+     else
+     {
+         bool st;
+@@ -417,6 +437,10 @@ int32_t BRD_SM_BbmRtcAlarmSet(uint32_t rtcId, bool enable, uint64_t val)
+     {
+         status = DEV_SM_BbmRtcAlarmSet(rtcId, enable, val);
+     }
++    else if (!g_pca2131Present)
++    {
++        status = SM_ERR_NOT_SUPPORTED;
++    }
+     else
+     {
+         /* Enable? */
+diff --git a/boards/cargt00414/sm/brd_sm_control.c b/boards/cargt00414/sm/brd_sm_control.c
+index d4f5d2b..40bf502 100755
+--- a/boards/cargt00414/sm/brd_sm_control.c
++++ b/boards/cargt00414/sm/brd_sm_control.c
+@@ -103,6 +103,10 @@ int32_t BRD_SM_ControlGet(uint32_t ctrlId, uint32_t *numRtn, uint32_t *rtn)
+         {
+             status = DEV_SM_ControlGet(ctrlId, numRtn, rtn);
+         }
++        else if ((ctrlId < BRD_SM_CTRL_TEST) && !g_pcal6408aPresent)
++        {
++            status = SM_ERR_NOT_SUPPORTED;
++        }
+         else if (ctrlId < BRD_SM_CTRL_TEST)
+         {
+             uint8_t data;
+diff --git a/boards/cargt00414/sm/brd_sm_handlers.c b/boards/cargt00414/sm/brd_sm_handlers.c
+index e4e1943..ba0d3f8 100755
+--- a/boards/cargt00414/sm/brd_sm_handlers.c
++++ b/boards/cargt00414/sm/brd_sm_handlers.c
+@@ -83,6 +83,10 @@ irq_prio_info_t g_brdIrqPrioInfo[BOARD_NUM_IRQ_PRIO_IDX] =
+ 
+ bool g_pca2131Used = false;
+ 
++/* Cargt 00414: EVK bus expander and RTC are optional (not fitted) */
++bool g_pcal6408aPresent = false;
++bool g_pca2131Present = false;
++
+ uint32_t g_pmicFaultFlags = 0U;
+ 
+ /* Local functions */
+@@ -105,12 +109,11 @@ int32_t BRD_SM_SerialDevicesInit(void)
+     /* Init the bus expander */
+     PCAL6408A_GetDefaultConfig(&pcal6408Config);
+     pcal6408Config.inputLatch = 0xFFU;
+-    if (!PCAL6408A_Init(&g_pcal6408aDev, &pcal6408Config))
+-    {
+-        status = SM_ERR_HARDWARE_ERROR;
+-    }
+-    else
++    /* Cargt 00414: no PCAL6408A fitted, a failed probe is not fatal */
++    if (PCAL6408A_Init(&g_pcal6408aDev, &pcal6408Config))
+     {
++        g_pcal6408aPresent = true;
++
+         if (!PCAL6408A_IntMaskSet(&g_pcal6408aDev, PCAL6408A_INITIAL_MASK))
+         {
+             status = SM_ERR_HARDWARE_ERROR;
+@@ -256,13 +259,14 @@ int32_t BRD_SM_SerialDevicesInit(void)
+         g_pca2131Dev.devAddr = BOARD_PCA2131_DEV_ADDR;
+ 
+         /* Initialize PCA2131 RTC */
+-        if (!PCA2131_Init(&g_pca2131Dev))
+-        {
+-            status = SM_ERR_HARDWARE_ERROR;
+-        }
++        /* Cargt 00414: no PCA2131 fitted, a failed probe is not fatal */
++        g_pca2131Present = PCA2131_Init(&g_pca2131Dev);
+     }
+ 
+-    if (status == SM_ERR_SUCCESS)
++    /* GPIO1-10 is the PCAL6408A interrupt on the EVK. On the 00414 that pad
++       (PDM_BIT_STREAM1) is routed to OSM GPIO_B_3 instead, so leave it alone
++       when the expander is absent. */
++    if ((status == SM_ERR_SUCCESS) && g_pcal6408aPresent)
+     {
+         rgpio_pin_config_t gpioConfig =
+         {
+@@ -291,8 +295,13 @@ int32_t BRD_SM_BusExpMaskSet(uint8_t val, uint8_t mask)
+ 
+     newMask |= val;
+ 
++    /* Nothing to program without the expander */
++    if (!g_pcal6408aPresent)
++    {
++        cachedMask = newMask;
++    }
+     /* Mask changed? */
+-    if (cachedMask != newMask)
++    else if (cachedMask != newMask)
+     {
+         if (PCAL6408A_IntMaskSet(&g_pcal6408aDev, newMask))
+         {
+diff --git a/boards/cargt00414/sm/brd_sm_handlers.h b/boards/cargt00414/sm/brd_sm_handlers.h
+index e34d52b..81d07f5 100755
+--- a/boards/cargt00414/sm/brd_sm_handlers.h
++++ b/boards/cargt00414/sm/brd_sm_handlers.h
+@@ -93,6 +93,12 @@ extern irq_prio_info_t g_brdIrqPrioInfo[BOARD_NUM_IRQ_PRIO_IDX];
+ /*! Indicator if bus expander bit[6] is used for the PF2131 RTC */
+ extern bool g_pca2131Used;
+ 
++/*! PCAL6408A bus expander detected (not fitted on Cargt 00414) */
++extern bool g_pcal6408aPresent;
++
++/*! PCA2131 RTC detected (not fitted on Cargt 00414) */
++extern bool g_pca2131Present;
++
+ /*! Fault flags from the PMICs */
+ extern uint32_t g_pmicFaultFlags;
+ 
