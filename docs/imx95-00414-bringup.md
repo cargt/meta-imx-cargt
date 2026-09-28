@@ -27,9 +27,10 @@ Sources used:
 - [x] Kernel DTBs compile with `dtc`. Checked outside bitbake against the lf-6.18.20 tree.
 - [x] U-Boot builds for both defconfigs. Checked outside bitbake with the Yocto aarch64 cross-compiler.
 - [x] System Manager builds with `CONFIG=mx95cargt00414`. Checked outside bitbake with arm-none-eabi 13.2.
-- [ ] `bitbake -e` parse check for both machines
-- [ ] `bitbake virtual/kernel`, `u-boot-imx`, `imx-system-manager`, `imx-oei`, `imx-boot`
-- [ ] `bitbake cargt-image-core`, for both machines
+- [x] `bitbake -e` parse check (imx95-cargt-00414-00365)
+- [x] `bitbake virtual/kernel`, `u-boot-imx`, `imx-system-manager`, `imx-oei`, `imx-boot` (imx95-cargt-00414-00365, via `cargt-image-dev-swu`, 2026-09-28)
+- [x] `bitbake cargt-image-dev-swu` (imx95-cargt-00414-00365, 2026-09-28)
+- [ ] Image build for imx95-cargt-00414-osm-som
 
 ## Hardware bring-up checklist
 
