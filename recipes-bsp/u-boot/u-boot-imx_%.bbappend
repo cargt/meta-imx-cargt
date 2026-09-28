@@ -53,6 +53,10 @@ SRC_URI += " \
             file://dts/imx91-cargt-00363-00365-u-boot.dtsi \
             file://dts/imx91-cargt-00363-osm-som.dts \
             file://dts/imx91-cargt-00363-osm-som-u-boot.dtsi \
+            file://dts/imx95-cargt-00414-00365.dts \
+            file://dts/imx95-cargt-00414-00365-u-boot.dtsi \
+            file://dts/imx95-cargt-00414-osm-som.dts \
+            file://dts/imx95-cargt-00414-osm-som-u-boot.dtsi \
             "
 
 SRC_URI += " \
@@ -92,4 +96,5 @@ SRC_URI += "file://0001-arch-arm-dts-register-Cargt-board-dtb-y-entries.patch \
             file://0027-board-cargt-common-add-EEPROM-dram_rank-write-repair.patch \
             file://0028-board-cargt-imx8mp_00377-vendor-neutral-DDR-dispatch.patch \
             file://0029-board-cargt-imx8mp_00377-use-USB2-OSM-L-USB_A-for-fast.patch \
+            file://0030-board-cargt-add-i.MX-95-00414-OSM-L-SOM-board-support.patch \
             "
