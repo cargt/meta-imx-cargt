@@ -21,7 +21,7 @@ Probe both devices and continue without them when absent:
 The PF09 interrupt, routed through the expander on the EVK, is wired to
 GPIO_IO35 on the 00414 and is not handled yet.
 
-Upstream-Status: Inappropriate [board-specific]
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
 diff --git a/boards/cargt00414/sm/brd_sm.h b/boards/cargt00414/sm/brd_sm.h
 index 25e9570..055992f 100755

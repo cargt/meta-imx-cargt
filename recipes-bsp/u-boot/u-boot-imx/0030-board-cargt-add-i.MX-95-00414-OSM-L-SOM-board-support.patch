@@ -20,6 +20,8 @@ Compared to the EVK:
 DDR init is done by OEI and PMIC control by the System Manager, so there
 is no DDR/PMIC code on the A55 side. Device trees are added as standalone
 files by the recipe (files/dts).
+
+Upstream-Status: Inappropriate [Cargt board specific]
 ---
  arch/arm/mach-imx/imx9/Kconfig              |   7 +
  board/cargt/imx95_00414/Kconfig             |  12 +
