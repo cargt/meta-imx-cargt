@@ -32,7 +32,12 @@ DEFAULTTUNE:mx8qm-nxp-bsp  ?= "armv8a-crc-crypto"
 DEFAULTTUNE:mx8x-nxp-bsp   ?= "armv8a-crc-crypto"
 DEFAULTTUNE:mx8ulp-nxp-bsp ?= "armv8a-crc-crypto"
 DEFAULTTUNE:mx9-nxp-bsp    ?= "armv8a-crc-crypto"
-DEFAULTTUNE:mx91-nxp-bsp  ?= "armv8a-crc-crypto"
+# i.MX91 builds with different DISTRO_FEATURES than i.MX93 (no x11/vulkan, see
+# below), so it must not share the armv8a package arch with i.MX93: the two
+# machines would overwrite/delete each other's packages in the shared feed.
+# cortexa55 matches meta-freescale's mx91 default. Hard assignment because
+# meta-imx's fsl-imx-base.inc also sets DEFAULTTUNE:mx91-nxp-bsp with ?=.
+DEFAULTTUNE:mx91-nxp-bsp = "cortexa55"
 DEFAULTTUNE:mx93-nxp-bsp   ?= "armv8a-crc-crypto"
 # imx-base.inc sets DEFAULTTUNE:mx95-generic-bsp ?= "cortexa55", which comes
 # after mx9-nxp-bsp in OVERRIDES and would otherwise win.
