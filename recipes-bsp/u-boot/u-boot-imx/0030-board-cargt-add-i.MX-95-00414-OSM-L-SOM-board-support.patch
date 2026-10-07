@@ -1,21 +1,23 @@
-From 9a002032eee1f848447ee7525456bf948368a27f Mon Sep 17 00:00:00 2001
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Tim Carney <tim.carney@cargt.com>
 Date: Mon, 28 Sep 2026 00:00:00 -0500
 Subject: [PATCH] board: cargt: add i.MX 95 00414 OSM-L SOM board support
 
 Add TARGET_IMX95_CARGT_00414 with a board port derived from
 board/nxp/imx95_evk and a Cargt boot environment for the 00414 on the
-00365 carrier and the bare osm-som. Their defconfigs ship as standalone
-files from the recipe (files/configs).
+00365 and 00428 carriers and the bare osm-som. Their defconfigs ship as
+standalone files from the recipe (files/configs).
 
 Compared to the EVK:
  - no TCPC, FlexSPI NOR, AQR 10G PHY, MIPI-DSI splash or EFI capsule
    support
- - board_init() releases the carrier PHY resets on the pca9555
-   (active-high: they drive an N-FET pulling PHYRST low)
- - ETH_B PHY management over GPIO bit-banged MDIO (i.MX 95 NETC has a
-   single EMDIO controller and the 00365 wires two PHYs at address 0 on
-   separate MDIO buses)
+ - board_init() pulses the carrier Ethernet PHY resets, picked by the
+   DT machine compatible: pca9555 P00/P01 on the 00365, GPIO_IO09 (OSM
+   SPI_A_SDO) on the 00428. ETH_x_RST reach PHYRST through a
+   non-inverting FET level shifter, so they are active low.
+ - ETH_B PHY management over GPIO bit-banged MDIO on the 00365 (i.MX 95
+   NETC has a single EMDIO controller and the 00365 wires two PHYs at
+   address 0 on separate MDIO buses)
  - environment in eMMC (mmc 0), rootfs partition 1 carries boot/Image
 
 DDR init is done by OEI and PMIC control by the System Manager, so there
@@ -24,14 +26,14 @@ files by the recipe (files/dts).
 
 Upstream-Status: Inappropriate [Cargt board specific]
 ---
- arch/arm/mach-imx/imx9/Kconfig        |    7 ++
- board/cargt/imx95_00414/Kconfig       |   12 +++
- board/cargt/imx95_00414/MAINTAINERS   |    7 ++
- board/cargt/imx95_00414/Makefile      |   11 ++
- board/cargt/imx95_00414/imx95_00414.c |  138 ++++++++++++++++++++++++++++++
- board/cargt/imx95_00414/spl.c         |  105 +++++++++++++++++++++++
- include/configs/imx95_00414.h         |  151 +++++++++++++++++++++++++++++++++
- 7 files changed, 431 insertions(+)
+ arch/arm/mach-imx/imx9/Kconfig        |   7 ++
+ board/cargt/imx95_00414/Kconfig       |  12 ++
+ board/cargt/imx95_00414/MAINTAINERS   |   8 ++
+ board/cargt/imx95_00414/Makefile      |  11 ++
+ board/cargt/imx95_00414/imx95_00414.c | 146 +++++++++++++++++++++++++
+ board/cargt/imx95_00414/spl.c         | 105 ++++++++++++++++++
+ include/configs/imx95_00414.h         | 151 ++++++++++++++++++++++++++
+ 7 files changed, 440 insertions(+)
  create mode 100644 board/cargt/imx95_00414/Kconfig
  create mode 100644 board/cargt/imx95_00414/MAINTAINERS
  create mode 100644 board/cargt/imx95_00414/Makefile
@@ -40,7 +42,7 @@ Upstream-Status: Inappropriate [Cargt board specific]
  create mode 100644 include/configs/imx95_00414.h
 
 diff --git a/arch/arm/mach-imx/imx9/Kconfig b/arch/arm/mach-imx/imx9/Kconfig
-index cafcb0a..6ad19db 100644
+index cafcb0a05f2..6ad19db6fb5 100644
 --- a/arch/arm/mach-imx/imx9/Kconfig
 +++ b/arch/arm/mach-imx/imx9/Kconfig
 @@ -216,6 +216,12 @@ config TARGET_IMX91_00363
@@ -65,7 +67,7 @@ index cafcb0a..6ad19db 100644
  endif
 diff --git a/board/cargt/imx95_00414/Kconfig b/board/cargt/imx95_00414/Kconfig
 new file mode 100644
-index 0000000..586ab6b
+index 00000000000..586ab6b4fc3
 --- /dev/null
 +++ b/board/cargt/imx95_00414/Kconfig
 @@ -0,0 +1,12 @@
@@ -83,20 +85,21 @@ index 0000000..586ab6b
 +endif
 diff --git a/board/cargt/imx95_00414/MAINTAINERS b/board/cargt/imx95_00414/MAINTAINERS
 new file mode 100644
-index 0000000..da78bf5
+index 00000000000..93374d2841b
 --- /dev/null
 +++ b/board/cargt/imx95_00414/MAINTAINERS
-@@ -0,0 +1,7 @@
+@@ -0,0 +1,8 @@
 +i.MX95 CARGT 00414 OSM-L SOM
 +M:	Tim Carney <tim.carney@cargt.com>
 +S:	Maintained
 +F:	board/cargt/imx95_00414/
 +F:	include/configs/imx95_00414.h
 +F:	configs/imx95-cargt-00414-00365_defconfig
++F:	configs/imx95-cargt-00414-00428_defconfig
 +F:	configs/imx95-cargt-00414-osm-som_defconfig
 diff --git a/board/cargt/imx95_00414/Makefile b/board/cargt/imx95_00414/Makefile
 new file mode 100644
-index 0000000..200141c
+index 00000000000..200141cbd2f
 --- /dev/null
 +++ b/board/cargt/imx95_00414/Makefile
 @@ -0,0 +1,11 @@
@@ -113,10 +116,10 @@ index 0000000..200141c
 +endif
 diff --git a/board/cargt/imx95_00414/imx95_00414.c b/board/cargt/imx95_00414/imx95_00414.c
 new file mode 100644
-index 0000000..85458e5
+index 00000000000..61efc3f6094
 --- /dev/null
 +++ b/board/cargt/imx95_00414/imx95_00414.c
-@@ -0,0 +1,138 @@
+@@ -0,0 +1,146 @@
 +// SPDX-License-Identifier: GPL-2.0+
 +/*
 + * Copyright 2025 NXP
@@ -139,6 +142,7 @@ index 0000000..85458e5
 +#include <scmi_agent.h>
 +#include "../dts/upstream/src/arm64/freescale/imx95-power.h"
 +#include <asm/arch/sys_proto.h>
++#include <dm/device.h>
 +#include <dm/uclass.h>
 +
 +extern int board_fix_fdt_fuse(void *fdt);
@@ -156,10 +160,10 @@ index 0000000..85458e5
 +}
 +
 +/*
-+ * Carrier PHY reset lines (e.g. 00365 ETH_A_RST/ETH_B_RST on the pca9555)
-+ * drive an N-FET that pulls the PHY's PHYRST low, so they are asserted
-+ * high. The GPIO is looked up by name and skipped quietly when the
-+ * carrier doesn't provide it (e.g. the bare osm-som configuration).
++ * Carrier PHY reset lines (ETH_x_RST) reach the PHY's PHYRST through a
++ * non-inverting FET level shifter, so they are active low; the carrier
++ * pull-up leaves the PHY out of reset when the GPIO is not driven.
++ * The GPIO is looked up by name and skipped quietly if it doesn't exist.
 + */
 +static void netc_phy_rst(const char *gpio_name, const char *label)
 +{
@@ -178,9 +182,10 @@ index 0000000..85458e5
 +		return;
 +	}
 +
-+	dm_gpio_set_dir_flags(&desc, GPIOD_IS_OUT | GPIOD_IS_OUT_ACTIVE);
++	/* assert, then release, the PHY reset */
++	dm_gpio_set_dir_flags(&desc, GPIOD_IS_OUT | GPIOD_IS_OUT_ACTIVE | GPIOD_ACTIVE_LOW);
 +	udelay(15000);
-+	dm_gpio_set_value(&desc, 0); /* release PHY reset */
++	dm_gpio_set_value(&desc, 0);
 +	udelay(100000);
 +}
 +
@@ -198,8 +203,14 @@ index 0000000..85458e5
 +		return;
 +	}
 +
-+	netc_phy_rst("pca9555@20_0", "ETH_A_RST");
-+	netc_phy_rst("pca9555@20_1", "ETH_B_RST");
++	if (of_machine_is_compatible("cargt,imx95-00414-00365")) {
++		/* 00365: resets on the I2C_A pca9555 */
++		netc_phy_rst("pca9555@20_0", "ETH_A_RST");
++		netc_phy_rst("pca9555@20_1", "ETH_B_RST");
++	} else if (of_machine_is_compatible("cargt,imx95-00414-00428")) {
++		/* 00428: ETH_A_RST on OSM SPI_A_SDO (GPIO_IO09) */
++		netc_phy_rst("GPIO2_9", "ETH_A_RST");
++	}
 +}
 +
 +int board_init(void)
@@ -257,7 +268,7 @@ index 0000000..85458e5
 +#endif
 diff --git a/board/cargt/imx95_00414/spl.c b/board/cargt/imx95_00414/spl.c
 new file mode 100644
-index 0000000..0d1dbd6
+index 00000000000..0d1dbd62bfc
 --- /dev/null
 +++ b/board/cargt/imx95_00414/spl.c
 @@ -0,0 +1,105 @@
@@ -368,7 +379,7 @@ index 0000000..0d1dbd6
 +}
 diff --git a/include/configs/imx95_00414.h b/include/configs/imx95_00414.h
 new file mode 100644
-index 0000000..0ab1113
+index 00000000000..0ab111381d4
 --- /dev/null
 +++ b/include/configs/imx95_00414.h
 @@ -0,0 +1,151 @@
