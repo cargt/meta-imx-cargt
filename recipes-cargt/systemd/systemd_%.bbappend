@@ -5,6 +5,8 @@ SRC_URI += "file://10-bridge.netdev \
             file://50-eth0.network \
             file://50-br0-member-eth0.network \
             file://51-eth1.network \
+            file://50-eth0-dhcp.network \
+            file://51-eth1-dhcp.network \
             file://51-eth-lan.network \
             file://51-br0-member-eth1.network \
             file://52-wlan0.network \
@@ -30,9 +32,18 @@ do_install:append () {
             install -Dm 0644 ${UNPACKDIR}/50-br0-member-eth0.network ${D}${sysconfdir}/systemd/network/    
             install -Dm 0644 ${UNPACKDIR}/51-br0-member-eth1.network ${D}${sysconfdir}/systemd/network/    
             install -Dm 0644 ${UNPACKDIR}/52-br0-member-wlan0.network ${D}${sysconfdir}/systemd/network/    
+        elif ${@bb.utils.contains('DISTRO_FEATURES', 'networkmanager', 'true', 'false', d)}; then
+            # NetworkManager owns eth0/eth1, so keep networkd's hands off them
+            install -Dm 0644 ${UNPACKDIR}/50-eth0.network ${D}${sysconfdir}/systemd/network/
+            install -Dm 0644 ${UNPACKDIR}/51-eth1.network ${D}${sysconfdir}/systemd/network/
+            if ${@bb.utils.contains('MACHINE_FEATURES', 'morsemicro-ap', 'true', 'false', d)}; then
+                install -Dm 0644 ${UNPACKDIR}/52-wlan0.network ${D}${sysconfdir}/systemd/network/
+            fi
         else
-            install -Dm 0644 ${UNPACKDIR}/50-eth0.network ${D}${sysconfdir}/systemd/network/    
-            install -Dm 0644 ${UNPACKDIR}/51-eth1.network ${D}${sysconfdir}/systemd/network/    
+            # No NetworkManager in this distro (e.g. fsl-imx-xwayland), so let
+            # networkd run DHCP on eth0/eth1 rather than leaving them unmanaged
+            install -Dm 0644 ${UNPACKDIR}/50-eth0-dhcp.network ${D}${sysconfdir}/systemd/network/
+            install -Dm 0644 ${UNPACKDIR}/51-eth1-dhcp.network ${D}${sysconfdir}/systemd/network/
             if ${@bb.utils.contains('MACHINE_FEATURES', 'morsemicro-ap', 'true', 'false', d)}; then
                 install -Dm 0644 ${UNPACKDIR}/52-wlan0.network ${D}${sysconfdir}/systemd/network/    
             fi
