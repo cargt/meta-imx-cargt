@@ -68,6 +68,8 @@ SRC_URI += " \
             file://configs/imx93-cargt-00363-00365_defconfig \
             file://configs/imx93-cargt-00363-00428_defconfig \
             file://configs/imx93-cargt-00363-osm-som_defconfig \
+            file://configs/imx95-cargt-00414-00365_defconfig \
+            file://configs/imx95-cargt-00414-osm-som_defconfig \
             "
 
 SRC_URI += "file://0001-arch-arm-dts-register-Cargt-board-dtb-y-entries.patch \

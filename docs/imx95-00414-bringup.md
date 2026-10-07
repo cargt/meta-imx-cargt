@@ -17,7 +17,7 @@ Sources used:
 |---|---|---|
 | OEI (DDR init) | M33 | stock `mx95lp5` board, EVK 19x19 LPDDR5 6400 MT/s timing (machine conf) |
 | System Manager | M33 | `recipes-bsp/imx-system-manager`: board `cargt00414` (copy of `mcimx95evk` + optional-device patch), config `mx95cargt00414.cfg` |
-| SPL / ATF / OP-TEE / U-Boot | A55 | `u-boot-imx` patch 0030 (`board/cargt/imx95_00414`), `files/dts/imx95-cargt-00414-*` |
+| SPL / ATF / OP-TEE / U-Boot | A55 | `u-boot-imx` patch 0030 (`board/cargt/imx95_00414`), `files/dts/imx95-cargt-00414-*`, `files/configs/imx95-cargt-00414-*_defconfig` |
 | Linux | A55 | `files/dts/freescale/imx95-cargt-00414-*.dts`, `cargt_00414_kernel_config_mods.cfg` |
 
 `IMXBOOT_TARGETS = "flash_a55"`: A55-only container, no M7 image.
