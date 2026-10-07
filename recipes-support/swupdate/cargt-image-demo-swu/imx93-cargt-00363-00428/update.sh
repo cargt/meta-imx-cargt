@@ -56,6 +56,22 @@ echo tar --zstd -xf /data/swupdate/update.tar.zst -C /data/swupdate/mnt >> /data
 tar --zstd -xf /data/swupdate/update.tar.zst -C /data/swupdate/mnt 
 # pv /data/swupdate/update.tar.zst | tar --zstd -xf -C /data/swupdate/mnt 
 
+# All 00363-00428 boards have the 5.5" GLT0557201280IS1 panel. U-Boot saves
+# its env on first boot, so boards set up before the U-Boot default was fixed
+# still boot the base DT, which has no display. Move them to the panel DT.
+BASE_DTB=boot/imx93-cargt-00363-00428.dtb
+PANEL_DTB=boot/imx93-cargt-00363-00428-glt0557201280is1.dtb
+case "$(fw_printenv -n fdtfile 2>/dev/null)" in
+	$BASE_DTB|/$BASE_DTB)
+		if [ -f /data/swupdate/mnt/$PANEL_DTB ]; then
+			fw_setenv fdtfile $PANEL_DTB
+			echo set fdtfile=${PANEL_DTB} >> /data/swupdate/log.txt
+		else
+			echo ${PANEL_DTB} missing from new rootfs, fdtfile left unchanged >> /data/swupdate/log.txt
+		fi
+		;;
+esac
+
 fw_setenv mmcpart $UPDATE_PART
 
 echo ******Update complete********* >> /data/swupdate/log.txt
