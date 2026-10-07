@@ -1,7 +1,7 @@
 # Wrynose Migration — Hardware Bring-Up Status
 
 Tracking document for the scarthgap → wrynose migration hardware validation pass.
-Last updated: 2026-07-24 (late evening).
+Last updated: 2026-10-07.
 
 ## Test matrix
 
@@ -10,7 +10,7 @@ Last updated: 2026-07-24 (late evening).
 | `imx93-cargt-00324-00326` | ✅ Real HW (full `.swu`, boots to userspace, network up) | ✅ Real HW, eMMC flash (production boot path) confirmed | Original console-hang board; console cable must be disconnected for reboot (see erratum below); no display panel attached to this DUT |
 | `imx93-cargt-00359-00406` | ✅ Real HW (full `.swu`, boots to userspace, network up); `stress-ng --vm` clean 1-min pass after EEPROM DRAM size/rank correction | ✅ Real HW, eMMC flash — TCPC fix CONFIRMED (`TCPC: Vendor ID [0x1fc9], Product ID [0x5110]` on both ports) | Confirmed no display/audio hardware; see EEPROM mis-provisioning incident + fail-safe recovery image below |
 | `imx91-cargt-00363-00365` | ✅ Real HW (full `.swu`, boots to userspace, network up) | ✅ Real HW, eMMC flash (production boot path) confirmed | Confirmed no display/audio hardware; different machine from imx93 primary board despite same board ID |
-| `imx8mp-cargt-00377-00365` | ✅ Real HW (full `.swu`, boots to userspace, WiFi confirmed); Bluetooth blocked by a hardware strapping issue, see below | ✅ Real HW, SDP/USB boot to fastboot confirmed, eMMC flash confirmed | First-ever wrynose hardware test for this SoC family; see the `CONFIG_SYS_MALLOC_F_LEN` fix below |
+| `imx8mp-cargt-00377-00365` | ✅ Real HW (full `.swu`, boots to userspace, WiFi confirmed); Bluetooth blocked by a hardware strapping issue, see below | ✅ Real HW, SDP/USB boot to fastboot confirmed, eMMC flash confirmed; fastboot moved to OSM-L USB_A ("A" port, item 18), confirmed 2026-10-07 | First-ever wrynose hardware test for this SoC family; see the `CONFIG_SYS_MALLOC_F_LEN` fix below |
 | `imx93-cargt-00363-00365` (primary) | ✅ Real HW (validated earlier, pre-dates this tracking doc) | ✅ Real HW via JTAG (this is where `CONFIG_SPL_HAVE_INIT_STACK` was originally discovered) | DSI shearing bug open, paused separately |
 
 Legend: ✅ tested on real hardware · 🔄 in progress · ⚠️ not yet hardware-tested
@@ -45,6 +45,8 @@ Legend: ✅ tested on real hardware · 🔄 in progress · ⚠️ not yet hardwa
     - `hdmi_pavi`/`hdmi`/`hdmiphy` moved out of `imx8mp.dtsi` entirely into an optional `imx8mp-nxp-display.dtsi` overlay, which also replaces `lcdif1`/`lcdif2`/`lcdif3`/`mipi_dsi`/`lvds_bridge` with NXP's downstream driver-stack versions. `imx8mp-cargt-00377-00365.dtsi` `#include`s this overlay, which required deleting the overlay's default `mipi_dsi` "port" node (`/delete-node/ port;`) to avoid a duplicate-label conflict with this board's own `port@0`/`port@1` DSI panel wiring.
     - The camera `cameradev` wrapper node was removed upstream and `isi_1` was consolidated away (`isi_0` now handles both CSI ports) — this board's `os08a20.dtsi` drops the `&cameradev`/`&isi_1` overrides and moves `status = "okay"` directly onto `&isi_0`.
     - A real hunk-header/line-count bug was caught and fixed while making the `imx8mp-nxp-display.dtsi` include edit by hand (a "new file" hunk declared `@@ -0,0 +1,118 @@` after only 2 lines were actually added, silently truncating the file and dropping the closing brace for `&mipi_dsi`) — a reminder to always recount when hand-editing a "new file" hunk, which is exactly the class of error the `files/dts/` extraction is meant to make structurally impossible going forward.
+
+18. **`imx8mp-cargt-00377-00365`: fastboot came up on OSM-L USB_C instead of the OSM-spec USB_A port.** The 00377 SOM wires native USB2 to OSM-L USB_A and native USB1 (with SS lanes) to OSM-L USB_C; USB_B is not connected (SOM schematic 014-00377-FE, J1 sheet). `board_usb_init()` hardcoded `USB1_BASE_ADDR`, so the gadget enumerated on the 00365's "C" Type-C port, while the TCPC it configured (port1, 0x51 = U17) belongs to the "A" port. Fixed by `0029-board-cargt-imx8mp_00377-use-USB2-OSM-L-USB_A-for-fast.patch`: new `CARGT_IMX8MP_00377_FASTBOOT_USB2` (default `y`) selects `USB2_BASE_ADDR`; set it to `n` only for a carrier that deviates from the spec. **CONFIRMED on real hardware (2026-10-07)** with a rebuilt `imx-boot` (0031 applied, `CONFIG_CARGT_IMX8MP_00377_FASTBOOT_USB2=y`) and the cable in the 00365 "A" port: `uuu imx-boot` loaded over `SDPS:`, then U-Boot's fastboot enumerated as `FB:` (`0x1fc9:0x0152`) on the same cable. The boot ROM's serial download works on USB2/USB_A too, so `uuu` needs no cable swap. An earlier run the same day used a stale 2026-09-08 image (`bitbake imx-boot` had picked up the `local.conf` default `MACHINE`), so pass `MACHINE=imx8mp-cargt-00377-00365` explicitly. Still open: `setup_typec()` passes `ss_mux_select` to port1, so the "A" port's CC polarity drives the "C" port's SS mux (`typec_sel`). This is harmless for fastboot but untidy.
 
 ## Issues found, noted for future resolution
 

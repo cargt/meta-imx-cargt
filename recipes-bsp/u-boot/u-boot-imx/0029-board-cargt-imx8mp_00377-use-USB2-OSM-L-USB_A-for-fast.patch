@@ -1,0 +1,72 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Cargt <tim.carney@cargt.com>
+Date: Fri, 21 Aug 2026 11:35:03 -0500
+Subject: [PATCH] board: cargt: imx8mp_00377: use USB2 (OSM-L USB_A) for
+ fastboot
+
+The OSM specification designates USB_A as the module's device-mode
+(fastboot/download) port. The 00377 SOM wires the SoC's native USB2
+controller to OSM-L USB_A, and native USB1 (with its SuperSpeed lanes)
+to OSM-L USB_C. OSM-L USB_B is not connected on the SOM. This was
+checked against SOM schematic 014-00377-FE (J1 connector sheet: USB2_D_P
+on AC14 = USB_A_D_P, USB1_D_P/TX_P on D10/A8 = USB_C_D_P/SSTX_P).
+
+board_usb_init()'s dwc3_device_data hardcoded .base = USB1_BASE_ADDR,
+so the fastboot/mfgtools gadget came up on OSM-L USB_C instead of the
+spec's USB_A. On the 00365 carrier that is the "C" Type-C port rather
+than the "A" port. A carrier that only exposes USB_A as a device port
+can never enumerate fastboot at all.
+
+dwc3_nxp_usb_phy_init() and HSIO_GPR_REG_0_USB_CLOCK_MODULE_EN are
+controller-agnostic, so only .base needs to change. TCPC port1
+(I2C 0x51) already targets the USB_A port's PTN5110 (U17 on 00365
+rev 05), so its UFP/DFP setup now matches the controller in use.
+
+Add CARGT_IMX8MP_00377_FASTBOOT_USB2, default y, so a carrier that
+deviates from the spec can switch back to USB1.
+
+Upstream-Status: Inappropriate [Cargt board specific]
+
+Signed-off-by: Cargt <tim.carney@cargt.com>
+---
+ board/cargt/imx8mp_00377/Kconfig        | 12 ++++++++++++
+ board/cargt/imx8mp_00377/imx8mp_00377.c |  4 ++++
+ 2 files changed, 16 insertions(+)
+
+diff --git a/board/cargt/imx8mp_00377/Kconfig b/board/cargt/imx8mp_00377/Kconfig
+index 2622cd2..ca04f6e 100644
+--- a/board/cargt/imx8mp_00377/Kconfig
++++ b/board/cargt/imx8mp_00377/Kconfig
+@@ -48,4 +48,16 @@ config CARGT_IMX8MP_00377_FORCE_DRAM_BOOTSTRAP
+ 	  read/write their EEPROM correctly, not for normal production
+ 	  builds - it always pays the cost of up to N training attempts.
+ 
++config CARGT_IMX8MP_00377_FASTBOOT_USB2
++	bool "Use the SoC's native USB2 controller for the fastboot/mfgtools USB gadget"
++	default y
++	help
++	  The OSM specification designates the USB_A port as the module's
++	  device-mode (fastboot/download) port. The 00377 SOM wires OSM-L
++	  USB_A to the SoC's native USB2 controller; native USB1 (with the
++	  SuperSpeed lanes) goes to OSM-L USB_C, and USB_B is not connected.
++	  Say y to bring the fastboot/mfgtools gadget up on USB2 (USB_A), as
++	  the spec requires. Say n only for a carrier that deviates from the
++	  spec and needs the gadget on native USB1 (USB_C) instead.
++
+ endif
+diff --git a/board/cargt/imx8mp_00377/imx8mp_00377.c b/board/cargt/imx8mp_00377/imx8mp_00377.c
+index 967d549..0b6e710 100644
+--- a/board/cargt/imx8mp_00377/imx8mp_00377.c
++++ b/board/cargt/imx8mp_00377/imx8mp_00377.c
+@@ -270,7 +270,11 @@ static struct dwc3_device dwc3_device_data = {
+ #else
+ 	.maximum_speed = USB_SPEED_SUPER,
+ #endif
++#if IS_ENABLED(CONFIG_CARGT_IMX8MP_00377_FASTBOOT_USB2)
++	.base = USB2_BASE_ADDR,
++#else
+ 	.base = USB1_BASE_ADDR,
++#endif
+ 	.dr_mode = USB_DR_MODE_PERIPHERAL,
+ 	.index = 0,
+ 	.power_down_scale = 2,
