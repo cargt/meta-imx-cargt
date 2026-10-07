@@ -46,6 +46,7 @@ SRC_URI += " \
             file://dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dtsi \
             file://dts/freescale/imx95-cargt-00414-osm-som.dts \
             file://dts/freescale/imx95-cargt-00414-00365.dts \
+            file://dts/freescale/imx95-cargt-00414-00428.dts \
             "
 
 do_patch:append() {
@@ -55,7 +56,8 @@ do_patch:append() {
 
     # Boards added after the 0001 dtb-y patch register themselves here with a
     # standalone appended line rather than growing that patch.
-    for dtb in imx95-cargt-00414-osm-som.dtb imx95-cargt-00414-00365.dtb; do
+    for dtb in imx95-cargt-00414-osm-som.dtb imx95-cargt-00414-00365.dtb \
+               imx95-cargt-00414-00428.dtb; do
         grep -qxF "dtb-\$(CONFIG_ARCH_MXC) += $dtb" ${S}/arch/arm64/boot/dts/freescale/Makefile || \
             echo "dtb-\$(CONFIG_ARCH_MXC) += $dtb" >> ${S}/arch/arm64/boot/dts/freescale/Makefile
     done

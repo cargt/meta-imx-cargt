@@ -1,13 +1,14 @@
 # i.MX 95 00414 OSM-L SOM bring-up (wrynose)
 
-Living TODO / test checklist for `imx95-cargt-00414-00365` (primary) and
-`imx95-cargt-00414-osm-som`. Check items off in the same commit that closes them.
+Living TODO / test checklist for `imx95-cargt-00414-00365` (primary),
+`imx95-cargt-00414-00428` and `imx95-cargt-00414-osm-som`. Check items off in the same commit that closes them.
 
 Sources used:
 - 00414 SOM schematic `014-00414-00.PDF` (rev 00). A rev 01 Altium project also exists.
 - 00365 carrier schematic `00365.pdf` (rev 05).
+- 00428 carrier schematic `014-00428-00.PDF` (rev 01, "Locker Display").
 - 00363 SOM schematic `014-00363-FE.PDF` (rev 04). Used to translate the
-  00363-00365 device tree by OSM-L signal name.
+  00363-00365 and 00363-00428 device trees by OSM-L signal name.
 - NXP 19x19 LPDDR5 EVK (`imx95-19x19-lpddr5-evk`, lf-6.18.20_2.0.0). Used as the
   SoC-level reference.
 
@@ -25,12 +26,13 @@ Sources used:
 ## Build verification
 
 - [x] Kernel DTBs compile with `dtc`. Checked outside bitbake against the lf-6.18.20 tree.
-- [x] U-Boot builds for both defconfigs. Checked outside bitbake with the Yocto aarch64 cross-compiler.
+- [x] U-Boot builds for all three defconfigs (00365, 00428, osm-som). Checked outside bitbake with the Yocto aarch64 cross-compiler.
 - [x] System Manager builds with `CONFIG=mx95cargt00414`. Checked outside bitbake with arm-none-eabi 13.2.
 - [x] `bitbake -e` parse check (imx95-cargt-00414-00365)
 - [x] `bitbake virtual/kernel`, `u-boot-imx`, `imx-system-manager`, `imx-oei`, `imx-boot` (imx95-cargt-00414-00365, via `cargt-image-dev-swu`, 2026-09-28)
 - [x] `bitbake cargt-image-dev-swu` (imx95-cargt-00414-00365, 2026-09-28)
 - [ ] Image build for imx95-cargt-00414-osm-som
+- [ ] Image build for imx95-cargt-00414-00428
 
 ## Hardware bring-up checklist
 
@@ -51,6 +53,16 @@ Sources used:
 - [ ] PMIC and SoC thermal zones in `/sys/class/thermal` (SCMI sensors)
 - [ ] Watchdog reset (wdog3 → WDOG_ANY → PF09)
 
+### 00428 carrier
+
+- [ ] Recovery/flash path. On the 00414, OSM USB_C is the i.MX 95 USB1 (USB 3.0) controller, and that is likely the ROM serial-download port. On the 00428, USB_C is a host-only port with a VBUS enable. On the 00363 the ROM used USB1 = OSM USB_A, the 00428's USB-C connector. Confirm which port `uuu` serial download works on; SD or eMMC flashing may be needed instead.
+- [ ] `i2cdetect` on I2C_A (lpi2c2): 0x51 (PTN5110 USB_A)
+- [ ] ETH_A (enetc_port0, NETC EMDIO, reset on GPIO_IO09): link and ping, in U-Boot and Linux
+- [ ] USB-C, OSM USB_A (usb2): role switching, plus U-Boot fastboot (`usb_gadget0`)
+- [ ] OSM USB_C (usb3) host with VBUS (GPIO_IO15)
+- [ ] UART_B (lpuart5, MikroBus)
+- [ ] `/data` mounted from `LABEL=data` (base-files fstab)
+
 ## Open items / TODO
 
 1. **DDR timing selection.** i.MX 95 trains DDR in OEI on the M33, before the SM and SPL. The SPL EEPROM-based selection used on i.MX 93 (`cargt_eeprom`) therefore does not apply. OEI builds exactly one timing file (`OEI_DDR_CONFIG`) and has no I2C driver.
@@ -62,7 +74,7 @@ Sources used:
 3. **PF09 interrupt.** On the EVK it is routed through the PCAL6408A; on the 00414 it goes to GPIO_IO35 and is not handled by the SM port yet.
 4. **SM/OEI debug UART.** The SM and OEI both use `DEBUG_UART_INSTANCE=2` (the EVK default). On the 00414 the UART2 pads are the BOOT_MODE strap nets, so check that this is harmless, or disable the debug UART.
 5. **USB_A TCPC address.** 0x51 is used, carried over from the tested 00363-00365 kernel DT. The 00363 U-Boot DT used 0x50. Verify against the 00365 SLV_ADDR strap.
-6. **PHY reset polarity.** The 00365 ETH_x_RST drive an N-FET that pulls PHYRST low, so they are asserted high. The 00414 files use GPIO_ACTIVE_HIGH. The 00363-00365 kernel DT uses GPIO_ACTIVE_LOW for its eqos reset (only U-Boot there is active-high); worth reviewing on that board too.
-7. **Not ported yet:** display variants (glt028240320is1 SPI, glt0557201280is1 DSI, glt1011280800is1 LVDS), PCIe (OSM PCIe_A/B, pca9555 P11 PCIE_PWR_EN), ETH_C, camera, audio (SAI1/I2S_A).
+6. **PHY reset polarity (resolved 2026-10-07).** On both the 00365 and the 00428, ETH_x_RST reaches PHYRST through a non-inverting FET level shifter: the FET gate is on VDD_1V8, with a 100k pull-up to 1V8 on the SoC side and a pull-up to 3V3 on the PHY side. So the line is active low, and the pull-up releases the PHY by default. The 00414 kernel DTs and U-Boot `board_init()` now use active low. The 00363 U-Boot DTs still declare `ethphy1` reset-gpios GPIO_ACTIVE_HIGH on the 00365; that is wrong, but it is outside this branch.
+7. **Not ported yet:** display variants (glt028240320is1 SPI, glt0557201280is1 DSI, glt1011280800is1 LVDS). On the 00428 the 5.5" GLT0557201280IS1 panel is fitted on every board and its DT is the 00363-00428 default, so `imx95-cargt-00414-00428` currently boots its base DT with no display. Also not ported: PCIe (OSM PCIe_A/B, pca9555 P11 PCIE_PWR_EN), ETH_C, camera, audio (SAI1/I2S_A).
 8. **ETH_x_nINT.** The PHY interrupts are not wired up in the DT, so the PHYs are polled.
 9. **Schematic revision.** Confirm whether the prototypes are rev 00 (the PDF used here) or rev 01 (Altium project `105-00414-01`).

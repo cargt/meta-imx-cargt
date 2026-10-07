@@ -1,0 +1,18 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Copyright 2026 Cargt
+ *
+ * U-Boot additions for the Cargt i.MX 95 00414 on the 00428 carrier. Only
+ * the top-level dts gets its -u-boot.dtsi pulled in automatically, so the
+ * SOM one is included explicitly.
+ */
+
+#include "imx95-cargt-00414-osm-som-u-boot.dtsi"
+
+/ {
+	aliases {
+		/* fastboot/UUU on the USB-C connector (OSM USB_A) */
+		usb_gadget0 = &usbg2;
+		usb_gadget1 = &usb3_dwc3;
+	};
+};

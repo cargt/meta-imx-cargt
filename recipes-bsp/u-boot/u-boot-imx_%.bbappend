@@ -55,6 +55,8 @@ SRC_URI += " \
             file://dts/imx91-cargt-00363-osm-som-u-boot.dtsi \
             file://dts/imx95-cargt-00414-00365.dts \
             file://dts/imx95-cargt-00414-00365-u-boot.dtsi \
+            file://dts/imx95-cargt-00414-00428.dts \
+            file://dts/imx95-cargt-00414-00428-u-boot.dtsi \
             file://dts/imx95-cargt-00414-osm-som.dts \
             file://dts/imx95-cargt-00414-osm-som-u-boot.dtsi \
             "
@@ -69,6 +71,7 @@ SRC_URI += " \
             file://configs/imx93-cargt-00363-00428_defconfig \
             file://configs/imx93-cargt-00363-osm-som_defconfig \
             file://configs/imx95-cargt-00414-00365_defconfig \
+            file://configs/imx95-cargt-00414-00428_defconfig \
             file://configs/imx95-cargt-00414-osm-som_defconfig \
             "
 

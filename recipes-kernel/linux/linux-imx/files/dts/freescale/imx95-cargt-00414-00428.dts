@@ -1,0 +1,248 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2024 NXP
+ * Copyright 2026 Cargt
+ *
+ * Cargt i.MX 95 00414 OSM-L SOM on the 00428 carrier (rev 01).
+ *
+ * Ported from imx93-cargt-00363-00428.dts by OSM-L signal name, using the
+ * same 00363 -> 00414 pad translation as imx95-cargt-00414-00365.dts:
+ *
+ *   OSM signal   00428 use        00363 (i.MX 93)   00414 (i.MX 95)
+ *   ETH_A        RTL8211FI        ENET1 (EQOS)      ENET1 (NETC ENETC0)
+ *   SPI_A_SDO    ETH_A_RST        SAI1_RXD0         GPIO_IO09 (gpio2 9)
+ *   I2C_A        PTN5110 @0x51    LPI2C2            LPI2C2
+ *   I2C_B        touch            LPI2C3            LPI2C6
+ *   UART_A_RX    USB2_VBUS_EN     GPIO_IO09         GPIO_IO15 (gpio2 15)
+ *   UART_A_CTS   USB1_nALERT      GPIO_IO10         GPIO_IO16 (gpio2 16)
+ *   UART_B       MikroBus UART    LPUART2           LPUART5
+ *   USB_A        USB-C (PTN5110)  USB1 (usbotg1)    USB2 (usb2, high-speed only)
+ *   USB_C        host, VBUS_EN    USB2 (usbotg2)    USB1 (usb3)
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/usb/pd.h>
+#include "imx95-cargt-00414-osm-som.dts"
+
+/ {
+	model = "Cargt i.MX95 00414 OSM-L SOM on 00428 carrier board";
+	compatible = "cargt,imx95-00414-00428", "cargt,imx95-00414-osm-som",
+		     "fsl,imx95";
+
+	aliases {
+		ethernet0 = &enetc_port0;
+		serial4 = &lpuart5;
+	};
+
+	/* OSM USB_C VBUS (USB2_VBUS_EN on OSM UART_A_RX) */
+	reg_usb_c_vbus: regulator-usb-c-vbus {
+		compatible = "regulator-fixed";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_usb_c_vbus>;
+		regulator-name = "USB2_VBUS_EN";
+		regulator-min-microvolt = <5000000>;
+		regulator-max-microvolt = <5000000>;
+		gpio = <&gpio2 15 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+	};
+};
+
+&adc1 {
+	vref-supply = <&reg_vref_1v8>;
+	status = "okay";
+};
+
+/* OSM I2C_A */
+&lpi2c2 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <400000>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&pinctrl_lpi2c2>;
+	pinctrl-1 = <&pinctrl_lpi2c2>;
+	status = "okay";
+
+	ptn5110_51: tcpc@51 {
+		compatible = "nxp,ptn5110", "tcpci";
+		reg = <0x51>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_ptn5110_51>;
+		interrupt-parent = <&gpio2>;
+		interrupts = <16 IRQ_TYPE_LEVEL_LOW>;	/* USB1_nALERT on OSM UART_A_CTS */
+		status = "okay";
+
+		connector {
+			compatible = "usb-c-connector";
+			label = "USB-C";
+			power-role = "dual";
+			data-role = "dual";
+			try-power-role = "sink";
+			source-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
+			sink-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)
+					PDO_VAR(5000, 20000, 3000)>;
+			op-sink-microwatt = <15000000>;
+			self-powered;
+
+			port {
+				typec1_dr_sw: endpoint {
+					remote-endpoint = <&usb2_drd_sw>;
+				};
+			};
+		};
+	};
+};
+
+/* OSM I2C_B (touch controllers on the display variants) */
+&lpi2c6 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <400000>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&pinctrl_lpi2c6>;
+	pinctrl-1 = <&pinctrl_lpi2c6>;
+	status = "okay";
+};
+
+/* OSM UART_B (MikroBus UART) */
+&lpuart5 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart5>;
+	status = "okay";
+};
+
+&netcmix_blk_ctrl {
+	status = "okay";
+};
+
+&netc_blk_ctrl {
+	status = "okay";
+};
+
+&netc_timer {
+	status = "okay";
+};
+
+/* ETH_A PHY MDIO (ENET1_MDC/MDIO) */
+&netc_emdio {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_emdio>, <&pinctrl_eth_rst>;
+	status = "okay";
+
+	ethphy0: ethernet-phy@0 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0>;
+		/* ETH_A_RST -> non-inverting FET level shifter -> PHYRST (active low) */
+		reset-gpios = <&gpio2 9 GPIO_ACTIVE_LOW>;
+		reset-assert-us = <15000>;
+		reset-deassert-us = <100000>;
+		realtek,clkout-disable;
+		eee-broken-1000t;
+	};
+};
+
+/* OSM ETH_A */
+&enetc_port0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_enetc0>;
+	phy-handle = <&ethphy0>;
+	phy-mode = "rgmii-id";
+	status = "okay";
+};
+
+/* OSM USB_A: USB-C with PTN5110, high-speed only controller */
+&usb2 {
+	dr_mode = "otg";
+	hnp-disable;
+	srp-disable;
+	adp-disable;
+	usb-role-switch;
+	disable-over-current;
+	status = "okay";
+
+	port {
+		usb2_drd_sw: endpoint {
+			remote-endpoint = <&typec1_dr_sw>;
+		};
+	};
+};
+
+/* OSM USB_C: host only (no SuperSpeed lanes on the 00428) */
+&usb3 {
+	status = "okay";
+};
+
+&usb3_dwc3 {
+	dr_mode = "host";
+	vbus-supply = <&reg_usb_c_vbus>;
+	status = "okay";
+};
+
+&usb3_phy {
+	status = "okay";
+};
+
+&scmi_iomuxc {
+	pinctrl_emdio: emdiogrp {
+		fsl,pins = <
+			IMX95_PAD_ENET1_MDC__NETCMIX_TOP_NETC_MDC		0x50e
+			IMX95_PAD_ENET1_MDIO__NETCMIX_TOP_NETC_MDIO		0x90e
+		>;
+	};
+
+	pinctrl_eth_rst: ethrstgrp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO09__GPIO2_IO_BIT9			0x31e /* ETH_A_RST */
+		>;
+	};
+
+	pinctrl_enetc0: enetc0grp {
+		fsl,pins = <
+			IMX95_PAD_ENET1_TD3__NETCMIX_TOP_ETH0_RGMII_TD3		0x50e
+			IMX95_PAD_ENET1_TD2__NETCMIX_TOP_ETH0_RGMII_TD2		0x50e
+			IMX95_PAD_ENET1_TD1__NETCMIX_TOP_ETH0_RGMII_TD1		0x50e
+			IMX95_PAD_ENET1_TD0__NETCMIX_TOP_ETH0_RGMII_TD0		0x50e
+			IMX95_PAD_ENET1_TX_CTL__NETCMIX_TOP_ETH0_RGMII_TX_CTL	0x57e
+			IMX95_PAD_ENET1_TXC__NETCMIX_TOP_ETH0_RGMII_TX_CLK	0x58e
+			IMX95_PAD_ENET1_RX_CTL__NETCMIX_TOP_ETH0_RGMII_RX_CTL	0x57e
+			IMX95_PAD_ENET1_RXC__NETCMIX_TOP_ETH0_RGMII_RX_CLK	0x58e
+			IMX95_PAD_ENET1_RD0__NETCMIX_TOP_ETH0_RGMII_RD0		0x57e
+			IMX95_PAD_ENET1_RD1__NETCMIX_TOP_ETH0_RGMII_RD1		0x57e
+			IMX95_PAD_ENET1_RD2__NETCMIX_TOP_ETH0_RGMII_RD2		0x57e
+			IMX95_PAD_ENET1_RD3__NETCMIX_TOP_ETH0_RGMII_RD3		0x57e
+		>;
+	};
+
+	pinctrl_lpi2c2: lpi2c2grp {
+		fsl,pins = <
+			IMX95_PAD_I2C2_SCL__AONMIX_TOP_LPI2C2_SCL		0x40000b9e
+			IMX95_PAD_I2C2_SDA__AONMIX_TOP_LPI2C2_SDA		0x40000b9e
+		>;
+	};
+
+	pinctrl_lpi2c6: lpi2c6grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO04__LPI2C6_SDA				0x40000b9e
+			IMX95_PAD_GPIO_IO05__LPI2C6_SCL				0x40000b9e
+		>;
+	};
+
+	pinctrl_ptn5110_51: ptn5110-51grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO16__GPIO2_IO_BIT16			0x31e
+		>;
+	};
+
+	pinctrl_usb_c_vbus: usbcvbusgrp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO15__GPIO2_IO_BIT15			0x31e /* USB2_VBUS_EN */
+		>;
+	};
+
+	pinctrl_uart5: uart5grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO00__LPUART5_TX				0x31e
+			IMX95_PAD_GPIO_IO01__LPUART5_RX				0x31e
+		>;
+	};
+};
