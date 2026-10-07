@@ -91,4 +91,5 @@ SRC_URI += "file://0001-arch-arm-dts-register-Cargt-board-dtb-y-entries.patch \
             file://0026-configs-imx8mp_00377-remove-hardcoded-FEC-PHY-addres.patch \
             file://0027-board-cargt-common-add-EEPROM-dram_rank-write-repair.patch \
             file://0028-board-cargt-imx8mp_00377-vendor-neutral-DDR-dispatch.patch \
+            file://0029-board-cargt-imx8mp_00377-use-USB2-OSM-L-USB_A-for-fast.patch \
             "
