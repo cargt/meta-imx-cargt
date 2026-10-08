@@ -38,6 +38,12 @@ DEFAULTTUNE:mx9-nxp-bsp    ?= "armv8a-crc-crypto"
 # cortexa55 matches meta-freescale's mx91 default. Hard assignment because
 # meta-imx's fsl-imx-base.inc also sets DEFAULTTUNE:mx91-nxp-bsp with ?=.
 DEFAULTTUNE:mx91-nxp-bsp = "cortexa55"
+
+# These recipes are built differently on i.MX8MP (CAAM / ISP dependencies, jsoncpp epoch)
+# but would otherwise be packaged for the shared armv8a arch, so i.MX8MP and i.MX93 builds
+# delete each other's copies from the shared armv8a deploy dir/feed. Make them SoC-specific
+# on i.MX8MP (armv8a-mx8mp, already in its PACKAGE_FEED_ARCHS).
+MACHINE_SOCARCH_FILTER:append:mx8mp-nxp-bsp = " jsoncpp crypto-af-alg keyctl-caam smw"
 DEFAULTTUNE:mx93-nxp-bsp   ?= "armv8a-crc-crypto"
 # imx-base.inc sets DEFAULTTUNE:mx95-generic-bsp ?= "cortexa55", which comes
 # after mx9-nxp-bsp in OVERRIDES and would otherwise win.
