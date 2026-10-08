@@ -53,7 +53,10 @@ Sources used:
 - [ ] Restore the 00365 PHY `reset-gpios` (pca9555 P00/P01) in the kernel DT once I2C_A works. They are commented out because an unprobed pca9555 kept both PHYs from registering (`net eth0/eth1: could not attach to PHY`); the resets are released by pull-ups when undriven.
 - [ ] `ci_hdrc ci_hdrc.0: Aliasing StreamID 0xf (from 4c200000.usb) unsupported, expect DMA to be broken` on usb2: check once USB_A can be exercised.
 - [ ] USB-C(A), OSM USB_A (usb2, high-speed only): host and device role switching
-- [ ] USB-C(C), OSM USB_C (usb3): role switching, and SuperSpeed in both plug orientations (CBTU02043 mux, pca9555 P12)
+- [x] USB-C(C), OSM USB_C (usb3): host role and SuperSpeed in both plug orientations (2026-10-08). RTS5411 USB 3 hub + drive at 5000M with the plug either way (CBTU02043 select low = normal, high = reverse), 122 MB/s direct read. Device role and PD not tested yet.
+  - The 00414 routes only USB1_TX0/RX0; TX1/RX1 are unconnected and orientation is done by the carrier's external mux, as the OSM spec expects. The i.MX 95 PHY's internal Type-C lane mux (TCA) must stay at FLIP = 0 (TX0/RX0); FLIP = 1 leaves the SS port in RxDetect. It does: the PHY is not in the connector's graph (the SS endpoint goes to `usb-c-ss-mux`), so nothing changes its orientation from the driver default.
+  - SuperSpeed first came up only after a USB 2.0 reset: with `role-switch-default-mode = "peripheral"` the xHCI/PHY started after VBUS and the device had already fallen back to high speed. Fixed by defaulting the controller to host.
+  - Test: plug a USB 3 device each way, `lsusb -t` shows it on bus 2 at 5000M, `cat /sys/class/typec/port1/orientation`, and `dd if=/dev/sda of=/dev/null bs=1M count=1024 iflag=direct` > 100 MB/s. Use a SuperSpeed-rated cable/adapter.
 - [ ] microSD card detect and read/write
 - [ ] CAN_A (flexcan1) and CAN_B (flexcan3) loopback between the two ports
 - [ ] UART_B (lpuart5, MikroBus) and UART_C (lpuart6)

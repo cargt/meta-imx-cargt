@@ -331,7 +331,15 @@
 	srp-disable;
 	adp-disable;
 	usb-role-switch;
-	role-switch-default-mode = "peripheral";
+	/*
+	 * Default to host (the EVK uses peripheral). tcpm turns VBUS on and
+	 * then switches the role; if the xHCI and PHY are only brought up at
+	 * that point, a USB 3 device has already given up on SuperSpeed
+	 * (it only looks for an SS receiver for ~100 ms after VBUS) and
+	 * stays at high speed. Device mode is unaffected: the role switches
+	 * to peripheral when the partner is a host.
+	 */
+	role-switch-default-mode = "host";
 	snps,dis-u1-entry-quirk;
 	snps,dis-u2-entry-quirk;
 	status = "okay";
