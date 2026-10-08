@@ -63,6 +63,7 @@
 		compatible = "ilitek,ili2520";
 		reg = <0x41>;
 
+		pinctrl-names = "default";
 		pinctrl-0 = <&pinctrl_touchscreen>;
 		reset-gpios = <&pca9555_20 4 GPIO_ACTIVE_LOW>;
 		interrupt-parent = <&gpio5>;
