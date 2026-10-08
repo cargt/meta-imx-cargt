@@ -7,7 +7,7 @@ PV = "1.0+git${SRCPV}"
 SRCREV = "${AUTOREV}"
 S = "${WORKDIR}/git"
 
-inherit systemd
+inherit systemd imx-cargt-component-version
 
 SYSTEMD_AUTO_ENABLE = "enable"
 SYSTEMD_SERVICE:${PN} = "cargt-python-nm-mqtt.service"
