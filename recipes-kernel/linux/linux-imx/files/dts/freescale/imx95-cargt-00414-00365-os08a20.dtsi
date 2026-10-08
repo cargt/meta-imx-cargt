@@ -1,0 +1,113 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2026 Cargt
+ *
+ * OmniVision OS08A20 MIPI CSI-2 camera on the 00365 camera connector
+ * (OSM CSI_A = i.MX 95 MIPI CSI0, 4 lanes), as used with the 00377.
+ *
+ * Control is on I2C_A (LPI2C2, 3.3 V side of the 00365 level shifter). CAM_PWR
+ * (pca9555 P07) powers the module, so it is the sensor's reset-gpios: the
+ * ox05b1s driver deasserts it (line high) on power-up and asserts it (low) on
+ * power-down. The sensor is driven by the NXP ox05b1s driver
+ * (CONFIG_VIDEO_OX05B1S), raw frames go MIPI CSI0 -> pixel formatter -> ISI,
+ * and processing is done by the NEO ISP (libcamera), as on the i.MX 95 EVK.
+ */
+
+&lpi2c2 {
+	os08a20: camera@36 {
+		compatible = "ovti,os08a20";
+		reg = <0x36>;
+		clocks = <&dummy>;
+		reset-gpios = <&pca9555_20 7 GPIO_ACTIVE_LOW>;
+		avdd-supply = <&reg_dummy>;
+		dovdd-supply = <&reg_dummy>;
+		dvdd-supply = <&reg_dummy>;
+		orientation = <2>;
+		rotation = <0>;
+
+		port {
+			os08a20_mipi_0_ep: endpoint {
+				remote-endpoint = <&mipi_csi0_ep>;
+				data-lanes = <1 2 3 4>;
+				clock-lanes = <0>;
+			};
+		};
+	};
+};
+
+&dphy_rx {
+	status = "okay";
+};
+
+&mipi_csi0 {
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+
+			mipi_csi0_ep: endpoint {
+				remote-endpoint = <&os08a20_mipi_0_ep>;
+				data-lanes = <1 2 3 4>;
+				clock-lanes = <0>;
+			};
+		};
+
+		port@1 {
+			reg = <1>;
+
+			mipi_csi0_out: endpoint {
+				remote-endpoint = <&formatter_0_in>;
+			};
+		};
+	};
+};
+
+&csi_pixel_formatter_0 {
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+
+			formatter_0_in: endpoint {
+				remote-endpoint = <&mipi_csi0_out>;
+			};
+		};
+
+		port@1 {
+			reg = <1>;
+
+			formatter_0_out: endpoint {
+				remote-endpoint = <&isi_in_2>;
+			};
+		};
+	};
+};
+
+&isi {
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@2 {
+			reg = <2>;
+
+			isi_in_2: endpoint {
+				remote-endpoint = <&formatter_0_out>;
+			};
+		};
+	};
+};
+
+&neoisp0 {
+	status = "okay";
+};

@@ -46,6 +46,7 @@ SRC_URI += " \
             file://dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dtsi \
             file://dts/freescale/imx95-cargt-00414-osm-som.dts \
             file://dts/freescale/imx95-cargt-00414-00365.dts \
+            file://dts/freescale/imx95-cargt-00414-00365-os08a20.dtsi \
             file://dts/freescale/imx95-cargt-00414-00365-glt0557201280is1.dts \
             file://dts/freescale/imx95-cargt-00414-00365-glt0557201280is1.dtsi \
             file://dts/freescale/imx95-cargt-00414-00365-glt1011280800is1.dts \

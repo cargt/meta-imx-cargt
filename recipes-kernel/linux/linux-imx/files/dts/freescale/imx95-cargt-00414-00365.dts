@@ -516,3 +516,6 @@
 		>;
 	};
 };
+
+/* OS08A20 camera on the 00365 camera connector (all 00365 variants) */
+#include "imx95-cargt-00414-00365-os08a20.dtsi"
