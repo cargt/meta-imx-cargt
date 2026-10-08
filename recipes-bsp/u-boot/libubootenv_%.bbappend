@@ -10,6 +10,28 @@ do_install:append:class-target() {
 
 FILES:${PN}:append:class-target = " ${sysconfdir}"
 
+# Machines that can boot from either eMMC or SD set fw-env-bootdev in
+# MACHINE_FEATURES: U-Boot's env lives on whichever MMC it booted from, so
+# generate fw_env.config at boot from the root device rather than shipping a
+# fixed mmcblkN. The machine's fw_env.config becomes the template.
+FW_ENV_BOOTDEV = "${@bb.utils.contains('MACHINE_FEATURES', 'fw-env-bootdev', '1', '', d)}"
+
+inherit ${@'systemd' if d.getVar('FW_ENV_BOOTDEV') else ''}
+
+SRC_URI:append:class-target = "${@' file://fw-env-bootdev.sh file://fw-env-bootdev.service' if d.getVar('FW_ENV_BOOTDEV') else ''}"
+SYSTEMD_SERVICE:${PN} = "fw-env-bootdev.service"
+
+do_install:append:class-target() {
+	if [ -n "${FW_ENV_BOOTDEV}" ]; then
+		mv ${D}${sysconfdir}/fw_env.config ${D}${sysconfdir}/fw_env.config.default
+		ln -s /run/fw_env.config ${D}${sysconfdir}/fw_env.config
+		install -Dm 0755 ${UNPACKDIR}/fw-env-bootdev.sh ${D}${sbindir}/fw-env-bootdev
+		install -Dm 0644 ${UNPACKDIR}/fw-env-bootdev.service ${D}${systemd_system_unitdir}/fw-env-bootdev.service
+	fi
+}
+
+FILES:${PN}:append:class-target = "${@' ${sbindir}/fw-env-bootdev ${systemd_system_unitdir}/fw-env-bootdev.service' if d.getVar('FW_ENV_BOOTDEV') else ''}"
+
 
 
 

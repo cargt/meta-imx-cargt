@@ -11,6 +11,7 @@ SRC_URI += "file://10-bridge.netdev \
             file://52-br0-member-wlan0.network \
             file://81-can1.network \
             file://80-can0.network \
+            file://50-cargt-networkmanager-wait-online.conf \
         "
 
 do_install:append () {
@@ -41,6 +42,10 @@ do_install:append () {
     # Configure the can networks    
     install -Dm 0644 ${UNPACKDIR}/80-can0.network ${D}${sysconfdir}/systemd/network/    
     install -Dm 0644 ${UNPACKDIR}/81-can1.network ${D}${sysconfdir}/systemd/network/    
+
+    # Skip networkd's wait-online when NetworkManager is installed (see the drop-in)
+    install -Dm 0644 ${UNPACKDIR}/50-cargt-networkmanager-wait-online.conf \
+        ${D}${systemd_system_unitdir}/systemd-networkd-wait-online.service.d/50-cargt-networkmanager-wait-online.conf
 
 }
 
