@@ -49,7 +49,7 @@ Sources used:
 - [ ] `i2cdetect` on I2C_A (lpi2c2): 0x20 (TCA9555), 0x51 (PTN5110 USB_A), 0x52 (PTN5110 USB_C)
 - [ ] ETH_A (enetc_port0, NETC EMDIO): link and ping, in U-Boot and Linux
 - [ ] ETH_B (enetc_port1, bit-banged MDIO): link and ping, in U-Boot and Linux. The PHY (RTL8211F at address 0) answers on the bit-banged bus in U-Boot (`mdio list`), and so does the ETH_A PHY on NETC EMDIO (2026-10-08).
-- [ ] I2C_A (lpi2c2) in U-Boot: `i2c: Error check busy bus: 0x8`, and the pca953x at 0x20 cannot be read. Linux (`i2c-1`) fails the same way: pca953x 1-0020, tcpci 1-0051 and 1-0052 all time out (-110). Check the SCL/SDA idle levels and the 00365 I2C_A 3.3 V level-shifter supply. Knock-on effects: both USB-C ports (no TCPC, no SS mux) and, before the workaround below, both Ethernet ports.
+- [ ] I2C_A (lpi2c2) in U-Boot: `i2c: Error check busy bus: 0x8`, and the pca953x at 0x20 cannot be read. Linux (`i2c-1`) fails the same way: pca953x 1-0020, tcpci 1-0051 and 1-0052 all time out (-110). Intermittent, not a hard fault (2026-10-08): with no hardware change, later boots work, 3000 back-to-back reads had 0 errors, and 10/10 warm reboots probed all three devices in both U-Boot and Linux. Both failures followed USB serial-download (uuu) sessions, so the suspect is a device left holding the bus across a reset; there is no bus recovery (the I2C2 pads' GPIO is GPIO1, owned by the SM). Still to test: cold power-up, and `i2c probe` in U-Boot right after a uuu load. Separately, the 00414 has no I2C_A or I2C_B pull-ups (the 00363 has 2.2 kΩ to 1.8 V, R13/R14) and the 00365 has none on the 1.8 V side; add them in a SOM respin. Knock-on effects when it fails: both USB-C ports (no TCPC, no SS mux) and, before the workaround below, both Ethernet ports.
 - [ ] Restore the 00365 PHY `reset-gpios` (pca9555 P00/P01) in the kernel DT once I2C_A works. They are commented out because an unprobed pca9555 kept both PHYs from registering (`net eth0/eth1: could not attach to PHY`); the resets are released by pull-ups when undriven.
 - [ ] `ci_hdrc ci_hdrc.0: Aliasing StreamID 0xf (from 4c200000.usb) unsupported, expect DMA to be broken` on usb2: check once USB_A can be exercised.
 - [ ] USB-C(A), OSM USB_A (usb2, high-speed only): host and device role switching
@@ -70,6 +70,32 @@ Sources used:
 - [ ] OSM USB_C (usb3) host with VBUS (GPIO_IO15)
 - [ ] UART_B (lpuart5, MikroBus)
 - [ ] `/data` mounted from `LABEL=data` (base-files fstab)
+
+## Interim MAC addresses (until the eFuses are programmed)
+
+The MAC fuses are blank and the SOM EEPROM is on the SM-owned LPI2C1, so
+U-Boot (`CONFIG_NET_RANDOM_ETHADDR`) and Linux both pick a random MAC every
+boot, and every boot gets a new DHCP lease. Until the eFuses are burned, set
+`ethaddr`/`eth1addr` in the U-Boot environment. U-Boot uses them and passes
+them to Linux as `local-mac-address` through the kernel DT `ethernet0`/
+`ethernet1` aliases (`fdt_fixup_ethernet`), and the ENETC driver uses that
+address instead of a random one.
+
+Locally administered addresses derived from the SoC unique ID, so they are
+stable and differ per board. Run once per board, from Linux, then reboot:
+
+```
+uid=$(cat /sys/devices/soc0/serial_number)
+h=$(printf %s "$uid" | sha256sum | cut -c1-8)
+base="02:${h:0:2}:${h:2:2}:${h:4:2}:${h:6:2}"
+fw_setenv ethaddr  "${base}:00"   # ETH_A, enetc_port0, eth0
+fw_setenv eth1addr "${base}:01"   # ETH_B, enetc_port1, eth1
+fw_printenv ethaddr eth1addr
+```
+
+Remove with `fw_setenv ethaddr; fw_setenv eth1addr` once real MACs are fused.
+
+- [ ] Program the MAC eFuses, then drop the env overrides
 
 ## Open items / TODO
 
