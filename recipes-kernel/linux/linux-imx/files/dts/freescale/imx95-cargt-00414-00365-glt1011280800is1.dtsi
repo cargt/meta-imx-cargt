@@ -1,0 +1,149 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2026 Cargt
+ *
+ * GT Display GLT1011280800IS1-CTP 10.1" 1280x800 LVDS panel with ILI251x
+ * touch, on the 00414 SOM + 00365 carrier (OSM LVDS_A = i.MX 95 LVDS0).
+ *
+ * Ported from imx93-cargt-00363-00365-glt1011280800is1.dtsi by OSM-L signal
+ * name. On the 00414:
+ *   LVDS_BL_PWM          CCM_CLKO2. The pad has no TPM function, so the
+ *                        backlight is on/off only (GPIO3_IO27, gpio-backlight)
+ *                        until a SOM respin moves it to a PWM-capable pad.
+ *   SPI_A_SDI            GPIO2_IO09, GPIO_IO09 (LVDSCT_nINT)
+ *   I2C_B                LPI2C6 (touch, MAX25221, display EEPROM)
+ * The 00365 LVDS_I2C_SEL switch (pca9555 P17) is driven high so the panel
+ * I2C goes to I2C_B, as on the 00363. LVDS_EN is pca9555 P05 and LVDSCT_nRST
+ * is P06.
+ */
+
+/ {
+	gpio_backlight: gpio-backlight {
+		compatible = "gpio-backlight";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_backlight_gpio>;
+		gpios = <&gpio3 27 GPIO_ACTIVE_HIGH>;
+		default-on;
+	};
+
+	reg_lvds_i2c_switch: regulator-lvds-i2c-switch {
+		compatible = "regulator-fixed";
+		regulator-name = "lvds_i2c_sw";
+		regulator-min-microvolt = <1800000>;
+		regulator-max-microvolt = <1800000>;
+		gpio = <&pca9555_20 15 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-always-on;
+	};
+
+	reg_lvds_vdd: regulator-lvds-vdd {
+		compatible = "regulator-fixed";
+		regulator-name = "lvds_vdd";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&pca9555_20 5 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		regulator-always-on;
+		vin-supply = <&reg_lvds_i2c_switch>;
+	};
+
+	panel_lvds0: panel-lvds0 {
+		compatible = "boe,ev121wxm-n10-1850";
+		backlight = <&gpio_backlight>;
+		power-supply = <&DISPLAY_reg>;
+
+		port {
+			panel_lvds0_in: endpoint {
+				remote-endpoint = <&lvds0_out>;
+			};
+		};
+	};
+};
+
+&dpu {
+	status = "okay";
+};
+
+&display_pixel_link {
+	status = "okay";
+};
+
+&pixel_interleaver {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	channel@0 {
+		reg = <0>;
+		status = "okay";
+	};
+};
+
+/* LDB PLL 497 MHz = 7 x 71 MHz pixel clock, as on the NXP BOE WXGA LVDS panel */
+&ldb {
+	assigned-clocks = <&scmi_clk IMX95_CLK_LDBPLL_VCO>,
+			  <&scmi_clk IMX95_CLK_LDBPLL>;
+	assigned-clock-rates = <2982000000>, <497000000>;
+	status = "okay";
+
+	channel@0 {
+		status = "okay";
+
+		port@1 {
+			reg = <1>;
+
+			lvds0_out: endpoint {
+				remote-endpoint = <&panel_lvds0_in>;
+			};
+		};
+	};
+};
+
+&ldb0_phy {
+	status = "okay";
+};
+
+&lpi2c6 {
+	touchscreen@41 {
+		compatible = "ilitek,ili251x";
+		reg = <0x41>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_cap_touch>;
+		interrupt-parent = <&gpio2>;
+		interrupts = <9 IRQ_TYPE_EDGE_FALLING>;
+		reset-gpios = <&pca9555_20 6 GPIO_ACTIVE_LOW>;
+	};
+
+	/* EEPROM on the display */
+	eeprom@54 {
+		compatible = "atmel,24c02";
+		reg = <0x54>;
+		pagesize = <16>;
+	};
+
+	max25221: pmic@21 {
+		compatible = "maxim,max25221";
+		reg = <0x21>;
+		lcd-supply = <&reg_lvds_vdd>;
+
+		regulators {
+			DISPLAY_reg: DISPLAY {
+				regulator-name = "DISPLAY";
+			};
+		};
+	};
+};
+
+&scmi_iomuxc {
+	pinctrl_cap_touch: captouchgrp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO09__GPIO2_IO_BIT9		0x31e	/* LVDSCT_nINT */
+		>;
+	};
+
+	pinctrl_backlight_gpio: backlight-gpiogrp {
+		fsl,pins = <
+			IMX95_PAD_CCM_CLKO2__GPIO3_IO_BIT27		0x31e	/* LVDS_BL_PWM */
+		>;
+	};
+};
