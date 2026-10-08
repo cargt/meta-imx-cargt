@@ -57,7 +57,8 @@
 		linux_cma: linux,cma {
 			compatible = "shared-dma-pool";
 			alloc-ranges = <0 0x80000000 0 0x7f000000>;
-			size = <0 0x3c000000>;
+			/* 384 MB: the EVK 960 MB is too much for a 2 GB SOM */
+			size = <0 0x18000000>;
 			linux,cma-default;
 			reusable;
 		};

@@ -40,6 +40,7 @@
 	aliases {
 		ethernet0 = &enetc_port0;
 		ethernet1 = &enetc_port1;
+		mdio-gpio0 = &mdio_eth_b;
 		serial4 = &lpuart5;
 		serial5 = &lpuart6;
 	};
@@ -76,10 +77,16 @@
 		ethphy1: ethernet-phy@0 {
 			compatible = "ethernet-phy-ieee802.3-c22";
 			reg = <0>;
-			/* ETH_B_RST -> non-inverting FET level shifter -> PHYRST (active low) */
-			reset-gpios = <&pca9555_20 1 GPIO_ACTIVE_LOW>;
-			reset-assert-us = <15000>;
-			reset-deassert-us = <100000>;
+			/*
+			 * ETH_B_RST (pca9555 P01) -> non-inverting FET level
+			 * shifter -> PHYRST, active low and released by the
+			 * pull-ups when undriven. Not declared until I2C_A works:
+			 * with the pca9555 unprobed, a reset-gpios here keeps the
+			 * PHY from registering. Restore with
+			 * reset-gpios = <&pca9555_20 1 GPIO_ACTIVE_LOW>;
+			 * reset-assert-us = <15000>;
+			 * reset-deassert-us = <100000>;
+			 */
 			realtek,clkout-disable;
 			eee-broken-1000t;
 		};
@@ -263,10 +270,16 @@
 	ethphy0: ethernet-phy@0 {
 		compatible = "ethernet-phy-ieee802.3-c22";
 		reg = <0>;
-		/* ETH_A_RST -> non-inverting FET level shifter -> PHYRST (active low) */
-		reset-gpios = <&pca9555_20 0 GPIO_ACTIVE_LOW>;
-		reset-assert-us = <15000>;
-		reset-deassert-us = <100000>;
+		/*
+		 * ETH_A_RST (pca9555 P00) -> non-inverting FET level
+		 * shifter -> PHYRST, active low and released by the
+		 * pull-ups when undriven. Not declared until I2C_A works:
+		 * with the pca9555 unprobed, a reset-gpios here keeps the
+		 * PHY from registering. Restore with
+		 * reset-gpios = <&pca9555_20 0 GPIO_ACTIVE_LOW>;
+		 * reset-assert-us = <15000>;
+		 * reset-deassert-us = <100000>;
+		 */
 		realtek,clkout-disable;
 		eee-broken-1000t;
 	};

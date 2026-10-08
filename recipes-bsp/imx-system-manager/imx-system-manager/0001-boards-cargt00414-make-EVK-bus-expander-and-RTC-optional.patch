@@ -27,12 +27,13 @@ diff --git a/boards/cargt00414/sm/brd_sm.h b/boards/cargt00414/sm/brd_sm.h
 index 25e9570..055992f 100755
 --- a/boards/cargt00414/sm/brd_sm.h
 +++ b/boards/cargt00414/sm/brd_sm.h
-@@ -62,7 +62,7 @@
+@@ -62,7 +62,8 @@
  /* Defines */
  
  /*! Board name string */
 -#define BRD_SM_NAME  "i.MX95 EVK"
-+#define BRD_SM_NAME  "Cargt i.MX95 00414"
++/* SCMI short names are 16 bytes including the NUL */
++#define BRD_SM_NAME  "Cargt 00414 SOM"
  
  /*! Board attributes */
  #define BRD_SM_ATTR  0x0

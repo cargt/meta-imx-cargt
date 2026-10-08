@@ -36,18 +36,22 @@ Sources used:
 
 ## Hardware bring-up checklist
 
-- [x] Serial download (BOOT_MODE 01) with `uuu` (2026-10-08). `uuu imx-boot` and the built-in scripts stop after the ROM stage on i.MX 95 and skip the SPL (SDPV) stage, so use an explicit script: `SDPS: boot -f imx-boot`, then `SDPV: write -f imx-boot -skipspl`, `SDPV: jump`. Expected on the console (LPUART1): OEI DDR training output, then SPL. The SM banner "Cargt i.MX95 00414" goes to LPUART2 (open item 4).
+- [x] Serial download (BOOT_MODE 01) with `uuu` (2026-10-08). `uuu imx-boot` and the built-in scripts stop after the ROM stage on i.MX 95 and skip the SPL (SDPV) stage, so use an explicit script: `SDPS: boot -f imx-boot`, then `SDPV: write -f imx-boot -skipspl`, `SDPV: jump`. Expected on the console (LPUART1): OEI DDR training output, then SPL. The SM banner "Cargt 00414 SOM" goes to LPUART2 (open item 4).
 - [x] DDR Tool training and stress test pass at 6400 MT/s, 2 GB (MT62F512M32D2DR, one board, room temperature, 2026-10-07)
 - [ ] DDR margins (PHY diagnostic/eye margin at 6400), long stress run, hot test, 3-5 boards
 - [x] OEI with the exported timing trains DDR from `imx-boot` (err = 0, about 2.5 s) and U-Boot reports 1.75 GB at 0x90000000. That is 2 GB minus the 256 MB secure region (2026-10-08).
 - [x] SM (`cargt00414` board port) and ELE 2.0.6 boot; BL31 and U-Boot run (2026-10-08)
 - [x] U-Boot prompt; `mmc list` shows eMMC (mmc0, HS400ES 200 MHz, 8-bit, 29.1 GiB) and microSD (mmc1, card detect reports no card) (2026-10-08)
-- [ ] eMMC boot (BOOT_MODE 10) and SD boot (BOOT_MODE 11)
-- [ ] Kernel boot to rootfs from eMMC
+- [x] eMMC boot (BOOT_MODE 10): OEI → SM → SPL → BL31/OP-TEE → U-Boot → `bsp_bootcmd` (2026-10-08)
+- [ ] SD boot (BOOT_MODE 11)
+- [x] Kernel boot to rootfs from eMMC (`cargt-image-dev`, login on ttyLP0, 2026-10-08). Expected failures in that boot: Weston (no display DT yet). The NXP Wi-Fi/BT services failed too; they are now only installed when MACHINE_FEATURES has `wifi`/`bluetooth`, which the 00414 does not.
+- [ ] Software updates by `.swu` from microSD until Ethernet works: copy `cargt-image-<type>-swu-<machine>.rootfs.swu` to the card, then on the target `swupdate -v -i /run/media/<card>/<file>.swu` and reboot.
 - [ ] `i2cdetect` on I2C_A (lpi2c2): 0x20 (TCA9555), 0x51 (PTN5110 USB_A), 0x52 (PTN5110 USB_C)
 - [ ] ETH_A (enetc_port0, NETC EMDIO): link and ping, in U-Boot and Linux
 - [ ] ETH_B (enetc_port1, bit-banged MDIO): link and ping, in U-Boot and Linux. The PHY (RTL8211F at address 0) answers on the bit-banged bus in U-Boot (`mdio list`), and so does the ETH_A PHY on NETC EMDIO (2026-10-08).
-- [ ] I2C_A (lpi2c2) in U-Boot: `i2c: Error check busy bus: 0x8`, and the pca953x at 0x20 cannot be read. Check the SCL/SDA idle levels and the 00365 I2C_A 3.3 V level-shifter supply.
+- [ ] I2C_A (lpi2c2) in U-Boot: `i2c: Error check busy bus: 0x8`, and the pca953x at 0x20 cannot be read. Linux (`i2c-1`) fails the same way: pca953x 1-0020, tcpci 1-0051 and 1-0052 all time out (-110). Check the SCL/SDA idle levels and the 00365 I2C_A 3.3 V level-shifter supply. Knock-on effects: both USB-C ports (no TCPC, no SS mux) and, before the workaround below, both Ethernet ports.
+- [ ] Restore the 00365 PHY `reset-gpios` (pca9555 P00/P01) in the kernel DT once I2C_A works. They are commented out because an unprobed pca9555 kept both PHYs from registering (`net eth0/eth1: could not attach to PHY`); the resets are released by pull-ups when undriven.
+- [ ] `ci_hdrc ci_hdrc.0: Aliasing StreamID 0xf (from 4c200000.usb) unsupported, expect DMA to be broken` on usb2: check once USB_A can be exercised.
 - [ ] USB-C(A), OSM USB_A (usb2, high-speed only): host and device role switching
 - [ ] USB-C(C), OSM USB_C (usb3): role switching, and SuperSpeed in both plug orientations (CBTU02043 mux, pca9555 P12)
 - [ ] microSD card detect and read/write
