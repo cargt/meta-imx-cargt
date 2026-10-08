@@ -64,6 +64,9 @@ Sources used:
 - [ ] PMIC and SoC thermal zones in `/sys/class/thermal` (SCMI sensors)
 - [ ] Watchdog reset (wdog3 → WDOG_ANY → PF09)
 
+- [x] OS08A20 camera on CSI-1 (J21, MIPI CSI0) and on CSI-2 (J22, OSM CSI_B), streaming 1920x1080 full screen through the NEO ISP (2026-10-08). Needs `LIBCAMERA_PIPELINES_MATCH_LIST=nxp/neo`, otherwise libcamera picks the raw-only imx8-isi handler: `LIBCAMERA_PIPELINES_MATCH_LIST=nxp/neo gst-launch-1.0 libcamerasrc ! video/x-raw,width=1920,height=1080 ! queue ! waylandsink fullscreen=true`. CSI-2 uses `imx95-cargt-00414-00365-glt1011280800is1-csi2.dtb`: OSM CSI_B is the combo PHY (MIPI CSI1) behind the TMUX646 shared with DSI, set to CSI with CSI_nDSI_SEL low, so CSI-2 and the DSI display cannot be used together.
+- [ ] PCIe (OSM PCIe_A = PCIE1/pcie0, J4, NVMe on an M.2 adapter): root port up, but "Phy link never came up"; LTSSM cycles DETECT_QUIET/DETECT_ACT (no receiver detected on our TX pair), also at Gen1 with PCIE_PWR_EN on from boot. Check NVMe 3.3 V, TX/RX mapping SOM → J4 → adapter, and the 100 MHz refclk.
+
 ### 00428 carrier
 
 - [ ] Recovery/flash path. On the 00414, OSM USB_C is the i.MX 95 USB1 (USB 3.0) controller, and that is likely the ROM serial-download port. On the 00428, USB_C is a host-only port with a VBUS enable. On the 00363 the ROM used USB1 = OSM USB_A, the 00428's USB-C connector. Confirm which port `uuu` serial download works on; SD or eMMC flashing may be needed instead.

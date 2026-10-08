@@ -1,0 +1,156 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2026 Cargt
+ *
+ * Move the 00365 OS08A20 camera from CSI-1 (J21, OSM CSI_A, i.MX 95 MIPI
+ * CSI0) to CSI-2 (J22, OSM CSI_B). Include after
+ * imx95-cargt-00414-00365-os08a20.dtsi (pulled in by the base 00365 DT).
+ * Both connectors share I2C_A and CAM_PWR, so only one OS08A20 (0x36) can be
+ * fitted at a time.
+ *
+ * On the 00414, OSM CSI_B is the i.MX 95 DSI/CSI combo PHY (MIPI CSI1 via
+ * combo_rx), reached through the TMUX646 switch (U4) that is shared with OSM
+ * DSI: DSI_nOE (XSPI1_DATA5, GPIO5_IO05) low enables it and CSI_nDSI_SEL
+ * (XSPI1_DATA6, GPIO5_IO06) low selects CSI_B (high = DSI). So this cannot
+ * be combined with the MIPI-DSI display DT. The pipeline follows the NXP
+ * imx95-19x19-evk-os08a20-combo overlay: CSI1 -> formatter 1 -> ISI port 3.
+ */
+
+/* Drop the CSI-1 graph from imx95-cargt-00414-00365-os08a20.dtsi */
+/delete-node/ &mipi_csi0_ep;
+/delete-node/ &mipi_csi0_out;
+/delete-node/ &formatter_0_in;
+/delete-node/ &formatter_0_out;
+/delete-node/ &isi_in_2;
+
+&os08a20_mipi_0_ep {
+	remote-endpoint = <&mipi_csi1_ep>;
+};
+
+&dphy_rx {
+	status = "disabled";
+};
+
+&mipi_csi0 {
+	status = "disabled";
+};
+
+&csi_pixel_formatter_0 {
+	status = "disabled";
+};
+
+/* The combo PHY is shared with DSI: keep the DSI-side CSRs out of the way */
+&display_stream_csr {
+	status = "disabled";
+};
+
+&display_master_csr {
+	status = "disabled";
+};
+
+&mipi_tx_phy_csr {
+	status = "disabled";
+};
+
+&mipi_dsi_intf {
+	status = "okay";
+};
+
+&combo_rx {
+	status = "okay";
+};
+
+&mipi_csi1 {
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+
+			mipi_csi1_ep: endpoint {
+				remote-endpoint = <&os08a20_mipi_0_ep>;
+				data-lanes = <1 2 3 4>;
+				clock-lanes = <0>;
+			};
+		};
+
+		port@1 {
+			reg = <1>;
+
+			mipi_csi1_out: endpoint {
+				remote-endpoint = <&formatter_1_in>;
+			};
+		};
+	};
+};
+
+&csi_pixel_formatter_1 {
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+
+			formatter_1_in: endpoint {
+				remote-endpoint = <&mipi_csi1_out>;
+			};
+		};
+
+		port@1 {
+			reg = <1>;
+
+			formatter_1_out: endpoint {
+				remote-endpoint = <&isi_in_3>;
+			};
+		};
+	};
+};
+
+&isi {
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@3 {
+			reg = <3>;
+
+			isi_in_3: endpoint {
+				remote-endpoint = <&formatter_1_out>;
+			};
+		};
+	};
+};
+
+&gpio5 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_csi2_mux>;
+
+	csi2-noe-hog {
+		gpio-hog;
+		gpios = <5 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "DSI_nOE";
+	};
+
+	csi2-sel-hog {
+		gpio-hog;
+		gpios = <6 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "CSI_nDSI_SEL";
+	};
+};
+
+&scmi_iomuxc {
+	pinctrl_csi2_mux: csi2muxgrp {
+		fsl,pins = <
+			IMX95_PAD_XSPI1_DATA5__GPIO5_IO_BIT5		0x31e	/* DSI_nOE */
+			IMX95_PAD_XSPI1_DATA6__GPIO5_IO_BIT6		0x31e	/* CSI_nDSI_SEL */
+		>;
+	};
+};
