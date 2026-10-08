@@ -11,6 +11,11 @@
  *   SPI_A_CS0# (DSICT_nINT)          GPIO2_IO08, GPIO_IO08
  *   I2C_B (touch)                    LPI2C6
  * DSI_VDD_EN (P03) and DSICT_nRST (P04) are on the 00365 pca9555.
+ *
+ * On the 00414 the i.MX 95 DSI/CSI combo PHY lanes reach the OSM DSI pins
+ * through a TMUX646 switch (U4) shared with OSM CSI_B. It is enabled by
+ * DSI_nOE (XSPI1_DATA5, GPIO5_IO05, low = on) and set to DSI with
+ * CSI_nDSI_SEL (XSPI1_DATA6, GPIO5_IO06, high = DSI; verified on hardware).
  */
 
 / {
@@ -34,15 +39,16 @@
 };
 
 /*
- * Pixel clock from VIDEOPLL1: 445.33 MHz / 9 = 49.48 MHz for the panel's
- * 50 MHz mode, the same rate the 00363 got from its video PLL.
+ * Pixel clock from VIDEOPLL1: 500 MHz / 10 = exactly the panel's 50 MHz,
+ * as on the NXP FRDM 50 MHz DSI panel. 445.33 MHz (49.48 MHz) gave a
+ * visibly mistimed picture.
  */
 &dpu {
 	assigned-clocks = <&scmi_clk IMX95_CLK_DISP1PIX>,
 			  <&scmi_clk IMX95_CLK_VIDEOPLL1_VCO>,
 			  <&scmi_clk IMX95_CLK_VIDEOPLL1>;
 	assigned-clock-parents = <&scmi_clk IMX95_CLK_VIDEOPLL1>;
-	assigned-clock-rates = <0>, <4008000000>, <445333334>;
+	assigned-clock-rates = <0>, <3000000000>, <500000000>;
 	status = "okay";
 };
 
@@ -109,6 +115,25 @@
 	};
 };
 
+&gpio5 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_dsi_mux>;
+
+	dsi-noe-hog {
+		gpio-hog;
+		gpios = <5 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "DSI_nOE";
+	};
+
+	csi-ndsi-sel-hog {
+		gpio-hog;
+		gpios = <6 GPIO_ACTIVE_HIGH>;
+		output-high;
+		line-name = "CSI_nDSI_SEL";
+	};
+};
+
 &tpm5 {
 	pinctrl-names = "default";
 	pinctrl-0 = <&pinctrl_backlight_pwm>;
@@ -119,6 +144,13 @@
 	pinctrl_backlight_pwm: backlight-pwmgrp {
 		fsl,pins = <
 			IMX95_PAD_GPIO_IO06__TPM5_CH0			0x51e	/* DSI_BL_PWM */
+		>;
+	};
+
+	pinctrl_dsi_mux: dsimuxgrp {
+		fsl,pins = <
+			IMX95_PAD_XSPI1_DATA5__GPIO5_IO_BIT5		0x31e	/* DSI_nOE */
+			IMX95_PAD_XSPI1_DATA6__GPIO5_IO_BIT6		0x31e	/* CSI_nDSI_SEL */
 		>;
 	};
 
