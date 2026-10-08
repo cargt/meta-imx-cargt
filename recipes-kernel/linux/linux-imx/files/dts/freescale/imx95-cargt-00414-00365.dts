@@ -369,6 +369,11 @@
 	no-sdio;
 	no-mmc;
 	max-frequency = <104000000>; /* 104MHz is the max frequency for 00365 */
+	/*
+	 * Deliberately limited to 3.3 V high-speed (50 MHz), as on the
+	 * 00363-00365: UHS-I on the 00365 microSD had signal integrity
+	 * problems. With no-1-8-v the 104 MHz limit above is never reached.
+	 */
 	no-1-8-v;
 	status = "okay";
 };
