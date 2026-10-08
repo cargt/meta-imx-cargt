@@ -1,0 +1,40 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 8 Oct 2026 00:00:00 -0500
+Subject: [PATCH] boards: cargt00414: Cargt i.MX 95 00414 OSM-L SOM
+
+boards/cargt00414 is created from boards/mx95lp5 by the recipe (do_patch
+prefunc, without the EVK timing files) before this patch is applied. The
+00414 timing file is added by the recipe into boards/cargt00414/ddr/.
+
+ - ddr/Makefile: build from boards/cargt00414/ddr, default to the 00414
+   MT62F512M32D2DR (2 GB, 6400 MT/s) timing
+ - debug UART on LPUART1, the 00414 console (OSM UART_CON); the EVK's
+   LPUART2 pads are the 00414 BOOT_MODE straps
+
+Upstream-Status: Inappropriate [Cargt board specific]
+---
+diff --git a/boards/cargt00414/config_board.h b/boards/cargt00414/config_board.h
+index 31afdb3..ca75496 100644
+--- a/boards/cargt00414/config_board.h
++++ b/boards/cargt00414/config_board.h
+@@ -52,7 +52,7 @@
+ /* Defines */
+ 
+ /*! Config for UART instance */
+-#define BOARD_DEBUG_UART_INSTANCE    2U
++#define BOARD_DEBUG_UART_INSTANCE    1U
+ /*! Config for UART baudrate */
+ #define BOARD_DEBUG_UART_BAUDRATE    115200U
+ 
+diff --git a/boards/cargt00414/ddr/Makefile b/boards/cargt00414/ddr/Makefile
+index 8b3a0e3..93c2313 100644
+--- a/boards/cargt00414/ddr/Makefile
++++ b/boards/cargt00414/ddr/Makefile
+@@ -1,4 +1,4 @@
+-DDR_CONFIG ?= MIMX95_LPDDR5_EVK_19X19_6400MTS_FW2024.09_timing
++DDR_CONFIG ?= cargt00414_MT62F512M32D2DR_2GB_6400MTS_FW2024.09_timing
+ OBJS  += $(OUT)/$(DDR_CONFIG).o
+ 
+-VPATH += boards/mx95lp5/ddr
++VPATH += boards/cargt00414/ddr

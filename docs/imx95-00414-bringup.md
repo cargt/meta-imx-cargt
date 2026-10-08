@@ -16,7 +16,7 @@ Sources used:
 
 | Stage | Runs on | Cargt 00414 support |
 |---|---|---|
-| OEI (DDR init) | M33 | stock `mx95lp5` board, EVK 19x19 LPDDR5 6400 MT/s timing (machine conf) |
+| OEI (DDR init) | M33 | `recipes-bsp/imx-oei`: board `cargt00414` (copy of `mx95lp5` + patch, debug UART on LPUART1), DDR Tool timing for MT62F512M32D2DR (2 GB, 6400 MT/s, FW2024.09). SOM settings in `conf/machine/include/imx95-cargt-00414.inc` |
 | System Manager | M33 | `recipes-bsp/imx-system-manager`: board `cargt00414` (copy of `mcimx95evk` + optional-device patch), config `mx95cargt00414.cfg` |
 | SPL / ATF / OP-TEE / U-Boot | A55 | `u-boot-imx` patch 0030 (`board/cargt/imx95_00414`), `files/dts/imx95-cargt-00414-*`, `files/configs/imx95-cargt-00414-*_defconfig` |
 | Linux | A55 | `files/dts/freescale/imx95-cargt-00414-*.dts`, `cargt_00414_kernel_config_mods.cfg` |
@@ -36,8 +36,10 @@ Sources used:
 
 ## Hardware bring-up checklist
 
-- [ ] Serial download (BOOT_MODE 01) with `uuu`. Expected on the console: OEI output, then the SM banner "Cargt i.MX95 00414", then SPL.
-- [ ] DDR training passes with the EVK timing (see open item 1)
+- [ ] Serial download (BOOT_MODE 01) with `uuu`. Expected on the console (LPUART1): OEI DDR training output, then SPL. The SM banner "Cargt i.MX95 00414" goes to LPUART2 (open item 4).
+- [x] DDR Tool training and stress test pass at 6400 MT/s, 2 GB (MT62F512M32D2DR, one board, room temperature, 2026-10-07)
+- [ ] DDR margins (PHY diagnostic/eye margin at 6400), long stress run, hot test, 3-5 boards
+- [ ] OEI with the exported timing trains DDR from `imx-boot` and U-Boot reports 2 GB
 - [ ] U-Boot prompt; `mmc list` shows eMMC (mmc0) and microSD (mmc1)
 - [ ] eMMC boot (BOOT_MODE 10) and SD boot (BOOT_MODE 11)
 - [ ] Kernel boot to rootfs from eMMC
@@ -65,9 +67,10 @@ Sources used:
 
 ## Open items / TODO
 
-1. **DDR timing selection.** i.MX 95 trains DDR in OEI on the M33, before the SM and SPL. The SPL EEPROM-based selection used on i.MX 93 (`cargt_eeprom`) therefore does not apply. OEI builds exactly one timing file (`OEI_DDR_CONFIG`) and has no I2C driver.
-   - [ ] Confirm the 00414 part (MT62F4G32D8DV, 16 GB) matches the EVK timing, or generate a 00414 timing file with the NXP Config Tools DDR tool.
-   - [ ] If one SOM image must support several DDR fits: add a Cargt OEI board port that reads the M24C02 at 0x50 on LPI2C1 and picks among compiled-in timings. OEI runs before the SM claims LPI2C1, so the bus is free at that point. Options are to port the imx-sm `fsl_lpi2c` driver into OEI, or to use fuses or strap GPIOs instead.
+1. **DDR parts and EEPROM-based selection.** i.MX 95 trains DDR in OEI on the M33, before the SM and SPL, so the i.MX 93 SPL selection (`cargt_eeprom`) does not apply. Today OEI builds exactly one timing file (`OEI_DDR_CONFIG`). Only one part is fitted so far: MT62F512M32D2DR-031 WT:B (2 GB). The BOM part MT62F4G32D8DV (16 GB) has no timing yet.
+   - [ ] Requirement: one image for every 00414 DDR fit, with the part read from the SOM EEPROM (M24C02 at 0x50 on LPI2C1) at boot. OEI runs before the SM claims LPI2C1, so the bus is free then. OEI has no I2C driver, so port the imx-sm `fsl_lpi2c` driver.
+   - [ ] Space constraint (measured 2026-10-08): OEI plus the four LPDDR5 FW2024.09 training images must fit in 0x59000 (356 KB). The firmware takes 221 KB. OEI with one timing table is 102 KB (about 64 KB of that is timing data), so a second full table does not fit. Design: keep one full table (the board-level PHY setup, PIE image and DQ/CA swizzle, which are shared because the routing is the same) plus a small per-part delta (DDRC CS bounds/config, FSP DDRC timings, message-block mode registers). That is roughly 1 KB per part, applied before training. Generate each part's timing with the DDR Tool keeping the same CA/DQ mapping, and diff it against the base.
+   - [ ] EEPROM layout for the DDR part ID (reuse or extend the Cargt EEPROM format from U-Boot `board/cargt/common/cargt_eeprom.c`), and a defined fallback when the EEPROM is blank.
 2. **LPI2C1 is owned by the SM.** The RX8111 RTC (0x32) and the M24C02 EEPROM (0x50) share the bus with the PMICs.
    - [ ] RTC: add an RX8111 board RTC to the `cargt00414` SM port, exposed to Linux over SCMI BBM, in place of the EVK PCA2131. Until then only the SoC BBM RTC is available.
    - [ ] EEPROM (serial number, MAC): expose it through SM board controls (SCMI misc) or read it in OEI. Otherwise move it off LPI2C1 in a SOM respin.
