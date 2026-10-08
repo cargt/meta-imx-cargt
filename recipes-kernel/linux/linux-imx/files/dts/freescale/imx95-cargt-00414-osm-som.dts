@@ -147,6 +147,15 @@
 	status = "okay";
 };
 
+/*
+ * Display-mix interrupt steering: the DPU and the pixel interleaver take
+ * their interrupts from it, so every display variant needs it. Enabled in
+ * the NXP EVK base DT as well.
+ */
+&displaymix_irqsteer {
+	status = "okay";
+};
+
 &mali {
 	protected-memory-allocator = <&mali_pma>;
 };
