@@ -1,0 +1,37 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Fri, 9 Oct 2026 14:30:00 -0500
+Subject: [PATCH] stress-gpu: retry gbm surface without GBM_BO_USE_LINEAR
+
+The Arm Mali GBM backend ("armsoc") used on NXP i.MX 95 reports
+ARGB8888 as supported for LINEAR | SCANOUT | RENDERING but cannot create
+a linear surface, so the gpu stressor always skipped with "could not
+create gbm surface". The stressor renders off-screen and does not need a
+linear buffer: retry with SCANOUT | RENDERING when the first attempt
+fails.
+
+Upstream-Status: Pending
+---
+ stress-gpu.c | 8 ++++++++
+ 1 file changed, 8 insertions(+)
+
+diff --git a/stress-gpu.c b/stress-gpu.c
+--- a/stress-gpu.c
++++ b/stress-gpu.c
+@@ -459,6 +459,14 @@
+ 	gs = gbm_surface_create(gbm, size_x, size_y, GBM_BO_FORMAT_ARGB8888,
+ 				GBM_BO_USE_LINEAR | GBM_BO_USE_SCANOUT |
+ 				GBM_BO_USE_RENDERING);
++	/*
++	 * Some GBM backends (e.g. the Arm Mali "armsoc" GBM on NXP i.MX 95)
++	 * cannot allocate a linear surface; the stressor renders off-screen
++	 * and does not need one, so retry without GBM_BO_USE_LINEAR.
++	 */
++	if (!gs)
++		gs = gbm_surface_create(gbm, size_x, size_y, GBM_BO_FORMAT_ARGB8888,
++					GBM_BO_USE_SCANOUT | GBM_BO_USE_RENDERING);
+ 	if (!gs) {
+ 		pr_inf_skip("%s: could not create gbm surface, skipping stressor\n", args->name);
+ 		return EXIT_NO_RESOURCE;
+-- 
+2.34.1
