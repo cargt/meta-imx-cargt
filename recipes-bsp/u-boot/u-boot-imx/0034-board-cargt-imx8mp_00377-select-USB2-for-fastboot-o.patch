@@ -1,0 +1,79 @@
+From: Cargt <tim.carney@cargt.com>
+Date: Fri, 21 Aug 2026 00:00:00 +0000
+Subject: [PATCH] board: cargt: imx8mp_00377: select USB2 for fastboot on
+ carriers where OSM-L USB-A is the only device-mode port
+
+The 00377 SOM wires the SoC's native USB2 controller to the OSM-L
+land-pattern's "USB-A" pad group (confirmed against the SOM schematic,
+sheet "i.MX8MP - USB" and the J1I connector sheet: USB2_VBUS/D_P/D_N
+land directly on USB_A_VBUS/D_P/D_N). USB1 is the other native
+controller, wired to OSM-L "USB-B".
+
+board_usb_init()'s dwc3_device_data has always hardcoded
+`.base = USB1_BASE_ADDR`, i.e. the fastboot/mfgtools USB gadget always
+comes up on whichever carrier connector is wired to native USB1. On
+carriers that route OSM-L USB-B to a second, separate device-capable
+connector (as apparently done historically - hence "switch to USB-C for
+fastboot"), that happens to work. On carriers where OSM-L USB-A is the
+*only* externally-accessible, TCPC-managed, device-capable USB
+connector - USB-B being hub-upstream/host-only instead - fastboot can
+never enumerate at all, regardless of TCPC/GPIO state, because the
+gadget is driving a PHY that isn't wired to any usable device-mode port
+in the first place.
+
+dwc3_nxp_usb_phy_init() and the HSIO_GPR_REG_0_USB_CLOCK_MODULE_EN bit
+are already controller-agnostic (confirmed against
+board/voxelbotics/navqp/navqp.c, which drives this same bit for either
+native USB controller on the same SoC) - only .base needs to change to
+target the other controller's register block. TCPC port1 (I2C addr
+0x51) and the SS-mux/typec_sel GPIO logic in setup_typec() are
+unaffected: they already target whichever connector is wired to
+whichever controller this now selects, on a per-carrier basis.
+
+Gated behind a new Kconfig option, default n, so existing carriers
+(e.g. 00365) keep their current default (USB1) unless they opt in.
+
+Signed-off-by: Cargt <tim.carney@cargt.com>
+---
+ board/cargt/imx8mp_00377/Kconfig        | 11 +++++++++++
+ board/cargt/imx8mp_00377/imx8mp_00377.c |  4 ++++
+ 2 files changed, 15 insertions(+)
+
+diff --git a/board/cargt/imx8mp_00377/Kconfig b/board/cargt/imx8mp_00377/Kconfig
+index 1111111..2222222 100644
+--- a/board/cargt/imx8mp_00377/Kconfig
++++ b/board/cargt/imx8mp_00377/Kconfig
+@@ -48,4 +48,15 @@ config CARGT_IMX8MP_00377_FORCE_DRAM_BOOTSTRAP
+ 	  read/write their EEPROM correctly, not for normal production
+ 	  builds - it always pays the cost of up to N training attempts.
+
++config CARGT_IMX8MP_00377_FASTBOOT_USB2
++	bool "Use the SoC's native USB2 controller for the fastboot/mfgtools USB gadget"
++	default n
++	help
++	  The 00377 SOM wires OSM-L land-pattern pad group "USB-A" to the
++	  SoC's native USB2 controller (USB-B goes to native USB1). On a
++	  carrier where USB-A is the only externally-accessible,
++	  device-capable USB connector, enable this so fastboot/mfgtools
++	  come up on USB2 instead of the default USB1 - otherwise the
++	  gadget drives a PHY that isn't wired to any usable port at all.
++
+ endif
+diff --git a/board/cargt/imx8mp_00377/imx8mp_00377.c b/board/cargt/imx8mp_00377/imx8mp_00377.c
+index 1111111..2222222 100644
+--- a/board/cargt/imx8mp_00377/imx8mp_00377.c
++++ b/board/cargt/imx8mp_00377/imx8mp_00377.c
+@@ -266,7 +266,11 @@ static struct dwc3_device dwc3_device_data = {
+ #else
+ 	.maximum_speed = USB_SPEED_SUPER,
+ #endif
++#if IS_ENABLED(CONFIG_CARGT_IMX8MP_00377_FASTBOOT_USB2)
++	.base = USB2_BASE_ADDR,
++#else
+ 	.base = USB1_BASE_ADDR,
++#endif
+ 	.dr_mode = USB_DR_MODE_PERIPHERAL,
+ 	.index = 0,
+ 	.power_down_scale = 2,
+--
+2.34.1
