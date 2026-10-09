@@ -1,0 +1,233 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Fri, 9 Oct 2026 00:00:00 -0500
+Subject: [PATCH] boards: cargt00414: add SOM EEPROM board control
+
+The Cargt SOM EEPROM (M24C02, 256 bytes, 16-byte pages, I2C 0x50) shares
+LPI2C1 with the PMICs, which the SM owns, so no other agent can reach it.
+OEI reads it before the SM starts; after that U-Boot (DDR/serial info,
+ATE programming) and Linux need it through the SM.
+
+Add BRD_SM_CTRL_EEPROM, the same raw-access pattern as the EVK PCA2131
+control: SCMI MISC control ext get/set with addr = EEPROM offset and one
+byte per value word, 1-16 bytes per call. Writes must stay within one
+page; the SM polls the EEPROM address until the write cycle is done
+(tWR is 5 ms max, polled every 500 us for up to 10 ms). Agents reach it
+as board control 8 (0x8000 | 8); the cfg grants it to AP-NS.
+
+Upstream-Status: Inappropriate [Cargt board specific]
+---
+diff --git a/boards/cargt00414/sm/brd_sm_control.c b/boards/cargt00414/sm/brd_sm_control.c
+index 40bf502..5bfde92 100755
+--- a/boards/cargt00414/sm/brd_sm_control.c
++++ b/boards/cargt00414/sm/brd_sm_control.c
+@@ -41,6 +41,7 @@
+ #include "sm.h"
+ #include "brd_sm.h"
+ #include "lmm.h"
++#include "fsl_lpi2c.h"
+ 
+ /* Local defines */
+ 
+@@ -51,10 +52,31 @@
+ #define PCAL6408A_INPUT_PCIE2_WAKE   6U
+ #define PCAL6408A_INPUT_BUTTON       7U
+ 
++/*
++ * Cargt SOM EEPROM: M24C02 (256 bytes, 16-byte write pages) at 0x50 on the
++ * PMIC I2C bus, which the SM owns. BRD_SM_CTRL_EEPROM gives agents byte
++ * access to it: addr is the EEPROM offset and each value word is one byte.
++ * A write must stay within one page; the SM waits for the write cycle
++ * (tWR, 5 ms max) to finish before returning.
++ */
++#define BRD_SM_EEPROM_DEV_ADDR   0x50U
++#define BRD_SM_EEPROM_SIZE       256U
++#define BRD_SM_EEPROM_PAGE       16U
++#define BRD_SM_EEPROM_MAX_XFER   16U
++#define BRD_SM_EEPROM_POLL_US    500U
++#define BRD_SM_EEPROM_POLL_MAX   20U
++
+ /* Local types */
+ 
+ /* Local variables */
+ 
++/* Local functions */
++
++static int32_t BRD_SM_EepromRead(uint32_t addr, uint32_t numRtn,
++    uint32_t *rtn);
++static int32_t BRD_SM_EepromWrite(uint32_t addr, uint32_t numVal,
++    const uint32_t *val);
++
+ /*--------------------------------------------------------------------------*/
+ /* Set a control value                                                      */
+ /*--------------------------------------------------------------------------*/
+@@ -164,6 +186,10 @@ int32_t BRD_SM_ControlExtSet(uint32_t ctrlId, uint32_t addr,
+         {
+             status = BRD_SM_BbmRtcWrite(addr, numVal, val);
+         }
++        else if (ctrlId == BRD_SM_CTRL_EEPROM)
++        {
++            status = BRD_SM_EepromWrite(addr, numVal, val);
++        }
+         else
+         {
+             status = SM_ERR_NOT_SUPPORTED;
+@@ -198,6 +224,10 @@ int32_t BRD_SM_ControlExtGet(uint32_t ctrlId, uint32_t addr,
+         {
+             status = BRD_SM_BbmRtcRead(addr, numRtn, rtn);
+         }
++        else if (ctrlId == BRD_SM_CTRL_EEPROM)
++        {
++            status = BRD_SM_EepromRead(addr, numRtn, rtn);
++        }
+         else
+         {
+             status = SM_ERR_NOT_SUPPORTED;
+@@ -358,3 +388,126 @@ void BRD_SM_ControlHandler(uint8_t status, uint8_t val)
+     }
+ }
+ 
++/*==========================================================================*/
++
++/*--------------------------------------------------------------------------*/
++/* Read the Cargt SOM EEPROM                                                */
++/*--------------------------------------------------------------------------*/
++static int32_t BRD_SM_EepromRead(uint32_t addr, uint32_t numRtn,
++    uint32_t *rtn)
++{
++    int32_t status = SM_ERR_SUCCESS;
++
++    if ((numRtn == 0U) || (numRtn > BRD_SM_EEPROM_MAX_XFER)
++        || (addr >= BRD_SM_EEPROM_SIZE)
++        || ((addr + numRtn) > BRD_SM_EEPROM_SIZE))
++    {
++        status = SM_ERR_INVALID_PARAMETERS;
++    }
++    else
++    {
++        static LPI2C_Type *const s_i2cBases[] = LPI2C_BASE_PTRS;
++        uint8_t buf[BRD_SM_EEPROM_MAX_XFER] = { 0 };
++        lpi2c_master_transfer_t xfer =
++        {
++            .flags = (uint32_t) kLPI2C_TransferDefaultFlag,
++            .slaveAddress = BRD_SM_EEPROM_DEV_ADDR,
++            .direction = kLPI2C_Read,
++            .subaddress = addr,
++            .subaddressSize = 1U,
++            .data = buf,
++            .dataSize = numRtn
++        };
++
++        if (LPI2C_MasterTransferBlocking(s_i2cBases[BOARD_I2C_INSTANCE],
++            &xfer) == kStatus_Success)
++        {
++            /* Copy buffer (convert to 32-bit) */
++            for (uint32_t idx = 0U; idx < numRtn; idx++)
++            {
++                rtn[idx] = (uint32_t) buf[idx];
++            }
++        }
++        else
++        {
++            status = SM_ERR_HARDWARE_ERROR;
++        }
++    }
++
++    /* Return status */
++    return status;
++}
++
++/*--------------------------------------------------------------------------*/
++/* Write the Cargt SOM EEPROM (within one page)                             */
++/*--------------------------------------------------------------------------*/
++static int32_t BRD_SM_EepromWrite(uint32_t addr, uint32_t numVal,
++    const uint32_t *val)
++{
++    int32_t status = SM_ERR_SUCCESS;
++
++    if ((numVal == 0U) || (numVal > BRD_SM_EEPROM_MAX_XFER)
++        || (addr >= BRD_SM_EEPROM_SIZE)
++        || (((addr % BRD_SM_EEPROM_PAGE) + numVal) > BRD_SM_EEPROM_PAGE))
++    {
++        status = SM_ERR_INVALID_PARAMETERS;
++    }
++    else
++    {
++        static LPI2C_Type *const s_i2cBases[] = LPI2C_BASE_PTRS;
++        LPI2C_Type *base = s_i2cBases[BOARD_I2C_INSTANCE];
++        uint8_t buf[BRD_SM_EEPROM_MAX_XFER];
++        lpi2c_master_transfer_t xfer =
++        {
++            .flags = (uint32_t) kLPI2C_TransferDefaultFlag,
++            .slaveAddress = BRD_SM_EEPROM_DEV_ADDR,
++            .direction = kLPI2C_Write,
++            .subaddress = addr,
++            .subaddressSize = 1U,
++            .data = buf,
++            .dataSize = numVal
++        };
++
++        /* Copy buffer (convert to 8-bit) */
++        for (uint32_t idx = 0U; idx < numVal; idx++)
++        {
++            buf[idx] = U32_U8(val[idx]);
++        }
++
++        if (LPI2C_MasterTransferBlocking(base, &xfer) != kStatus_Success)
++        {
++            status = SM_ERR_HARDWARE_ERROR;
++        }
++        else
++        {
++            /* Wait for the write cycle: the EEPROM NAKs its address until done */
++            lpi2c_master_transfer_t poll =
++            {
++                .flags = (uint32_t) kLPI2C_TransferDefaultFlag,
++                .slaveAddress = BRD_SM_EEPROM_DEV_ADDR,
++                .direction = kLPI2C_Write,
++                .subaddress = 0U,
++                .subaddressSize = 0U,
++                .data = NULL,
++                .dataSize = 0U
++            };
++            uint32_t tries = 0U;
++
++            status = SM_ERR_TIMEOUT;
++            while (tries < BRD_SM_EEPROM_POLL_MAX)
++            {
++                SystemTimeDelay(BRD_SM_EEPROM_POLL_US);
++                tries++;
++                if (LPI2C_MasterTransferBlocking(base, &poll)
++                    == kStatus_Success)
++                {
++                    status = SM_ERR_SUCCESS;
++                    break;
++                }
++            }
++        }
++    }
++
++    /* Return status */
++    return status;
++}
+diff --git a/boards/cargt00414/sm/brd_sm_control.h b/boards/cargt00414/sm/brd_sm_control.h
+index 30ad8e6..7e95f76 100755
+--- a/boards/cargt00414/sm/brd_sm_control.h
++++ b/boards/cargt00414/sm/brd_sm_control.h
+@@ -67,7 +67,7 @@
+ /** @} */
+ 
+ /*! Number of board controls */
+-#define BRD_SM_NUM_CTRL  8UL
++#define BRD_SM_NUM_CTRL  9UL
+ 
+ /*! Total number of controls */
+ #define SM_NUM_CTRL  (DEV_SM_NUM_CTRL + BRD_SM_NUM_CTRL)
+@@ -84,6 +84,7 @@
+ #define BRD_SM_CTRL_TEST        (DEV_SM_NUM_CTRL + 5U)  /*!< Test */
+ #define BRD_SM_CTRL_PCA2131     (DEV_SM_NUM_CTRL + 6U)  /*!< PCA2131 raw access */
+ #define BRD_SM_CTRL_TEST_A      (DEV_SM_NUM_CTRL + 7U)  /*!< Test action */
++#define BRD_SM_CTRL_EEPROM      (DEV_SM_NUM_CTRL + 8U)  /*!< Cargt SOM EEPROM raw access */
+ /** @} */
+ 
+ /* Types */
