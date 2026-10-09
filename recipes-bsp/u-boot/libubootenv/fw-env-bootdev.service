@@ -1,0 +1,12 @@
+[Unit]
+Description=Point fw_env.config at the MMC device U-Boot booted from
+DefaultDependencies=no
+Before=sysinit.target swupdate.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/sbin/fw-env-bootdev
+
+[Install]
+WantedBy=sysinit.target
