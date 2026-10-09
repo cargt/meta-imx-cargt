@@ -24,5 +24,9 @@ OEI_DDR_CONFIG = "cargt00414_MT62F512M32D2DR_2GB_6400MTS_FW2024.09_timing"
 # variable unconditionally when building DDR_CONFIG, so it must be defined.
 OEI_DDR_CONFIG_ECC = "${OEI_DDR_CONFIG}"
 
+# The 00414 boots from eMMC or SD and U-Boot keeps its environment on the
+# boot MMC, so fw_env.config must follow the boot device (libubootenv).
+MACHINE_FEATURES:append = " fw-env-bootdev"
+
 # SM board port and resource config (recipes-bsp/imx-system-manager)
 SYSTEM_MANAGER_CONFIG = "mx95cargt00414"
