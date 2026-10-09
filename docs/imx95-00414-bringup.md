@@ -43,7 +43,7 @@ Sources used:
 - [x] SM (`cargt00414` board port) and ELE 2.0.6 boot; BL31 and U-Boot run (2026-10-08)
 - [x] U-Boot prompt; `mmc list` shows eMMC (mmc0, HS400ES 200 MHz, 8-bit, 29.1 GiB) and microSD (mmc1, card detect reports no card) (2026-10-08)
 - [x] eMMC boot (BOOT_MODE 10): OEI → SM → SPL → BL31/OP-TEE → U-Boot → `bsp_bootcmd` (2026-10-08)
-- [ ] SD boot (BOOT_MODE 11)
+- [x] SD boot (BOOT_MODE 11), 2026-10-09, `cargt-image-ate` written with `bmaptool copy`: OEI → SM → SPL ("Trying to boot from MMC2") → U-Boot → kernel with root on mmcblk1p1. U-Boot keeps its environment on the boot MMC (MMC(1) when booted from SD), but the machine's `fw_env.config` always names mmcblk0 (eMMC), so `fw_printenv`/`fw_setenv` use the wrong copy after an SD boot. The fix on `wrynose-imx95-frdm` (`fw-env-bootdev`, 333d6d3) applies here too.
 - [x] Kernel boot to rootfs from eMMC (`cargt-image-dev`, login on ttyLP0, 2026-10-08). Expected failures in that boot: Weston (no display DT yet). The NXP Wi-Fi/BT services failed too; they are now only installed when MACHINE_FEATURES has `wifi`/`bluetooth`, which the 00414 does not.
 - [ ] Software updates by `.swu` from microSD until Ethernet works: copy `cargt-image-<type>-swu-<machine>.rootfs.swu` to the card, then on the target `swupdate -v -i /run/media/<card>/<file>.swu` and reboot.
 - [ ] `i2cdetect` on I2C_A (lpi2c2): 0x20 (TCA9555), 0x51 (PTN5110 USB_A), 0x52 (PTN5110 USB_C)
@@ -115,6 +115,7 @@ Remove with `fw_setenv ethaddr; fw_setenv eth1addr` once real MACs are fused.
      |---|---|---|---|
      | 2 | MT62F4G32D8DV-023 (LPDDR5X, 16 GB) | 2 rank, x8 byte mode, 6400 | Not validated on hardware: checked against the Micron Y42M datasheet and the NXP 19x19 LPDDR5 EVK table (same organization; identical message block) |
      | 1 | MT62F512M32D2DR-031 WT:B (2 GB) | 1 rank, x16, 6400 | DDR Tool training + stress at 6400 (2026-10-07) |
+   - [x] Multi-DDR OEI on a 00414 with a blank EEPROM (2026-10-09, SD boot): `EEPROM blank or not a Cargt record` (LPI2C1 read OK, the M24C02 answers but is unprogrammed), bootstrap tried cfg 2 (16 GB) which failed in under a second, then cfg 1 (2 GB) trained in 2.54 s; the SM then took LPI2C1 for the PMICs and booted normally. U-Boot: DRAM 1.8 GiB; Linux MemTotal 1703 MB.
    - [ ] Boot `imx-boot` on a 00414 with a programmed EEPROM: expect `DDR OEI: cargt: EEPROM v3 ... -> cfg id 0x01` and `using cfg 1` on LPUART1, no bootstrap.
    - [ ] 16 GB part on hardware: training, stress, margins (needs a board with MT62F4G32D8DV).
    - [ ] Spread spectrum on/off at 6400 for each part during prototype validation (decide before EMC testing).
