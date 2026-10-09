@@ -85,6 +85,8 @@ SRC_URI += "file://0001-arm64-dts-freescale-register-Cargt-board-dtb-y-entri.pat
             file://0010-clk-imx93-drop-CLK_SET_RATE_PARENT-from-media_disp_p.patch \
             file://0011-drm-imx-dw_mipi_dsi-imx-round-pixel-clock-through-th.patch \
             file://0012-drm-bridge-imx95-mipi-dsi-round-htotal-to-whole-lane.patch \
+            file://0013-firmware-arm_scmi-imx-add-MISC-control-ext-get-set.patch \
+            file://0014-i2c-busses-add-Cargt-i.MX-95-SOM-EEPROM-adapter-thro.patch \
             "
 
 # Re-audited 2026-07-16 while diagnosing "bluetooth doesn't come up on its own":

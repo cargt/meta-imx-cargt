@@ -11,7 +11,10 @@
  * On i.MX 95 the System Manager (SM, Cortex-M33) owns LPI2C1 and the
  * PF09 + PF5301 + PF5302 PMICs on it, so lpi2c1 is not enabled here. The
  * RX8111 RTC (0x32) and M24C02 EEPROM (0x50) share that bus and are
- * therefore not reachable from Linux directly.
+ * therefore not reachable from Linux directly. The EEPROM is reached
+ * through the SM board control BRD_SM_CTRL_EEPROM instead: the
+ * i2c-cargt-sm-eeprom adapter below is i2c0, with an at24 at 0x50
+ * (/sys/class/i2c-adapter/i2c-0/0-0050/eeprom, as on the i.MX 93 SOMs).
  * TODO: expose RX8111 through an SM board RTC (SCMI BBM) or move it off
  *       LPI2C1 in a SOM respin.
  */
@@ -30,6 +33,7 @@
 
 	aliases {
 		gpio0 = &gpio1;
+		i2c0 = &sm_eeprom_i2c;
 		gpio1 = &gpio2;
 		gpio2 = &gpio3;
 		gpio3 = &gpio4;
@@ -41,6 +45,19 @@
 
 	chosen {
 		stdout-path = &lpuart1;
+	};
+
+	/* SOM EEPROM, through the System Manager (see the header comment) */
+	sm_eeprom_i2c: i2c-sm-eeprom {
+		compatible = "cargt,imx95-sm-eeprom-i2c";
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		eeprom@50 {
+			compatible = "atmel,24c02";
+			reg = <0x50>;
+			pagesize = <16>;
+		};
 	};
 
 	/* Updated by U-Boot with the populated DDR size */
