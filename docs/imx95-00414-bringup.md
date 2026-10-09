@@ -105,10 +105,19 @@ Remove with `fw_setenv ethaddr; fw_setenv eth1addr` once real MACs are fused.
 
 ## Open items / TODO
 
-1. **DDR parts and EEPROM-based selection.** i.MX 95 trains DDR in OEI on the M33, before the SM and SPL, so the i.MX 93 SPL selection (`cargt_eeprom`) does not apply. Today OEI builds exactly one timing file (`OEI_DDR_CONFIG`). Only one part is fitted so far: MT62F512M32D2DR-031 WT:B (2 GB). The BOM part MT62F4G32D8DV (16 GB) has no timing yet.
-   - [ ] Requirement: one image for every 00414 DDR fit, with the part read from the SOM EEPROM (M24C02 at 0x50 on LPI2C1) at boot. OEI runs before the SM claims LPI2C1, so the bus is free then. OEI has no I2C driver, so port the imx-sm `fsl_lpi2c` driver.
-   - [ ] Space constraint (measured 2026-10-08): OEI plus the four LPDDR5 FW2024.09 training images must fit in 0x59000 (356 KB). The firmware takes 221 KB. OEI with one timing table is 102 KB (about 64 KB of that is timing data), so a second full table does not fit. Design: keep one full table (the board-level PHY setup, PIE image and DQ/CA swizzle, which are shared because the routing is the same) plus a small per-part delta (DDRC CS bounds/config, FSP DDRC timings, message-block mode registers). That is roughly 1 KB per part, applied before training. Generate each part's timing with the DDR Tool keeping the same CA/DQ mapping, and diff it against the base.
-   - [ ] EEPROM layout for the DDR part ID (reuse or extend the Cargt EEPROM format from U-Boot `board/cargt/common/cargt_eeprom.c`), and a defined fallback when the EEPROM is blank.
+1. **DDR parts and EEPROM-based selection.** i.MX 95 trains DDR in OEI on the M33, before the SM and SPL, so the i.MX 93 SPL selection (`cargt_eeprom`) does not apply. Branch `feature/imx95-00414-multi-ddr` builds every 00414 DDR configuration into one OEI and picks one from the SOM EEPROM.
+   - [x] One image for every 00414 DDR fit. OEI reads the DDR configuration ID from the SOM EEPROM (M24C02 at 0x50 on LPI2C1) before the SM claims the bus, with a minimal polling LPI2C driver that leaves the controller reset and its clock root as found (imx-oei patches 0001/0002). The driver and the absent-EEPROM fallback were tested on an FRDM-IMX95 (2026-10-09); the 00414 EEPROM read is not tested on hardware yet.
+   - [x] Space: the configurations share the trained-CSR list (same registers, all values 0) and the PIE table, and each configuration carries a small {index, value} PIE patch (9 entries for the 2 GB part). `scripts/cargt_ddr_merge.py` (patch 0003) does this at build time and checks that each configuration reproduces its original tables. OEI with both configurations is 110 KB (DEBUG=1); with the 221 KB of firmware about 35 KB of the 356 KB remain, roughly 5-6 KB per additional configuration.
+   - [x] EEPROM layout: Cargt EEPROM record version 3 adds `ddr_cfg_id` at offset 38 (ate_pc `BuildEeprom`). Version 2 and older records are matched by size and rank count. Blank, invalid or unreadable EEPROM: OEI tries every configuration in list order, 2-rank first, since a 1-rank configuration can train on a 2-rank part and expose only half of it. Saved QuickBoot data is only used for the configuration the EEPROM names.
+   - Configurations (`boards/cargt00414/ddr/cargt_ddr_cfgs.c`, generated from the 00414 DDR Tool project so they share the 00414 CA/DQ mapping):
+
+     | ID | Part | Organization | Status |
+     |---|---|---|---|
+     | 2 | MT62F4G32D8DV-023 (LPDDR5X, 16 GB) | 2 rank, x8 byte mode, 6400 | Not validated on hardware: checked against the Micron Y42M datasheet and the NXP 19x19 LPDDR5 EVK table (same organization; identical message block) |
+     | 1 | MT62F512M32D2DR-031 WT:B (2 GB) | 1 rank, x16, 6400 | DDR Tool training + stress at 6400 (2026-10-07) |
+   - [ ] Boot `imx-boot` on a 00414 with a programmed EEPROM: expect `DDR OEI: cargt: EEPROM v3 ... -> cfg id 0x01` and `using cfg 1` on LPUART1, no bootstrap.
+   - [ ] 16 GB part on hardware: training, stress, margins (needs a board with MT62F4G32D8DV).
+   - [ ] Spread spectrum on/off at 6400 for each part during prototype validation (decide before EMC testing).
 2. **LPI2C1 is owned by the SM.** The RX8111 RTC (0x32) and the M24C02 EEPROM (0x50) share the bus with the PMICs.
    - [ ] RTC: add an RX8111 board RTC to the `cargt00414` SM port, exposed to Linux over SCMI BBM, in place of the EVK PCA2131. Until then only the SoC BBM RTC is available.
    - [ ] EEPROM (serial number, MAC): expose it through SM board controls (SCMI misc) or read it in OEI. Otherwise move it off LPI2C1 in a SOM respin.

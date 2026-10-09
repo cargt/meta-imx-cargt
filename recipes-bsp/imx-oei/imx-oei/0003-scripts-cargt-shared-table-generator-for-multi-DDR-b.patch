@@ -1,0 +1,397 @@
+From 269f326d9eea393573a1430d604fe3dd7a456c0a Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Fri, 9 Oct 2026 11:36:26 -0500
+Subject: [PATCH 3/3] scripts: cargt: shared-table generator for multi-DDR
+ boards, EEPROM host test
+
+- cargt_ddr_merge.py: turns DDR Tool timing files into one shared
+  trained-CSR list and PIE table plus per-configuration files, and checks
+  that each configuration reproduces its original tables.
+- test/run_eeprom_test.sh: host test of oei/ddr/cargt_eeprom.c against
+  records built like the ATE writes them.
+
+Upstream-Status: Inappropriate [Cargt board specific]
+---
+ scripts/cargt_ddr_merge.py       | 141 +++++++++++++++++++++++++++++++
+ scripts/test/harness.c           |  24 ++++++
+ scripts/test/mkrec.py            |  37 ++++++++
+ scripts/test/run_eeprom_test.sh  |  11 +++
+ scripts/test/stubs/cargt_ddr.h   |  50 +++++++++++
+ scripts/test/stubs/cargt_lpi2c.h |  33 ++++++++
+ scripts/test/stubs/ddr.h         |   1 +
+ scripts/test/stubs/fsl_iomuxc.h  |   8 ++
+ scripts/test/stubs/oei.h         |   1 +
+ 9 files changed, 306 insertions(+)
+ create mode 100644 scripts/cargt_ddr_merge.py
+ create mode 100644 scripts/test/harness.c
+ create mode 100644 scripts/test/mkrec.py
+ create mode 100755 scripts/test/run_eeprom_test.sh
+ create mode 100644 scripts/test/stubs/cargt_ddr.h
+ create mode 100644 scripts/test/stubs/cargt_lpi2c.h
+ create mode 100644 scripts/test/stubs/ddr.h
+ create mode 100644 scripts/test/stubs/fsl_iomuxc.h
+ create mode 100644 scripts/test/stubs/oei.h
+
+diff --git a/scripts/cargt_ddr_merge.py b/scripts/cargt_ddr_merge.py
+new file mode 100644
+index 0000000..4afbf3a
+--- /dev/null
++++ b/scripts/cargt_ddr_merge.py
+@@ -0,0 +1,141 @@
++#!/usr/bin/env python3
++# SPDX-License-Identifier: BSD-3-Clause
++# Copyright 2026 Cargt
++"""
++Prepare several NXP DDR tool timing files (*_timing.c) for one OEI image.
++
++The two large tables of a timing file are shared between configurations:
++  - ddr_ddrphy_trained_csr: a list of PHY registers saved for retention. All
++    values are 0, and configurations of one DRAM type list the same registers
++    in a different order, so a single list serves all of them.
++  - ddr_phy_pie: the PHY init engine program. Configurations differ in a few
++    entries, which are stored per configuration as a patch applied while the
++    shared table is loaded (Ddr_Phy_Cfg_Set_Patched()). A patch entry holds the
++    index of the replaced entry in the shared table, not a register address,
++    since the PIE writes some registers more than once.
++Every other table stays per configuration. A configuration whose tables cannot
++be shared keeps its own copy, with a warning.
++
++Output, in OUTDIR:
++  cargt_ddr_shared.c       the shared tables (taken from the first configuration)
++  cargt_timing_<name>.c    each configuration, defining dram_timing_<name>
++
++Each output configuration is checked against its input: the effective PIE
++(shared table with patch) and the trained CSR register set must match exactly.
++
++usage: cargt_ddr_merge.py OUTDIR name=timing.c [name=timing.c ...]
++"""
++import os
++import re
++import sys
++
++ENTRY = re.compile(r"\{\s*(0x[0-9a-fA-F]+)\s*,\s*(0x[0-9a-fA-F]+)U?\s*\}")
++
++
++def get_array(text, name):
++    m = re.search(r"static struct (\w+) %s\[\] = \{(.*?)\n\};\n" % re.escape(name), text, re.S)
++    if not m:
++        sys.exit("error: array %s not found" % name)
++    return m, [(int(r, 16), int(v, 16)) for r, v in ENTRY.findall(m.group(2))]
++
++
++def fmt(entries):
++    return "".join("    {0x%x, 0x%x},\n" % (r, v) for r, v in entries)
++
++
++def pie_patch(base, pie):
++    """(index, value) of the entries of pie that differ from base, or None if the registers differ."""
++    if [r for r, _ in base] != [r for r, _ in pie]:
++        return None
++    return [(i, p[1]) for i, (b, p) in enumerate(zip(base, pie)) if b != p]
++
++
++def apply_patch(base, patch):
++    """Mirror of Ddr_Phy_Cfg_Set_Patched() in oei/ddr/ddrphy_train.c."""
++    out, j = [], 0
++    for i, (r, v) in enumerate(base):
++        if j < len(patch) and patch[j][0] == i:
++            out.append((r, patch[j][1]))
++            j += 1
++        else:
++            out.append((r, v))
++    return out
++
++
++def main():
++    if len(sys.argv) < 3:
++        sys.exit(__doc__)
++    outdir = sys.argv[1]
++    cfgs = []
++    for arg in sys.argv[2:]:
++        name, path = arg.split("=", 1)
++        if not re.fullmatch(r"[A-Za-z_][A-Za-z0-9_]*", name):
++            sys.exit("error: bad configuration name %s" % name)
++        with open(path) as f:
++            cfgs.append((name, path, f.read()))
++    os.makedirs(outdir, exist_ok=True)
++
++    _, base_csr = get_array(cfgs[0][2], "ddr_ddrphy_trained_csr")
++    _, base_pie = get_array(cfgs[0][2], "ddr_phy_pie")
++
++    with open(os.path.join(outdir, "cargt_ddr_shared.c"), "w") as f:
++        f.write("// SPDX-License-Identifier: BSD-3-Clause\n")
++        f.write("/* Generated by cargt_ddr_merge.py from %s - do not edit */\n\n"
++                % os.path.basename(cfgs[0][1]))
++        f.write('#include "ddr.h"\n\n')
++        f.write("struct ddrphy_cfg_param cargt_shared_trained_csr[%d] = {\n%s};\n\n"
++                % (len(base_csr), fmt(base_csr)))
++        f.write("struct ddrphy_cfg_param cargt_shared_phy_pie[%d] = {\n%s};\n"
++                % (len(base_pie), fmt(base_pie)))
++
++    for name, path, text in cfgs:
++        out = text
++        notes = []
++
++        m, csr = get_array(out, "ddr_ddrphy_trained_csr")
++        if sorted(r for r, _ in csr) == sorted(r for r, _ in base_csr) and all(v == 0 for _, v in csr):
++            out = out.replace(m.group(0),
++                "/* ddr_ddrphy_trained_csr: same registers as cargt_shared_trained_csr */\n"
++                "extern struct ddrphy_cfg_param cargt_shared_trained_csr[%d];\n"
++                "#define ddr_ddrphy_trained_csr cargt_shared_trained_csr\n" % len(base_csr))
++            notes.append("trained_csr shared")
++        else:
++            print("warning: %s: trained CSR list differs, kept unshared" % name)
++            notes.append("trained_csr UNSHARED")
++
++        m, pie = get_array(out, "ddr_phy_pie")
++        patch = pie_patch(base_pie, pie)
++        patch_init = ""
++        if patch is not None:
++            if apply_patch(base_pie, patch) != pie:
++                sys.exit("error: %s: patched PIE does not reproduce the original" % name)
++            repl = ("/* ddr_phy_pie: cargt_shared_phy_pie with %d entries patched {index, value} */\n"
++                    "extern struct ddrphy_cfg_param cargt_shared_phy_pie[%d];\n"
++                    "#define ddr_phy_pie cargt_shared_phy_pie\n" % (len(patch), len(base_pie)))
++            if patch:
++                repl += "static struct ddrphy_cfg_param ddr_phy_pie_patch[] = {\n%s};\n" % fmt(patch)
++                patch_init = ("    .ddrphy_pie_patch = ddr_phy_pie_patch,\n"
++                              "    .ddrphy_pie_patch_num = ARRAY_SIZE(ddr_phy_pie_patch),\n")
++            out = out.replace(m.group(0), repl)
++            notes.append("pie shared, %d patched" % len(patch))
++        else:
++            print("warning: %s: PIE registers differ, kept unshared" % name)
++            notes.append("pie UNSHARED")
++
++        head = "struct dram_timing_info dram_timing = {\n"
++        if out.count(head) != 1:
++            sys.exit("error: %s: dram_timing definition not found" % path)
++        start = out.index(head)
++        end = out.index("\n};", start)
++        body = out[start:end].replace(head, "struct dram_timing_info dram_timing_%s = {\n" % name)
++        out = out[:start] + body + "\n" + patch_init.rstrip("\n") + out[end:]
++
++        out = ("/* Generated by cargt_ddr_merge.py from %s (%s) - do not edit */\n"
++               % (os.path.basename(path), ", ".join(notes))) + out
++        with open(os.path.join(outdir, "cargt_timing_%s.c" % name), "w") as f:
++            f.write(out)
++        print("%s: %s" % (name, ", ".join(notes)))
++
++
++if __name__ == "__main__":
++    main()
+diff --git a/scripts/test/harness.c b/scripts/test/harness.c
+new file mode 100644
+index 0000000..7e40bdc
+--- /dev/null
++++ b/scripts/test/harness.c
+@@ -0,0 +1,24 @@
++/* Host test: real cargt_eeprom.c, fake I2C returning a record from a file */
++#include <stdio.h>
++#include <stdlib.h>
++#include <string.h>
++#include "cargt_ddr.h"
++#include "cargt_lpi2c.h"
++static struct dram_timing_info t16, t2;
++const struct cargt_ddr_cfg cargt_ddr_cfgs[] = {
++    { .id = 2, .ranks = 2, .size_mb = 16384, .name = "16GB", .timing = &t16 },
++    { .id = 1, .ranks = 1, .size_mb = 2048,  .name = "2GB",  .timing = &t2 },
++};
++const uint32_t cargt_ddr_cfgs_num = 2;
++static unsigned char rec[48]; static int nack;
++int Cargt_Lpi2c_Init(uint32_t inst) { return 0; }
++void Cargt_Lpi2c_Deinit(void) {}
++int Cargt_Lpi2c_Read(uint8_t addr, uint8_t reg, uint8_t *buf, uint32_t len)
++{ if (nack || addr != 0x50 || reg != 0 || len != 48) return -1; memcpy(buf, rec, 48); return 0; }
++int main(int argc, char **argv)
++{
++    FILE *f = fopen(argv[1], "rb");
++    if (!f) { nack = 1; } else { fread(rec, 1, 48, f); fclose(f); }
++    printf("%s -> 0x%02x\n", argv[1], Cargt_Ddr_Get_Cfg_Id());
++    return 0;
++}
+diff --git a/scripts/test/mkrec.py b/scripts/test/mkrec.py
+new file mode 100644
+index 0000000..444f9c1
+--- /dev/null
++++ b/scripts/test/mkrec.py
+@@ -0,0 +1,37 @@
++# Port of ate_pc ateTest_eeprom.cs BuildEeprom (v2), extended with the v3 ddr_cfg_id at offset 38
++import struct
++import zlib
++
++
++def build(cpn, serial, date, size_mb, speed, ranks, ver=2, cfg_id=None):
++    b = bytearray()
++    b += struct.pack(">IHB", 0x43524754, 48, ver)
++    b += cpn.encode().ljust(13, b"\0")
++    b += struct.pack(">I", serial)
++    b += date.encode().ljust(9, b"\0")
++    b += struct.pack(">HH", size_mb, speed)
++    res = bytearray(7)
++    res[0] = ranks
++    if cfg_id is not None:
++        res[1] = cfg_id
++    b += res
++    assert len(b) == 44
++    b += struct.pack(">I", zlib.crc32(bytes(b)) & 0xFFFFFFFF)
++    return bytes(b)
++
++
++cases = {
++    "v2_2g_r1": build("012-00414-01", 1001, "20261009", 2048, 6400, 1),
++    "v2_16g_r2": build("012-00414-02", 1002, "20261009", 16384, 6400, 2),
++    "v2_4g_r2_nomatch": build("012-00414-03", 1003, "20261009", 4096, 6400, 2),
++    "v3_id2": build("012-00414-02", 1004, "20261009", 16384, 6400, 2, ver=3, cfg_id=2),
++    "v3_id0_fallback": build("012-00414-01", 1005, "20261009", 2048, 6400, 1, ver=3, cfg_id=0),
++    "v1_2g_assume_r2": build("012-00414-01", 1006, "20261009", 2048, 6400, 0, ver=1),
++}
++bad = bytearray(cases["v2_2g_r1"])
++bad[33] ^= 0x01
++cases["bad_crc"] = bytes(bad)
++cases["blank_ff"] = b"\xff" * 48
++for name, data in cases.items():
++    with open(name + ".bin", "wb") as f:
++        f.write(data)
+diff --git a/scripts/test/run_eeprom_test.sh b/scripts/test/run_eeprom_test.sh
+new file mode 100755
+index 0000000..58f648b
+--- /dev/null
++++ b/scripts/test/run_eeprom_test.sh
+@@ -0,0 +1,11 @@
++#!/bin/sh
++# Host test of oei/ddr/cargt_eeprom.c: records built like ate_pc BuildEeprom.
++set -e
++D=$(mktemp -d); trap "rm -rf $D" EXIT
++H=$(cd "$(dirname "$0")" && pwd)
++cp "$H/harness.c" "$H/mkrec.py" "$H/../../oei/ddr/cargt_eeprom.c" "$D"; cp -r "$H/stubs" "$D"
++cp "$H/../../oei/ddr/cargt_ddr.h" "$H/../../oei/ddr/cargt_lpi2c.h" "$D/stubs/"
++cd "$D"; gcc -Wall -std=c99 -Istubs -o harness harness.c cargt_eeprom.c; python3 mkrec.py
++check() { r=$(./harness "$1.bin" | tail -1 | sed "s/.*-> //"); [ "$r" = "$2" ] && echo "ok   $1 -> $r" || { echo "FAIL $1 -> $r (want $2)"; exit 1; }; }
++check v2_2g_r1 0x01; check v2_16g_r2 0x02; check v2_4g_r2_nomatch 0xff; check v3_id2 0x02
++check v3_id0_fallback 0x01; check v1_2g_assume_r2 0xff; check bad_crc 0xff; check blank_ff 0xff; check no_eeprom 0xff
+diff --git a/scripts/test/stubs/cargt_ddr.h b/scripts/test/stubs/cargt_ddr.h
+new file mode 100644
+index 0000000..fcb46d0
+--- /dev/null
++++ b/scripts/test/stubs/cargt_ddr.h
+@@ -0,0 +1,50 @@
++/* SPDX-License-Identifier: BSD-3-Clause */
++/*
++ * Copyright 2026 Cargt
++ *
++ * Runtime selection between several DDR timing configurations, so that one
++ * OEI image can boot SOM variants populated with different DRAM parts.
++ */
++#ifndef CARGT_DDR_H
++#define CARGT_DDR_H
++
++#include <stdint.h>
++#include "ddr.h"
++
++/** No usable DDR configuration ID (blank, invalid or missing EEPROM) */
++#define CARGT_DDR_CFG_ID_NONE   0xFFU
++
++struct cargt_ddr_cfg
++{
++    uint8_t id;                         /** ddr_cfg_id stored in the Cargt EEPROM */
++    uint8_t ranks;                      /** informational, printed on the console */
++    uint32_t size_mb;                   /** informational, printed on the console */
++    const char *name;
++    struct dram_timing_info *timing;
++};
++
++/**
++ * Provided by the board. The order of the list is the bootstrap order used
++ * when the preferred configuration is unknown or fails to train: put the
++ * configurations with more ranks first, since a 1-rank configuration can
++ * train on a 2-rank part and silently expose only half of the memory.
++ */
++extern const struct cargt_ddr_cfg cargt_ddr_cfgs[];
++extern const uint32_t cargt_ddr_cfgs_num;
++
++/**
++ * Board hook returning the DDR configuration ID of this unit, or
++ * CARGT_DDR_CFG_ID_NONE if it is not known. The weak default returns
++ * CARGT_DDR_FORCE_ID when built with it, CARGT_DDR_CFG_ID_NONE otherwise.
++ */
++uint8_t Cargt_Ddr_Get_Cfg_Id(void);
++
++/**
++ * Initialize DDR with the preferred configuration, falling back to the
++ * other configurations in list order if it is unknown or fails to train.
++ *
++ * @return 0 on success, the last Ddrc_Init() error otherwise
++ */
++int Cargt_Ddr_Init(uint32_t img_id);
++
++#endif /* CARGT_DDR_H */
+diff --git a/scripts/test/stubs/cargt_lpi2c.h b/scripts/test/stubs/cargt_lpi2c.h
+new file mode 100644
+index 0000000..58407cb
+--- /dev/null
++++ b/scripts/test/stubs/cargt_lpi2c.h
+@@ -0,0 +1,33 @@
++/* SPDX-License-Identifier: BSD-3-Clause */
++/*
++ * Copyright 2026 Cargt
++ *
++ * Minimal polling LPI2C master for OEI, used to read the SOM EEPROM before
++ * the System Manager starts. It leaves the controller reset and the clock
++ * root as it found them, so the SM can initialize the bus normally.
++ */
++#ifndef CARGT_LPI2C_H
++#define CARGT_LPI2C_H
++
++#include <stdint.h>
++
++/**
++ * Configure LPI2C instance inst (1..8) for 100 kHz, from the 24 MHz oscillator.
++ * The pads must already be muxed to the instance.
++ *
++ * @return 0 on success, negative on error
++ */
++int Cargt_Lpi2c_Init(uint32_t inst);
++
++/**
++ * Read len bytes (1..256) from the 7-bit address addr, starting at the
++ * 8-bit register/offset reg: START, addr+W, reg, rSTART, addr+R, data, STOP.
++ *
++ * @return 0 on success, -1 on NACK, -2 on timeout, -3 on bus/arbitration error
++ */
++int Cargt_Lpi2c_Read(uint8_t addr, uint8_t reg, uint8_t *buf, uint32_t len);
++
++/** Reset the controller and restore its clock root */
++void Cargt_Lpi2c_Deinit(void);
++
++#endif /* CARGT_LPI2C_H */
+diff --git a/scripts/test/stubs/ddr.h b/scripts/test/stubs/ddr.h
+new file mode 100644
+index 0000000..902eb0c
+--- /dev/null
++++ b/scripts/test/stubs/ddr.h
+@@ -0,0 +1 @@
++struct dram_timing_info { int unused; };
+diff --git a/scripts/test/stubs/fsl_iomuxc.h b/scripts/test/stubs/fsl_iomuxc.h
+new file mode 100644
+index 0000000..88bcdd5
+--- /dev/null
++++ b/scripts/test/stubs/fsl_iomuxc.h
+@@ -0,0 +1,8 @@
++#define IOMUXC_PAD_I2C1_SCL__LPI2C1_SCL 0
++#define IOMUXC_PAD_I2C1_SDA__LPI2C1_SDA 0
++#define IOMUXC_PAD_DSE(x) 0
++#define IOMUXC_PAD_FSEL1(x) 0
++#define IOMUXC_PAD_PU(x) 0
++#define IOMUXC_PAD_OD(x) 0
++#define IOMUXC_SetPinMux(...) ((void)0)
++#define IOMUXC_SetPinConfig(...) ((void)0)
+diff --git a/scripts/test/stubs/oei.h b/scripts/test/stubs/oei.h
+new file mode 100644
+index 0000000..53c5fdf
+--- /dev/null
++++ b/scripts/test/stubs/oei.h
+@@ -0,0 +1 @@
++#include <stdio.h>
+-- 
+2.34.1
+

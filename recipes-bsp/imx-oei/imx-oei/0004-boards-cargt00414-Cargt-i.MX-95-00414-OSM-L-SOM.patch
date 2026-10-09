@@ -1,0 +1,111 @@
+From c7a5fe0557b92a9ca0e86f1e94cd2e0eb8e30329 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Fri, 9 Oct 2026 11:36:57 -0500
+Subject: [PATCH] boards: cargt00414: Cargt i.MX 95 00414 OSM-L SOM
+
+boards/cargt00414 is created from boards/mx95lp5 by the recipe (do_patch
+prefunc, without the EVK timing files) before this patch is applied. The
+recipe also copies the DDR Tool timing files into boards/cargt00414/ddr/
+and generates boards/cargt00414/ddr/gen with scripts/cargt_ddr_merge.py.
+
+ - every 00414 DDR configuration in one OEI, selected from the SOM EEPROM:
+     id 2: MT62F4G32D8DV-023 LPDDR5X 16GB, 2 rank x8, 6400 (not validated)
+     id 1: MT62F512M32D2DR-031 LPDDR5 2GB, 1 rank x16, 6400 (validated)
+ - debug UART on LPUART1, the 00414 console (OSM UART_CON); the EVK
+   LPUART2 pads are the 00414 BOOT_MODE straps
+
+Upstream-Status: Inappropriate [Cargt board specific]
+---
+ boards/cargt00414/config_board.h       |  2 +-
+ boards/cargt00414/ddr/Makefile         | 26 +++++++++++++++++---
+ boards/cargt00414/ddr/cargt_ddr_cfgs.c | 33 ++++++++++++++++++++++++++
+ 3 files changed, 57 insertions(+), 4 deletions(-)
+ create mode 100644 boards/cargt00414/ddr/cargt_ddr_cfgs.c
+
+diff --git a/boards/cargt00414/config_board.h b/boards/cargt00414/config_board.h
+index 31afdb3..ca75496 100644
+--- a/boards/cargt00414/config_board.h
++++ b/boards/cargt00414/config_board.h
+@@ -52,7 +52,7 @@
+ /* Defines */
+ 
+ /*! Config for UART instance */
+-#define BOARD_DEBUG_UART_INSTANCE    2U
++#define BOARD_DEBUG_UART_INSTANCE    1U
+ /*! Config for UART baudrate */
+ #define BOARD_DEBUG_UART_BAUDRATE    115200U
+ 
+diff --git a/boards/cargt00414/ddr/Makefile b/boards/cargt00414/ddr/Makefile
+index 8b3a0e3..f534340 100644
+--- a/boards/cargt00414/ddr/Makefile
++++ b/boards/cargt00414/ddr/Makefile
+@@ -1,4 +1,24 @@
+-DDR_CONFIG ?= MIMX95_LPDDR5_EVK_19X19_6400MTS_FW2024.09_timing
+-OBJS  += $(OUT)/$(DDR_CONFIG).o
++## SPDX-License-Identifier: BSD-3-Clause
++## Cargt 00414 i.MX 95 OSM-L SOM: every populated DDR configuration in one OEI.
++##
++## The recipe copies the DDR Tool timing files here and runs
++## scripts/cargt_ddr_merge.py to produce gen/ (shared tables plus one file
++## per configuration); cargt_ddr_cfgs.c lists the configurations.
+ 
+-VPATH += boards/mx95lp5/ddr
++FLAGS += -DCARGT_MULTI_DDR
++ifdef CARGT_DDR_FORCE_ID
++FLAGS += -DCARGT_DDR_FORCE_ID=$(CARGT_DDR_FORCE_ID)
++endif
++
++CARGT_DDR_TIMINGS ?= MT62F4G32D8DV_16GB MT62F512M32D2DR_2GB
++
++OBJS += $(OUT)/cargt_ddr.o $(OUT)/cargt_ddr_cfgs.o $(OUT)/cargt_ddr_shared.o
++OBJS += $(foreach t,$(CARGT_DDR_TIMINGS),$(OUT)/cargt_timing_$(t).o)
++
++# DDR configuration ID from the SOM EEPROM (M24C02 on LPI2C1, I2C1 pads, 0x50)
++CARGT_EEPROM_I2C_INST ?= 1U
++CARGT_EEPROM_I2C_ADDR ?= 0x50U
++FLAGS += -DCARGT_EEPROM_I2C_INST=$(CARGT_EEPROM_I2C_INST) -DCARGT_EEPROM_I2C_ADDR=$(CARGT_EEPROM_I2C_ADDR)
++OBJS += $(OUT)/cargt_eeprom.o $(OUT)/cargt_lpi2c.o
++
++VPATH += boards/cargt00414/ddr boards/cargt00414/ddr/gen
+diff --git a/boards/cargt00414/ddr/cargt_ddr_cfgs.c b/boards/cargt00414/ddr/cargt_ddr_cfgs.c
+new file mode 100644
+index 0000000..92b35a6
+--- /dev/null
++++ b/boards/cargt00414/ddr/cargt_ddr_cfgs.c
+@@ -0,0 +1,33 @@
++// SPDX-License-Identifier: BSD-3-Clause
++/*
++ * Copyright 2026 Cargt
++ *
++ * DDR configurations of the 00414 i.MX 95 OSM-L SOM. The id is the
++ * ddr_cfg_id written to the SOM EEPROM by the ATE (record version 3).
++ *
++ * Order is the bootstrap order: 2-rank parts first, since a 1-rank
++ * configuration can train on a 2-rank part and expose only half of it.
++ */
++#include "cargt_ddr.h"
++
++extern struct dram_timing_info dram_timing_MT62F4G32D8DV_16GB;
++extern struct dram_timing_info dram_timing_MT62F512M32D2DR_2GB;
++
++const struct cargt_ddr_cfg cargt_ddr_cfgs[] =
++{
++    {
++        /* NOT VALIDATED on hardware: checked against the datasheet and the
++         * NXP 19x19 LPDDR5 EVK table (same 2 rank x8 organization) */
++        .id = 2, .ranks = 2, .size_mb = 16384,
++        .name = "MT62F4G32D8DV-023 LPDDR5X 16GB x8 6400",
++        .timing = &dram_timing_MT62F4G32D8DV_16GB,
++    },
++    {
++        /* Validated 2026-10-07 with the NXP DDR Tool: training + stress at 6400 */
++        .id = 1, .ranks = 1, .size_mb = 2048,
++        .name = "MT62F512M32D2DR-031 LPDDR5 2GB x16 6400",
++        .timing = &dram_timing_MT62F512M32D2DR_2GB,
++    },
++};
++
++const uint32_t cargt_ddr_cfgs_num = sizeof(cargt_ddr_cfgs) / sizeof(cargt_ddr_cfgs[0]);
+-- 
+2.34.1
+
