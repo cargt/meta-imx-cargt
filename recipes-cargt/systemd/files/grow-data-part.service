@@ -1,11 +1,12 @@
 [Unit]
-Description=Grow data partition
+Description=Grow the data partition to the end of the boot disk
 After=local-fs.target
+ConditionPathExists=/dev/disk/by-label/data
 
 [Service]
-Type=simple
+Type=oneshot
 ExecStart=/usr/bin/grow-data-part.sh
-ExecStop=/bin/systemctl disable grow-data-part
+RemainAfterExit=yes
 
 [Install]
 WantedBy=multi-user.target
