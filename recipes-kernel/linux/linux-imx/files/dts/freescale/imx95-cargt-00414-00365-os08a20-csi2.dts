@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: (GPL-2.0+ OR MIT)
 /*
  * Copyright 2026 Cargt
+ *
+ * 00414 + 00365 with the 10.1" LVDS panel and OS08A20 on CSI-2.
  */
 
 /dts-v1/;

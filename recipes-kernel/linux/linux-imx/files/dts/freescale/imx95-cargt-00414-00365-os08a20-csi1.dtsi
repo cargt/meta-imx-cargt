@@ -1,0 +1,9 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2026 Cargt
+ *
+ * One OS08A20 (I2C 0x36) on CSI-1 (J21, OSM CSI_A, MIPI CSI0).
+ */
+
+#include "imx95-cargt-00414-00365-os08a20-common.dtsi"
+#include "imx95-cargt-00414-00365-os08a20-csi-a.dtsi"

@@ -2,31 +2,24 @@
 /*
  * Copyright 2026 Cargt
  *
- * OmniVision OS08A20 MIPI CSI-2 camera on the 00365 camera connector
- * (OSM CSI_A = i.MX 95 MIPI CSI0, 4 lanes), as used with the 00377.
- *
- * Control is on I2C_A (LPI2C2, 3.3 V side of the 00365 level shifter). CAM_PWR
- * (pca9555 P07) powers the module, so it is the sensor's reset-gpios: the
- * ox05b1s driver deasserts it (line high) on power-up and asserts it (low) on
- * power-down. The sensor is driven by the NXP ox05b1s driver
- * (CONFIG_VIDEO_OX05B1S), raw frames go MIPI CSI0 -> pixel formatter -> ISI,
- * and processing is done by the NEO ISP (libcamera), as on the i.MX 95 EVK.
+ * OS08A20 at 0x36 on CSI-1 (J21, OSM CSI_A = i.MX 95 MIPI CSI0, 4 lanes):
+ * MIPI CSI0 -> CSI pixel formatter 0 -> ISI port 2, as in the NXP
+ * imx95-19x19-evk-os08a20 overlay. Include after the -common dtsi.
  */
 
 &lpi2c2 {
-	os08a20: camera@36 {
+	os08a20_csi_a: camera@36 {
 		compatible = "ovti,os08a20";
 		reg = <0x36>;
 		clocks = <&dummy>;
-		reset-gpios = <&pca9555_20 7 GPIO_ACTIVE_LOW>;
-		avdd-supply = <&reg_dummy>;
-		dovdd-supply = <&reg_dummy>;
-		dvdd-supply = <&reg_dummy>;
+		avdd-supply = <&reg_cam_pwr>;
+		dovdd-supply = <&reg_cam_pwr>;
+		dvdd-supply = <&reg_cam_pwr>;
 		orientation = <2>;
 		rotation = <0>;
 
 		port {
-			os08a20_mipi_0_ep: endpoint {
+			os08a20_csi_a_ep: endpoint {
 				remote-endpoint = <&mipi_csi0_ep>;
 				data-lanes = <1 2 3 4>;
 				clock-lanes = <0>;
@@ -50,7 +43,7 @@
 			reg = <0>;
 
 			mipi_csi0_ep: endpoint {
-				remote-endpoint = <&os08a20_mipi_0_ep>;
+				remote-endpoint = <&os08a20_csi_a_ep>;
 				data-lanes = <1 2 3 4>;
 				clock-lanes = <0>;
 			};
@@ -92,8 +85,6 @@
 };
 
 &isi {
-	status = "okay";
-
 	ports {
 		#address-cells = <1>;
 		#size-cells = <0>;
@@ -106,8 +97,4 @@
 			};
 		};
 	};
-};
-
-&neoisp0 {
-	status = "okay";
 };
