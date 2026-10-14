@@ -1,0 +1,539 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Mon, 28 Sep 2026 00:00:00 -0500
+Subject: [PATCH] board: cargt: add i.MX 95 00414 OSM-L SOM board support
+
+Add TARGET_IMX95_CARGT_00414 with a board port derived from
+board/nxp/imx95_evk and a Cargt boot environment for the 00414 on the
+00365 and 00428 carriers and the bare osm-som. Their defconfigs ship as
+standalone files from the recipe (files/configs).
+
+Compared to the EVK:
+ - no TCPC, FlexSPI NOR, AQR 10G PHY, MIPI-DSI splash or EFI capsule
+   support
+ - board_init() pulses the carrier Ethernet PHY resets, picked by the
+   DT machine compatible: pca9555 P00/P01 on the 00365, GPIO_IO09 (OSM
+   SPI_A_SDO) on the 00428. ETH_x_RST reach PHYRST through a
+   non-inverting FET level shifter, so they are active low.
+ - ETH_B PHY management over GPIO bit-banged MDIO on the 00365 (i.MX 95
+   NETC has a single EMDIO controller and the 00365 wires two PHYs at
+   address 0 on separate MDIO buses)
+ - environment in eMMC (mmc 0), rootfs partition 1 carries boot/Image
+
+DDR init is done by OEI and PMIC control by the System Manager, so there
+is no DDR/PMIC code on the A55 side. Device trees are added as standalone
+files by the recipe (files/dts).
+
+Upstream-Status: Inappropriate [Cargt board specific]
+---
+ arch/arm/mach-imx/imx9/Kconfig        |   7 ++
+ board/cargt/imx95_00414/Kconfig       |  12 ++
+ board/cargt/imx95_00414/MAINTAINERS   |   8 ++
+ board/cargt/imx95_00414/Makefile      |  11 ++
+ board/cargt/imx95_00414/imx95_00414.c | 146 +++++++++++++++++++++++++
+ board/cargt/imx95_00414/spl.c         | 105 ++++++++++++++++++
+ include/configs/imx95_00414.h         | 151 ++++++++++++++++++++++++++
+ 7 files changed, 440 insertions(+)
+ create mode 100644 board/cargt/imx95_00414/Kconfig
+ create mode 100644 board/cargt/imx95_00414/MAINTAINERS
+ create mode 100644 board/cargt/imx95_00414/Makefile
+ create mode 100644 board/cargt/imx95_00414/imx95_00414.c
+ create mode 100644 board/cargt/imx95_00414/spl.c
+ create mode 100644 include/configs/imx95_00414.h
+
+diff --git a/arch/arm/mach-imx/imx9/Kconfig b/arch/arm/mach-imx/imx9/Kconfig
+index cafcb0a05f2..6ad19db6fb5 100644
+--- a/arch/arm/mach-imx/imx9/Kconfig
++++ b/arch/arm/mach-imx/imx9/Kconfig
+@@ -216,6 +216,12 @@ config TARGET_IMX91_00363
+ 	select IMX91
+ 	select IMX9_LPDDR4X
+ 
++config TARGET_IMX95_CARGT_00414
++	bool "imx95_cargt_00414"
++	select IMX95
++	imply BOOTSTD_BOOTCOMMAND
++	imply BOOTSTD_FULL
++
+ config TARGET_IMX95_19X19_EVK
+ 	bool "imx95_19x19_evk"
+ 	select IMX95
+@@ -310,5 +316,6 @@ source "board/cargt/imx93_00324/Kconfig"
+ source "board/cargt/imx93_00359/Kconfig"
+ source "board/cargt/imx93_00363/Kconfig"
+ source "board/cargt/imx91_00363/Kconfig"
++source "board/cargt/imx95_00414/Kconfig"
+ 
+ endif
+diff --git a/board/cargt/imx95_00414/Kconfig b/board/cargt/imx95_00414/Kconfig
+new file mode 100644
+index 00000000000..586ab6b4fc3
+--- /dev/null
++++ b/board/cargt/imx95_00414/Kconfig
+@@ -0,0 +1,12 @@
++if TARGET_IMX95_CARGT_00414
++
++config SYS_BOARD
++	default "imx95_00414"
++
++config SYS_VENDOR
++	default "cargt"
++
++config SYS_CONFIG_NAME
++	default "imx95_00414"
++
++endif
+diff --git a/board/cargt/imx95_00414/MAINTAINERS b/board/cargt/imx95_00414/MAINTAINERS
+new file mode 100644
+index 00000000000..93374d2841b
+--- /dev/null
++++ b/board/cargt/imx95_00414/MAINTAINERS
+@@ -0,0 +1,8 @@
++i.MX95 CARGT 00414 OSM-L SOM
++M:	Tim Carney <tim.carney@cargt.com>
++S:	Maintained
++F:	board/cargt/imx95_00414/
++F:	include/configs/imx95_00414.h
++F:	configs/imx95-cargt-00414-00365_defconfig
++F:	configs/imx95-cargt-00414-00428_defconfig
++F:	configs/imx95-cargt-00414-osm-som_defconfig
+diff --git a/board/cargt/imx95_00414/Makefile b/board/cargt/imx95_00414/Makefile
+new file mode 100644
+index 00000000000..200141cbd2f
+--- /dev/null
++++ b/board/cargt/imx95_00414/Makefile
+@@ -0,0 +1,11 @@
++#
++# Copyright 2026 Cargt Inc.
++#
++# SPDX-License-Identifier: GPL-2.0+
++#
++
++obj-y += imx95_00414.o
++
++ifdef CONFIG_SPL_BUILD
++obj-y += spl.o
++endif
+diff --git a/board/cargt/imx95_00414/imx95_00414.c b/board/cargt/imx95_00414/imx95_00414.c
+new file mode 100644
+index 00000000000..61efc3f6094
+--- /dev/null
++++ b/board/cargt/imx95_00414/imx95_00414.c
+@@ -0,0 +1,146 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright 2025 NXP
++ * Copyright 2026 Cargt Inc.
++ *
++ * Cargt i.MX 95 00414 OSM-L SOM. Derived from board/nxp/imx95_evk.
++ *
++ * DDR init happens in OEI and PMIC/power control lives in the System
++ * Manager, so the A55 side only needs power-domain setup and carrier
++ * peripheral resets here.
++ */
++
++#include <env.h>
++#include <init.h>
++#include <fdt_support.h>
++#include <asm/gpio.h>
++#include <asm/arch/clock.h>
++#include <linux/bitops.h>
++#include <linux/delay.h>
++#include <scmi_agent.h>
++#include "../dts/upstream/src/arm64/freescale/imx95-power.h"
++#include <asm/arch/sys_proto.h>
++#include <dm/device.h>
++#include <dm/uclass.h>
++
++extern int board_fix_fdt_fuse(void *fdt);
++
++static int imx9_scmi_power_domain_enable(u32 domain, bool enable)
++{
++	struct udevice *dev;
++	int ret;
++
++	ret = uclass_get_device_by_name(UCLASS_CLK, "protocol@14", &dev);
++	if (ret)
++		return ret;
++
++	return scmi_pwd_state_set(dev, 0, domain, enable ? 0 : BIT(30));
++}
++
++/*
++ * Carrier PHY reset lines (ETH_x_RST) reach the PHY's PHYRST through a
++ * non-inverting FET level shifter, so they are active low; the carrier
++ * pull-up leaves the PHY out of reset when the GPIO is not driven.
++ * The GPIO is looked up by name and skipped quietly if it doesn't exist.
++ */
++static void netc_phy_rst(const char *gpio_name, const char *label)
++{
++	struct gpio_desc desc;
++	int ret;
++
++	ret = dm_gpio_lookup_name(gpio_name, &desc);
++	if (ret) {
++		debug("%s lookup %s failed ret = %d\n", __func__, gpio_name, ret);
++		return;
++	}
++
++	ret = dm_gpio_request(&desc, label);
++	if (ret) {
++		printf("%s request %s failed ret = %d\n", __func__, label, ret);
++		return;
++	}
++
++	/* assert, then release, the PHY reset */
++	dm_gpio_set_dir_flags(&desc, GPIOD_IS_OUT | GPIOD_IS_OUT_ACTIVE | GPIOD_ACTIVE_LOW);
++	udelay(15000);
++	dm_gpio_set_value(&desc, 0);
++	udelay(100000);
++}
++
++static void netc_init(void)
++{
++	int ret;
++
++	ret = imx9_scmi_power_domain_enable(IMX95_PD_NETC, false);
++	udelay(10000);
++
++	/* Power up the NETC MIX. */
++	ret = imx9_scmi_power_domain_enable(IMX95_PD_NETC, true);
++	if (ret) {
++		printf("SCMI_POWER_STATE_SET Failed for NETC MIX\n");
++		return;
++	}
++
++	if (of_machine_is_compatible("cargt,imx95-00414-00365")) {
++		/* 00365: resets on the I2C_A pca9555 */
++		netc_phy_rst("pca9555@20_0", "ETH_A_RST");
++		netc_phy_rst("pca9555@20_1", "ETH_B_RST");
++	} else if (of_machine_is_compatible("cargt,imx95-00414-00428")) {
++		/* 00428: ETH_A_RST on OSM SPI_A_SDO (GPIO_IO09) */
++		netc_phy_rst("GPIO2_9", "ETH_A_RST");
++	}
++}
++
++int board_init(void)
++{
++	int ret;
++
++	ret = imx9_scmi_power_domain_enable(IMX95_PD_HSIO_TOP, true);
++	if (ret) {
++		printf("SCMI_POWER_STATE_SET Failed for USB\n");
++		return ret;
++	}
++
++	imx9_scmi_power_domain_enable(IMX95_PD_DISPLAY, false);
++	imx9_scmi_power_domain_enable(IMX95_PD_CAMERA, false);
++
++	netc_init();
++
++	return 0;
++}
++
++int board_late_init(void)
++{
++	if (IS_ENABLED(CONFIG_ENV_IS_IN_MMC))
++		board_late_mmc_env_init();
++
++	env_set("sec_boot", "no");
++#ifdef CONFIG_AHAB_BOOT
++	env_set("sec_boot", "yes");
++#endif
++
++	return 0;
++}
++
++void board_quiesce_devices(void)
++{
++	int ret;
++
++	ret = imx9_scmi_power_domain_enable(IMX95_PD_HSIO_TOP, false);
++	if (ret) {
++		printf("%s: Failed for HSIO MIX: %d\n", __func__, ret);
++		return;
++	}
++
++	ret = imx9_scmi_power_domain_enable(IMX95_PD_NETC, false);
++	if (ret)
++		printf("%s: Failed for NETC MIX: %d\n", __func__, ret);
++}
++
++#if IS_ENABLED(CONFIG_OF_BOARD_FIXUP)
++int board_fix_fdt(void *fdt)
++{
++	/* Remove nodes based on fuses. */
++	return board_fix_fdt_fuse(fdt);
++}
++#endif
+diff --git a/board/cargt/imx95_00414/spl.c b/board/cargt/imx95_00414/spl.c
+new file mode 100644
+index 00000000000..0d1dbd62bfc
+--- /dev/null
++++ b/board/cargt/imx95_00414/spl.c
+@@ -0,0 +1,105 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright 2025-2026 NXP
++ * Copyright 2026 Cargt Inc.
++ *
++ * Cargt i.MX 95 00414 OSM-L SOM SPL. Derived from board/nxp/imx95_evk/spl.c
++ * without the EVK FlexSPI NOR reset: the 00414 has no NOR flash and routes
++ * the XSPI1 pads to the OSM connector as GPIOs.
++ */
++
++#include <hang.h>
++#include <init.h>
++#include <spl.h>
++#include <asm/global_data.h>
++#include <asm/sections.h>
++#include <asm/arch/clock.h>
++#include <asm/arch/mu.h>
++#include <asm/arch/sys_proto.h>
++#include <asm/arch-imx9/bbsm.h>
++#include <asm/mach-imx/boot_mode.h>
++#include <asm/mach-imx/ele_api.h>
++#include <asm/mach-imx/qb.h>
++
++DECLARE_GLOBAL_DATA_PTR;
++
++int spl_board_boot_device(enum boot_device boot_dev_spl)
++{
++	switch (boot_dev_spl) {
++	case SD1_BOOT:
++	case MMC1_BOOT:
++		return BOOT_DEVICE_MMC1;
++	case SD2_BOOT:
++	case MMC2_BOOT:
++		return BOOT_DEVICE_MMC2;
++	case USB_BOOT:
++	case USB2_BOOT:
++		return BOOT_DEVICE_BOARD;
++	default:
++		return BOOT_DEVICE_NONE;
++	}
++}
++
++void spl_board_init(void)
++{
++	int ret;
++	u32 bd;
++
++	puts("Normal Boot\n");
++
++	ret = ele_start_rng();
++	if (ret)
++		printf("Fail to start RNG: %d\n", ret);
++
++#ifdef CONFIG_SPL_IMX_BBSM
++	ret = bbsm_tamper_detect_enable();
++	if (ret)
++		printf("Failed to enable BBSM Tamper Detection: %d\n", ret);
++#endif
++
++	bd = spl_boot_device();
++	if (bd == BOOT_DEVICE_BOARD) { /* USB */
++		ret = power_on_hsio();
++		if (ret)
++			printf("power on hsio is failed\n");
++	}
++
++	if (IS_ENABLED(CONFIG_SPL_IMX_QB))
++		spl_qb_save();
++}
++
++void board_init_f(ulong dummy)
++{
++	int ret;
++
++	/* Clear the BSS. */
++	memset(__bss_start, 0, __bss_end - __bss_start);
++
++#ifdef CONFIG_SPL_RECOVER_DATA_SECTION
++	if (IS_ENABLED(CONFIG_SPL_BUILD))
++		spl_save_restore_data();
++#endif
++
++	timer_init();
++
++	/* Need dm_init() to run before any SCMI calls can be made. */
++	spl_early_init();
++
++	/* Need enable SCMI drivers and ELE driver before enabling console */
++	ret = imx9_probe_mu();
++	if (ret)
++		hang(); /* if MU not probed, nothing can output, just hang here */
++
++	arch_cpu_init();
++
++	preloader_console_init();
++
++	debug("SOC: 0x%x\n", gd->arch.soc_rev);
++	debug("LC: 0x%x\n", gd->arch.lifecycle);
++
++	get_reset_reason(true, false);
++
++	disable_smmuv3();
++
++	board_init_r(NULL, 0);
++}
+diff --git a/include/configs/imx95_00414.h b/include/configs/imx95_00414.h
+new file mode 100644
+index 00000000000..0ab111381d4
+--- /dev/null
++++ b/include/configs/imx95_00414.h
+@@ -0,0 +1,151 @@
++/* SPDX-License-Identifier: GPL-2.0+ */
++/*
++ * Copyright 2025 NXP
++ * Copyright 2026 Cargt Inc.
++ *
++ * Cargt i.MX 95 00414 OSM-L SOM. Memory map from include/configs/imx95_evk.h
++ * (same 16 GB LPDDR5 configuration as the 19x19 EVK), boot environment
++ * from the Cargt i.MX 93 00363 (rootfs partition carries boot/Image and
++ * boot/<fdtfile>, loaded with ext4load).
++ */
++
++#ifndef __IMX95_00414_H
++#define __IMX95_00414_H
++
++#include <linux/sizes.h>
++#include <linux/stringify.h>
++#include <asm/arch/imx-regs.h>
++#include <env/nxp/imx_env.h>
++
++#define CFG_SYS_INIT_RAM_ADDR		0x90000000
++#define CFG_SYS_INIT_RAM_SIZE		0x200000
++
++#define CFG_SYS_SDRAM_BASE		0x90000000
++#define PHYS_SDRAM			0x90000000
++
++#define PHYS_SDRAM_SIZE			0x70000000 /* 2GB - 256MB DDR */
++#define PHYS_SDRAM_2_SIZE		0x380000000 /* 14GB (Totally 16GB) */
++
++#define CFG_SYS_SECURE_SDRAM_BASE	0x8A000000 /* Secure DDR region for A55, SPL could use first 2MB */
++#define CFG_SYS_SECURE_SDRAM_SIZE	0x06000000
++
++#ifdef CONFIG_AHAB_BOOT
++#define AHAB_ENV "sec_boot=yes\0"
++#else
++#define AHAB_ENV "sec_boot=no\0"
++#endif
++
++#define CFG_MFG_ENV_SETTINGS \
++	CFG_MFG_ENV_SETTINGS_DEFAULT \
++	"initrd_addr=0x93800000\0" \
++	"initrd_high=0xffffffffffffffff\0" \
++	"emmc_dev=0\0" \
++	"sd_dev=1\0" \
++
++/* Initial environment variables */
++#define CFG_EXTRA_ENV_SETTINGS		\
++	CFG_MFG_ENV_SETTINGS \
++	AHAB_ENV \
++	"prepare_mcore=setenv mcore_args pd_ignore_unused;\0" \
++	"scriptaddr=0x93500000\0" \
++	"kernel_addr_r=" __stringify(CONFIG_SYS_LOAD_ADDR) "\0" \
++	"image=boot/Image\0" \
++	"splashimage=0xA0000000\0" \
++	"console=ttyLP0,115200 earlycon\0" \
++	"fdt_addr_r=0x93000000\0" \
++	"fdt_addr=0x93000000\0" \
++	"fdt_high=0xffffffffffffffff\0" \
++	"cntr_addr=0xA8000000\0" \
++	"cntr_file=os_cntr_signed.bin\0" \
++	"boot_fit=no\0" \
++	"fdtfile=" CONFIG_DEFAULT_FDT_FILE "\0" \
++	"bootm_size=0x10000000\0" \
++	"mmcdev=" __stringify(CONFIG_ENV_MMC_DEVICE_INDEX) "\0" \
++	"mmcpart=1\0" \
++	"mmcautodetect=yes\0" \
++	"mmcargs=setenv bootargs ${mcore_args} console=${console} " \
++		"root=/dev/mmcblk${mmcdev}p${mmcpart} rootwait rw\0" \
++	"loadbootscript=${loadcmd} mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};\0" \
++	"bootscript=echo Running bootscript from mmc ...; " \
++		"source\0" \
++	"loadimage=${loadcmd} mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}\0" \
++	"loadfdt=${loadcmd} mmc ${mmcdev}:${mmcpart} ${fdt_addr_r} ${fdtfile}\0" \
++	"loadcntr=${loadcmd} mmc ${mmcdev}:${mmcpart} ${cntr_addr} ${cntr_file}\0" \
++	"auth_os=auth_cntr ${cntr_addr}\0" \
++	"boot_os=booti ${loadaddr} - ${fdt_addr_r};\0" \
++	"mmcboot=echo Booting from mmc ...; " \
++		"run mmcargs; " \
++		"if test ${sec_boot} = yes; then " \
++			"if run auth_os; then " \
++				"run boot_os; " \
++			"else " \
++				"echo ERR: failed to authenticate; " \
++			"fi; " \
++		"else " \
++			"if test ${boot_fit} = yes || test ${boot_fit} = try; then " \
++				"bootm ${loadaddr}; " \
++			"else " \
++				"if run loadfdt; then " \
++					"run boot_os; " \
++				"else " \
++					"echo WARN: Cannot load the DT; " \
++				"fi; " \
++			"fi;" \
++		"fi;\0" \
++	"netargs=setenv bootargs ${mcore_args} console=${console} " \
++		"root=/dev/nfs " \
++		"ip=dhcp nfsroot=${serverip}:${nfsroot},v3,tcp\0" \
++	"netboot=echo Booting from net ...; " \
++		"run netargs;  " \
++		"if test ${ip_dyn} = yes; then " \
++			"setenv get_cmd dhcp; " \
++		"else " \
++			"setenv get_cmd tftp; " \
++		"fi; " \
++		"if test ${sec_boot} = yes; then " \
++			"${get_cmd} ${cntr_addr} ${cntr_file}; " \
++			"if run auth_os; then " \
++				"run boot_os; " \
++			"else " \
++				"echo ERR: failed to authenticate; " \
++			"fi; " \
++		"else " \
++			"${get_cmd} ${loadaddr} ${image}; " \
++			"if test ${boot_fit} = yes || test ${boot_fit} = try; then " \
++				"bootm ${loadaddr}; " \
++			"else " \
++				"if ${get_cmd} ${fdt_addr_r} ${fdtfile}; then " \
++					"run boot_os; " \
++				"else " \
++					"echo WARN: Cannot load the DT; " \
++				"fi; " \
++			"fi;" \
++		"fi;\0" \
++	"bsp_bootcmd=echo Running BSP bootcmd ...; " \
++		"setenv loadcmd ext4load; " \
++		"mmc dev ${mmcdev}; if mmc rescan; then " \
++		   "if run loadbootscript; then " \
++			   "run bootscript; " \
++		   "else " \
++			   "if test ${sec_boot} = yes; then " \
++				   "if run loadcntr; then " \
++					   "run mmcboot; " \
++				   "else run netboot; " \
++				   "fi; " \
++			    "else " \
++				   "if run loadimage; then " \
++					   "run mmcboot; " \
++				   "else run netboot; " \
++				   "fi; " \
++				"fi; " \
++		   "fi; " \
++	   "fi;"
++
++/* Using ULP WDOG for reset */
++#define WDOG_BASE_ADDR			WDG3_BASE_ADDR
++
++#if defined(CONFIG_CMD_NET)
++#define PHY_ANEG_TIMEOUT 20000
++#endif
++
++#endif /* __IMX95_00414_H */
+-- 
+2.34.1
+

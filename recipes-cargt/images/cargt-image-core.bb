@@ -38,7 +38,7 @@ IMAGE_INSTALL += " \
     can-utils \
     i2c-tools \
     ppp modemmanager \
-    ${@bb.utils.contains('MACHINE_FEATURES', 'morsemicro', 'morsemicro-driver morsemicro-firmware morse-ctrl', 'nxp-wifi-systemd nxp-bluetooth-systemd', d)} \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'morsemicro', 'morsemicro-driver morsemicro-firmware morse-ctrl', bb.utils.contains('MACHINE_FEATURES', 'wifi', 'nxp-wifi-systemd', '', d) + ' ' + bb.utils.contains('MACHINE_FEATURES', 'bluetooth', 'nxp-bluetooth-systemd', '', d), d)} \
     u-boot-fw-utils \
     net-tools \
     mosquitto \

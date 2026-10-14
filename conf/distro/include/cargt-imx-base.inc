@@ -34,6 +34,9 @@ DEFAULTTUNE:mx8ulp-nxp-bsp ?= "armv8a-crc-crypto"
 DEFAULTTUNE:mx9-nxp-bsp    ?= "armv8a-crc-crypto"
 DEFAULTTUNE:mx91-nxp-bsp  ?= "armv8a-crc-crypto"
 DEFAULTTUNE:mx93-nxp-bsp   ?= "armv8a-crc-crypto"
+# imx-base.inc sets DEFAULTTUNE:mx95-generic-bsp ?= "cortexa55", which comes
+# after mx9-nxp-bsp in OVERRIDES and would otherwise win.
+DEFAULTTUNE:mx95-nxp-bsp   ?= "armv8a-crc-crypto"
 
 PACKAGECONFIG:append:pn-gstreamer1.0-plugins-ugly = " x264"
 

@@ -1,0 +1,534 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2024 NXP
+ * Copyright 2026 Cargt
+ *
+ * Cargt i.MX 95 00414 OSM-L SOM on the 00365 OSM-L carrier (rev 05).
+ *
+ * Ported from imx93-cargt-00363-00365.dts by OSM-L signal name: the
+ * carrier routing is unchanged, but the SoC pad behind each OSM signal
+ * differs between the 00363 (i.MX 93) and 00414 (i.MX 95):
+ *
+ *   OSM signal   00363 (i.MX 93)        00414 (i.MX 95)
+ *   ETH_A        ENET1 (EQOS)           ENET1 (NETC ENETC0)
+ *   ETH_B        ENET2 (FEC)            ENET2 (NETC ENETC1)
+ *   I2C_A        LPI2C2                 LPI2C2
+ *   I2C_B        LPI2C3 (GPIO_IO28/29)  LPI2C6 (GPIO_IO04/05)
+ *   UART_A       LPUART7 (GPIO_IO08-11) LPUART3 (GPIO_IO14-17)
+ *   UART_B       LPUART2                LPUART5 (GPIO_IO00-03)
+ *   UART_C       LPUART6 (GPIO_IO04/05) LPUART6 (GPIO_IO32/33)
+ *   CAN_A        CAN1 (PDM_CLK/BS0)     CAN1 (PDM_CLK/BS0)
+ *   CAN_B        CAN2 (GPIO_IO25/27)    CAN3 (CCM_CLKO3/4)
+ *   SDIO_A       USDHC2                 USDHC2
+ *   USB_A        USB1 (usbotg1)         USB2 (usb2, high-speed only)
+ *   USB_C        USB2 (usbotg2)         USB1 (usb3, USB 3.0)
+ *
+ * The 00365 uses UART_A RX/CTS as the USB_A/USB_C PTN5110 alert lines,
+ * so LPUART3 itself is not enabled.
+ */
+
+/dts-v1/;
+
+#include <dt-bindings/usb/pd.h>
+#include "imx95-cargt-00414-osm-som.dts"
+
+/ {
+	model = "Cargt i.MX95 00414 OSM-L SOM on 00365 carrier board";
+	compatible = "cargt,imx95-00414-00365", "cargt,imx95-00414-osm-som",
+		     "fsl,imx95";
+
+	aliases {
+		ethernet0 = &enetc_port0;
+		ethernet1 = &enetc_port1;
+		mdio-gpio0 = &mdio_eth_b;
+		serial4 = &lpuart5;
+		serial5 = &lpuart6;
+	};
+
+	reg_usdhc2_vmmc: regulator-usdhc2 {
+		compatible = "regulator-fixed";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_reg_usdhc2_vmmc>;
+		/* SD2_RESET_B -> PF09 GPIO2 -> VDD_SD2_3V3 (LDO1) on the SOM */
+		regulator-name = "VDD_SD2_3V3";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&gpio3 7 GPIO_ACTIVE_HIGH>;
+		off-on-delay-us = <12000>;
+		enable-active-high;
+	};
+
+	/*
+	 * i.MX 95 has a single NETC EMDIO controller, muxable to either the
+	 * ENET1 or the ENET2 MDC/MDIO pads, but the 00365 wires the two
+	 * RTL8211FI PHYs to separate MDIO buses (ETH_A_MDC/MDIO and
+	 * ETH_B_MDC/MDIO), both strapped to PHY address 0. NETC EMDIO serves
+	 * ETH_A; ETH_B's MDIO is bit-banged on the ENET2 MDC/MDIO pads.
+	 */
+	mdio_eth_b: mdio {
+		compatible = "virtual,mdio-gpio";
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_mdio_eth_b>;
+		gpios = <&gpio4 14 GPIO_ACTIVE_HIGH>,	/* MDC  (ENET2_MDC) */
+			<&gpio4 15 GPIO_ACTIVE_HIGH>;	/* MDIO (ENET2_MDIO) */
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		ethphy1: ethernet-phy@0 {
+			compatible = "ethernet-phy-ieee802.3-c22";
+			reg = <0>;
+			/*
+			 * ETH_B_RST (pca9555 P01) -> non-inverting FET level
+			 * shifter -> PHYRST, active low and released by the
+			 * pull-ups when undriven. Not declared until I2C_A works:
+			 * with the pca9555 unprobed, a reset-gpios here keeps the
+			 * PHY from registering. Restore with
+			 * reset-gpios = <&pca9555_20 1 GPIO_ACTIVE_LOW>;
+			 * reset-assert-us = <15000>;
+			 * reset-deassert-us = <100000>;
+			 */
+			realtek,clkout-disable;
+			eee-broken-1000t;
+		};
+	};
+
+	/* USB_C SuperSpeed lane orientation mux (CBTU02043, SEL = pca9555 P12) */
+	usb_c_ss_mux: usb-c-ss-mux {
+		compatible = "nxp,cbdtu02043", "gpio-sbu-mux";
+		select-gpios = <&pca9555_20 10 GPIO_ACTIVE_HIGH>;
+		orientation-switch;
+
+		port {
+			usb3_data_ss: endpoint {
+				remote-endpoint = <&typec2_con_ss>;
+			};
+		};
+	};
+};
+
+&adc1 {
+	vref-supply = <&reg_vref_1v8>;
+	status = "okay";
+};
+
+/* OSM CAN_A */
+&flexcan1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_flexcan1>;
+	status = "okay";
+};
+
+/* OSM CAN_B */
+&flexcan3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_flexcan3>;
+	status = "okay";
+};
+
+/* OSM I2C_A */
+&lpi2c2 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <400000>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&pinctrl_lpi2c2>;
+	pinctrl-1 = <&pinctrl_lpi2c2>;
+	status = "okay";
+
+	pca9555_20: gpio@20 {
+		compatible = "nxp,pca9555";
+		gpio-controller;
+		#gpio-cells = <2>;
+		reg = <0x20>;
+		gpio-line-names =
+			"ETH_A_RST", "ETH_B_RST", "ETH_C_RST", "DSI_VDD_EN",		// P00-P03
+			"DSICT_nRST", "LVDS_EN", "LVDSCT_nRST", "CAM_PWR",		// P04-P07
+			"UBUS_RST", "PCIE_PWR_EN", "USB_C_SEL", "pca9555_20-11",	// P10-P13
+			"pca9555_20-12", "pca9555_20-13", "pca9555_20-14",		// P14-P16
+			"LVDS_I2C_SEL";							// P17
+	};
+
+	/* USB_A: TODO verify address against the 00365 SLV_ADDR strap (0x51 on 00363-00365) */
+	ptn5110_51: tcpc@51 {
+		compatible = "nxp,ptn5110", "tcpci";
+		reg = <0x51>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_ptn5110_51>;
+		interrupt-parent = <&gpio2>;
+		interrupts = <15 IRQ_TYPE_LEVEL_LOW>;	/* USB_A_nALERT on OSM UART_A_RX */
+		status = "okay";
+
+		connector {
+			compatible = "usb-c-connector";
+			label = "USB-C(A)";
+			power-role = "dual";
+			data-role = "dual";
+			try-power-role = "sink";
+			source-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
+			sink-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)
+					PDO_VAR(5000, 20000, 3000)>;
+			op-sink-microwatt = <15000000>;
+			self-powered;
+
+			port {
+				typec1_dr_sw: endpoint {
+					remote-endpoint = <&usb2_drd_sw>;
+				};
+			};
+		};
+	};
+
+	/* USB_C: SLV_ADDR unconnected -> 0x52 */
+	ptn5110_52: tcpc@52 {
+		compatible = "nxp,ptn5110", "tcpci";
+		reg = <0x52>;
+		pinctrl-names = "default";
+		pinctrl-0 = <&pinctrl_ptn5110_52>;
+		interrupt-parent = <&gpio2>;
+		interrupts = <16 IRQ_TYPE_LEVEL_LOW>;	/* USB_C_nALERT on OSM UART_A_CTS */
+		status = "okay";
+
+		connector {
+			compatible = "usb-c-connector";
+			label = "USB-C(C)";
+			power-role = "dual";
+			data-role = "dual";
+			try-power-role = "sink";
+			source-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)>;
+			sink-pdos = <PDO_FIXED(5000, 3000, PDO_FIXED_USB_COMM)
+					PDO_VAR(5000, 20000, 3000)>;
+			op-sink-microwatt = <15000000>;
+			self-powered;
+
+			ports {
+				#address-cells = <1>;
+				#size-cells = <0>;
+
+				port@0 {
+					reg = <0>;
+
+					typec2_con_hs: endpoint {
+						remote-endpoint = <&usb3_data_hs>;
+					};
+				};
+
+				port@1 {
+					reg = <1>;
+
+					typec2_con_ss: endpoint {
+						remote-endpoint = <&usb3_data_ss>;
+					};
+				};
+			};
+		};
+	};
+};
+
+/* OSM I2C_B (touch controllers on the display variants) */
+&lpi2c6 {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	clock-frequency = <400000>;
+	pinctrl-names = "default", "sleep";
+	pinctrl-0 = <&pinctrl_lpi2c6>;
+	pinctrl-1 = <&pinctrl_lpi2c6>;
+	status = "okay";
+};
+
+/* OSM UART_B (MikroBus UART) */
+&lpuart5 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart5>;
+	status = "okay";
+};
+
+/* OSM UART_C */
+&lpuart6 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_uart6>;
+	status = "okay";
+};
+
+&netcmix_blk_ctrl {
+	status = "okay";
+};
+
+&netc_blk_ctrl {
+	status = "okay";
+};
+
+&netc_timer {
+	status = "okay";
+};
+
+/* ETH_A PHY MDIO (ENET1_MDC/MDIO) */
+&netc_emdio {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_emdio>;
+	status = "okay";
+
+	ethphy0: ethernet-phy@0 {
+		compatible = "ethernet-phy-ieee802.3-c22";
+		reg = <0>;
+		/*
+		 * ETH_A_RST (pca9555 P00) -> non-inverting FET level
+		 * shifter -> PHYRST, active low and released by the
+		 * pull-ups when undriven. Not declared until I2C_A works:
+		 * with the pca9555 unprobed, a reset-gpios here keeps the
+		 * PHY from registering. Restore with
+		 * reset-gpios = <&pca9555_20 0 GPIO_ACTIVE_LOW>;
+		 * reset-assert-us = <15000>;
+		 * reset-deassert-us = <100000>;
+		 */
+		realtek,clkout-disable;
+		eee-broken-1000t;
+	};
+};
+
+/* OSM ETH_A */
+&enetc_port0 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_enetc0>;
+	phy-handle = <&ethphy0>;
+	phy-mode = "rgmii-id";
+	status = "okay";
+};
+
+/* OSM ETH_B */
+&enetc_port1 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_enetc1>;
+	phy-handle = <&ethphy1>;
+	phy-mode = "rgmii-id";
+	status = "okay";
+};
+
+/* OSM USB_A: high-speed only controller */
+&usb2 {
+	dr_mode = "otg";
+	hnp-disable;
+	srp-disable;
+	adp-disable;
+	usb-role-switch;
+	disable-over-current;
+	status = "okay";
+
+	port {
+		usb2_drd_sw: endpoint {
+			remote-endpoint = <&typec1_dr_sw>;
+		};
+	};
+};
+
+/* OSM USB_C: USB 3.0 controller */
+&usb3 {
+	status = "okay";
+};
+
+&usb3_dwc3 {
+	dr_mode = "otg";
+	hnp-disable;
+	srp-disable;
+	adp-disable;
+	usb-role-switch;
+	/*
+	 * Default to host (the EVK uses peripheral). tcpm turns VBUS on and
+	 * then switches the role; if the xHCI and PHY are only brought up at
+	 * that point, a USB 3 device has already given up on SuperSpeed
+	 * (it only looks for an SS receiver for ~100 ms after VBUS) and
+	 * stays at high speed. Device mode is unaffected: the role switches
+	 * to peripheral when the partner is a host.
+	 */
+	role-switch-default-mode = "host";
+	snps,dis-u1-entry-quirk;
+	snps,dis-u2-entry-quirk;
+	status = "okay";
+
+	port {
+		usb3_data_hs: endpoint {
+			remote-endpoint = <&typec2_con_hs>;
+		};
+	};
+};
+
+&usb3_phy {
+	status = "okay";
+};
+
+/* OSM SDIO_A (microSD) */
+&usdhc2 {
+	pinctrl-names = "default", "state_100mhz", "state_200mhz", "sleep";
+	pinctrl-0 = <&pinctrl_usdhc2>, <&pinctrl_usdhc2_gpio>;
+	pinctrl-1 = <&pinctrl_usdhc2_100mhz>, <&pinctrl_usdhc2_gpio>;
+	pinctrl-2 = <&pinctrl_usdhc2_200mhz>, <&pinctrl_usdhc2_gpio>;
+	pinctrl-3 = <&pinctrl_usdhc2>, <&pinctrl_usdhc2_gpio>;
+	cd-gpios = <&gpio3 0 GPIO_ACTIVE_LOW>;
+	fsl,cd-gpio-wakeup-disable;
+	vmmc-supply = <&reg_usdhc2_vmmc>;
+	bus-width = <4>;
+	no-sdio;
+	no-mmc;
+	max-frequency = <104000000>; /* 104MHz is the max frequency for 00365 */
+	/*
+	 * Deliberately limited to 3.3 V high-speed (50 MHz), as on the
+	 * 00363-00365: UHS-I on the 00365 microSD had signal integrity
+	 * problems. With no-1-8-v the 104 MHz limit above is never reached.
+	 */
+	no-1-8-v;
+	status = "okay";
+};
+
+&scmi_iomuxc {
+	pinctrl_emdio: emdiogrp {
+		fsl,pins = <
+			IMX95_PAD_ENET1_MDC__NETCMIX_TOP_NETC_MDC		0x50e
+			IMX95_PAD_ENET1_MDIO__NETCMIX_TOP_NETC_MDIO		0x90e
+		>;
+	};
+
+	pinctrl_mdio_eth_b: mdioethbgrp {
+		fsl,pins = <
+			IMX95_PAD_ENET2_MDC__GPIO4_IO_BIT14			0x50e
+			IMX95_PAD_ENET2_MDIO__GPIO4_IO_BIT15			0x90e
+		>;
+	};
+
+	pinctrl_enetc0: enetc0grp {
+		fsl,pins = <
+			IMX95_PAD_ENET1_TD3__NETCMIX_TOP_ETH0_RGMII_TD3		0x50e
+			IMX95_PAD_ENET1_TD2__NETCMIX_TOP_ETH0_RGMII_TD2		0x50e
+			IMX95_PAD_ENET1_TD1__NETCMIX_TOP_ETH0_RGMII_TD1		0x50e
+			IMX95_PAD_ENET1_TD0__NETCMIX_TOP_ETH0_RGMII_TD0		0x50e
+			IMX95_PAD_ENET1_TX_CTL__NETCMIX_TOP_ETH0_RGMII_TX_CTL	0x57e
+			IMX95_PAD_ENET1_TXC__NETCMIX_TOP_ETH0_RGMII_TX_CLK	0x58e
+			IMX95_PAD_ENET1_RX_CTL__NETCMIX_TOP_ETH0_RGMII_RX_CTL	0x57e
+			IMX95_PAD_ENET1_RXC__NETCMIX_TOP_ETH0_RGMII_RX_CLK	0x58e
+			IMX95_PAD_ENET1_RD0__NETCMIX_TOP_ETH0_RGMII_RD0		0x57e
+			IMX95_PAD_ENET1_RD1__NETCMIX_TOP_ETH0_RGMII_RD1		0x57e
+			IMX95_PAD_ENET1_RD2__NETCMIX_TOP_ETH0_RGMII_RD2		0x57e
+			IMX95_PAD_ENET1_RD3__NETCMIX_TOP_ETH0_RGMII_RD3		0x57e
+		>;
+	};
+
+	pinctrl_enetc1: enetc1grp {
+		fsl,pins = <
+			IMX95_PAD_ENET2_TD3__NETCMIX_TOP_ETH1_RGMII_TD3		0x50e
+			IMX95_PAD_ENET2_TD2__NETCMIX_TOP_ETH1_RGMII_TD2		0x50e
+			IMX95_PAD_ENET2_TD1__NETCMIX_TOP_ETH1_RGMII_TD1		0x50e
+			IMX95_PAD_ENET2_TD0__NETCMIX_TOP_ETH1_RGMII_TD0		0x50e
+			IMX95_PAD_ENET2_TX_CTL__NETCMIX_TOP_ETH1_RGMII_TX_CTL	0x57e
+			IMX95_PAD_ENET2_TXC__NETCMIX_TOP_ETH1_RGMII_TX_CLK	0x58e
+			IMX95_PAD_ENET2_RX_CTL__NETCMIX_TOP_ETH1_RGMII_RX_CTL	0x57e
+			IMX95_PAD_ENET2_RXC__NETCMIX_TOP_ETH1_RGMII_RX_CLK	0x58e
+			IMX95_PAD_ENET2_RD0__NETCMIX_TOP_ETH1_RGMII_RD0		0x57e
+			IMX95_PAD_ENET2_RD1__NETCMIX_TOP_ETH1_RGMII_RD1		0x57e
+			IMX95_PAD_ENET2_RD2__NETCMIX_TOP_ETH1_RGMII_RD2		0x57e
+			IMX95_PAD_ENET2_RD3__NETCMIX_TOP_ETH1_RGMII_RD3		0x57e
+		>;
+	};
+
+	pinctrl_flexcan1: flexcan1grp {
+		fsl,pins = <
+			IMX95_PAD_PDM_CLK__AONMIX_TOP_CAN1_TX			0x39e
+			IMX95_PAD_PDM_BIT_STREAM0__AONMIX_TOP_CAN1_RX		0x39e
+		>;
+	};
+
+	pinctrl_flexcan3: flexcan3grp {
+		fsl,pins = <
+			IMX95_PAD_CCM_CLKO3__CAN3_TX				0x39e
+			IMX95_PAD_CCM_CLKO4__CAN3_RX				0x39e
+		>;
+	};
+
+	pinctrl_lpi2c2: lpi2c2grp {
+		fsl,pins = <
+			IMX95_PAD_I2C2_SCL__AONMIX_TOP_LPI2C2_SCL		0x40000b9e
+			IMX95_PAD_I2C2_SDA__AONMIX_TOP_LPI2C2_SDA		0x40000b9e
+		>;
+	};
+
+	pinctrl_lpi2c6: lpi2c6grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO04__LPI2C6_SDA				0x40000b9e
+			IMX95_PAD_GPIO_IO05__LPI2C6_SCL				0x40000b9e
+		>;
+	};
+
+	pinctrl_ptn5110_51: ptn5110-51grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO15__GPIO2_IO_BIT15			0x31e
+		>;
+	};
+
+	pinctrl_ptn5110_52: ptn5110-52grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO16__GPIO2_IO_BIT16			0x31e
+		>;
+	};
+
+	pinctrl_uart5: uart5grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO00__LPUART5_TX				0x31e
+			IMX95_PAD_GPIO_IO01__LPUART5_RX				0x31e
+		>;
+	};
+
+	pinctrl_uart6: uart6grp {
+		fsl,pins = <
+			IMX95_PAD_GPIO_IO32__LPUART6_TX				0x31e
+			IMX95_PAD_GPIO_IO33__LPUART6_RX				0x31e
+		>;
+	};
+
+	pinctrl_reg_usdhc2_vmmc: regusdhc2vmmcgrp {
+		fsl,pins = <
+			IMX95_PAD_SD2_RESET_B__GPIO3_IO_BIT7			0x31e
+		>;
+	};
+
+	pinctrl_usdhc2_gpio: usdhc2gpiogrp {
+		fsl,pins = <
+			IMX95_PAD_SD2_CD_B__GPIO3_IO_BIT0			0x31e
+		>;
+	};
+
+	pinctrl_usdhc2: usdhc2grp {
+		fsl,pins = <
+			IMX95_PAD_SD2_CLK__USDHC2_CLK				0x158e
+			IMX95_PAD_SD2_CMD__USDHC2_CMD				0x138e
+			IMX95_PAD_SD2_DATA0__USDHC2_DATA0			0x138e
+			IMX95_PAD_SD2_DATA1__USDHC2_DATA1			0x138e
+			IMX95_PAD_SD2_DATA2__USDHC2_DATA2			0x138e
+			IMX95_PAD_SD2_DATA3__USDHC2_DATA3			0x138e
+			IMX95_PAD_SD2_VSELECT__USDHC2_VSELECT			0x51e
+		>;
+	};
+
+	pinctrl_usdhc2_100mhz: usdhc2-100mhzgrp {
+		fsl,pins = <
+			IMX95_PAD_SD2_CLK__USDHC2_CLK				0x158e
+			IMX95_PAD_SD2_CMD__USDHC2_CMD				0x138e
+			IMX95_PAD_SD2_DATA0__USDHC2_DATA0			0x138e
+			IMX95_PAD_SD2_DATA1__USDHC2_DATA1			0x138e
+			IMX95_PAD_SD2_DATA2__USDHC2_DATA2			0x138e
+			IMX95_PAD_SD2_DATA3__USDHC2_DATA3			0x138e
+			IMX95_PAD_SD2_VSELECT__USDHC2_VSELECT			0x51e
+		>;
+	};
+
+	pinctrl_usdhc2_200mhz: usdhc2-200mhzgrp {
+		fsl,pins = <
+			IMX95_PAD_SD2_CLK__USDHC2_CLK				0x158e
+			IMX95_PAD_SD2_CMD__USDHC2_CMD				0x138e
+			IMX95_PAD_SD2_DATA0__USDHC2_DATA0			0x138e
+			IMX95_PAD_SD2_DATA1__USDHC2_DATA1			0x138e
+			IMX95_PAD_SD2_DATA2__USDHC2_DATA2			0x138e
+			IMX95_PAD_SD2_DATA3__USDHC2_DATA3			0x138e
+			IMX95_PAD_SD2_VSELECT__USDHC2_VSELECT			0x51e
+		>;
+	};
+};
+
+/* OS08A20 camera on the 00365 camera connector (all 00365 variants) */
+#include "imx95-cargt-00414-00365-os08a20.dtsi"

@@ -1,0 +1,39 @@
+// SPDX-License-Identifier: GPL-2.0+
+/*
+ * Copyright 2026 Cargt
+ *
+ * U-Boot additions for the Cargt i.MX 95 00414 on the 00365 carrier. Only
+ * the top-level dts gets its -u-boot.dtsi pulled in automatically, so the
+ * SOM one is included explicitly.
+ */
+
+#include "imx95-cargt-00414-osm-som-u-boot.dtsi"
+
+/* microSD boot (BOOT_MODE 11) */
+&reg_usdhc2_vmmc {
+	bootph-pre-ram;
+};
+
+&usdhc2 {
+	bootph-pre-ram;
+};
+
+&pinctrl_usdhc2 {
+	bootph-pre-ram;
+};
+
+&pinctrl_usdhc2_100mhz {
+	bootph-pre-ram;
+};
+
+&pinctrl_usdhc2_200mhz {
+	bootph-pre-ram;
+};
+
+&pinctrl_usdhc2_gpio {
+	bootph-pre-ram;
+};
+
+&pinctrl_reg_usdhc2_vmmc {
+	bootph-pre-ram;
+};

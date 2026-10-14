@@ -44,12 +44,33 @@ SRC_URI += " \
             file://dts/freescale/imx8mp-cargt-00377-osm-som.dts \
             file://dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dts \
             file://dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dtsi \
+            file://dts/freescale/imx95-cargt-00414-osm-som.dts \
+            file://dts/freescale/imx95-cargt-00414-00365.dts \
+            file://dts/freescale/imx95-cargt-00414-00365-os08a20.dtsi \
+            file://dts/freescale/imx95-cargt-00414-00365-os08a20-csi2.dtsi \
+            file://dts/freescale/imx95-cargt-00414-00365-glt1011280800is1-csi2.dts \
+            file://dts/freescale/imx95-cargt-00414-00365-glt0557201280is1.dts \
+            file://dts/freescale/imx95-cargt-00414-00365-glt0557201280is1.dtsi \
+            file://dts/freescale/imx95-cargt-00414-00365-glt1011280800is1.dts \
+            file://dts/freescale/imx95-cargt-00414-00365-glt1011280800is1.dtsi \
+            file://dts/freescale/imx95-cargt-00414-00428.dts \
             "
 
 do_patch:append() {
     if [ -d "${UNPACKDIR}/dts/freescale" ]; then
         cp -a ${UNPACKDIR}/dts/freescale/. ${S}/arch/arm64/boot/dts/freescale/
     fi
+
+    # Boards added after the 0001 dtb-y patch register themselves here with a
+    # standalone appended line rather than growing that patch.
+    for dtb in imx95-cargt-00414-osm-som.dtb imx95-cargt-00414-00365.dtb \
+               imx95-cargt-00414-00365-glt0557201280is1.dtb \
+               imx95-cargt-00414-00365-glt1011280800is1.dtb \
+               imx95-cargt-00414-00365-glt1011280800is1-csi2.dtb \
+               imx95-cargt-00414-00428.dtb; do
+        grep -qxF "dtb-\$(CONFIG_ARCH_MXC) += $dtb" ${S}/arch/arm64/boot/dts/freescale/Makefile || \
+            echo "dtb-\$(CONFIG_ARCH_MXC) += $dtb" >> ${S}/arch/arm64/boot/dts/freescale/Makefile
+    done
 }
 
 SRC_URI += "file://0001-arm64-dts-freescale-register-Cargt-board-dtb-y-entri.patch \
@@ -63,6 +84,7 @@ SRC_URI += "file://0001-arm64-dts-freescale-register-Cargt-board-dtb-y-entri.pat
             file://0009-drm-bridge-sec-dsim-config-esc-byte-clock-before-pa.patch \
             file://0010-clk-imx93-drop-CLK_SET_RATE_PARENT-from-media_disp_p.patch \
             file://0011-drm-imx-dw_mipi_dsi-imx-round-pixel-clock-through-th.patch \
+            file://0012-drm-bridge-imx95-mipi-dsi-round-htotal-to-whole-lane.patch \
             "
 
 # Re-audited 2026-07-16 while diagnosing "bluetooth doesn't come up on its own":
@@ -175,6 +197,7 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'cargt-router', 'file://car
             ${@bb.utils.contains('MACHINE_FEATURES', '00365', 'file://cargt_00365_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00377', 'file://cargt_00377_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00406', 'file://cargt_00406_kernel_config_mods.cfg', '', d)} \
+            ${@bb.utils.contains('MACHINE_FEATURES', '00414', 'file://cargt_00414_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00428', 'file://cargt_00428_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', 't1l', 'file://cargt_t1l_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', 'ST7789T3', 'file://cargt_st7789t3_kernel_config_mods.cfg', '', d)} \
