@@ -1,0 +1,279 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Fri, 9 Oct 2026 00:00:00 -0500
+Subject: [PATCH] board: cargt: imx95_00414: SOM EEPROM I2C bus through the
+ System Manager
+
+The 00414 SOM EEPROM (M24C02 at 0x50) is on LPI2C1 with the PMICs, which
+the System Manager owns. The 00414 SM exposes it as board control
+BRD_SM_CTRL_EEPROM (meta-imx-cargt imx-system-manager patch 0002).
+
+Add a UCLASS_I2C driver ("cargt,imx95-sm-eeprom-i2c") that forwards
+transfers for chip 0x50 to that control over SCMI MISC control ext
+get/set, so "i2c dev/probe/md/mw" and dm_i2c_read()/dm_i2c_write() work
+as on the i.MX 93 SOMs. Writes are split at 16-byte pages; the SM waits
+out each write cycle.
+
+Upstream-Status: Inappropriate [Cargt board specific]
+---
+diff -Nru a/board/cargt/imx95_00414/Makefile b/board/cargt/imx95_00414/Makefile
+--- a/board/cargt/imx95_00414/Makefile	2026-10-09 15:39:34.056790632 -0500
++++ b/board/cargt/imx95_00414/Makefile	2026-10-09 15:39:34.066790899 -0500
+@@ -6,6 +6,10 @@
+ 
+ obj-y += imx95_00414.o
+ 
++ifndef CONFIG_SPL_BUILD
++obj-y += sm_eeprom_i2c.o
++endif
++
+ ifdef CONFIG_SPL_BUILD
+ obj-y += spl.o
+ endif
+diff -Nru a/board/cargt/imx95_00414/sm_eeprom_i2c.c b/board/cargt/imx95_00414/sm_eeprom_i2c.c
+--- a/board/cargt/imx95_00414/sm_eeprom_i2c.c	1969-12-31 18:00:00.000000000 -0600
++++ b/board/cargt/imx95_00414/sm_eeprom_i2c.c	2026-10-09 15:39:34.057790658 -0500
+@@ -0,0 +1,243 @@
++// SPDX-License-Identifier: GPL-2.0+
++/*
++ * Copyright 2026 Cargt
++ *
++ * I2C bus for the Cargt 00414 SOM EEPROM, reached through the System Manager.
++ *
++ * The EEPROM (M24C02, 256 bytes, 16-byte pages, address 0x50) shares LPI2C1
++ * with the PMICs, which the SM owns, so the A55 cannot drive that bus. The
++ * 00414 SM exposes the EEPROM as board control BRD_SM_CTRL_EEPROM (SCMI MISC
++ * control ext get/set: addr = EEPROM offset, one byte per value word, up to
++ * 16 bytes per call, writes within one page; the SM waits out the write
++ * cycle). This driver presents it as an I2C bus with a single chip at 0x50,
++ * so "i2c md/mw" and dm_i2c_read()/dm_i2c_write() work unchanged.
++ */
++
++#include <dm.h>
++#include <i2c.h>
++#include <scmi_agent.h>
++#include <scmi_nxp_protocols.h>
++#include <linux/errno.h>
++#include <linux/kernel.h>
++
++#define SM_EEPROM_CHIP_ADDR		0x50
++#define SM_EEPROM_SIZE			256
++#define SM_EEPROM_PAGE			16
++#define SM_EEPROM_MAX_XFER		16
++
++/* BRD_SM_CTRL_EEPROM is board control 8 in the 00414 SM (MISC_CTRL_FLAG_BRD) */
++#define SM_EEPROM_CTRL_ID		(0x8000 | 8)
++
++#define SCMI_IMX_MISC_CONTROL_EXT_SET	0x20
++#define SCMI_IMX_MISC_CONTROL_EXT_GET	0x21
++
++struct sm_eeprom_ext_set_in {
++	u32 ctrlid;
++	u32 addr;
++	u32 len;
++	u32 numval;
++	u32 val[SM_EEPROM_MAX_XFER];
++};
++
++struct sm_eeprom_ext_set_out {
++	s32 status;
++};
++
++struct sm_eeprom_ext_get_in {
++	u32 ctrlid;
++	u32 addr;
++	u32 len;
++};
++
++struct sm_eeprom_ext_get_out {
++	s32 status;
++	u32 numval;
++	u32 val[SM_EEPROM_MAX_XFER];
++};
++
++struct sm_eeprom_i2c_priv {
++	uint offset;	/* current address, for reads without an address write */
++};
++
++static int sm_eeprom_scmi_dev(struct udevice **devp)
++{
++	/* Any SCMI protocol device carries the channel; soc.c uses the same one */
++	return uclass_get_device_by_name(UCLASS_CLK, "protocol@14", devp);
++}
++
++static int sm_eeprom_read(uint offset, u8 *buf, uint len)
++{
++	struct udevice *dev;
++	int ret;
++
++	if (offset >= SM_EEPROM_SIZE || len > SM_EEPROM_SIZE - offset)
++		return -EINVAL;
++
++	ret = sm_eeprom_scmi_dev(&dev);
++	if (ret)
++		return ret;
++
++	while (len) {
++		uint n = min_t(uint, len, SM_EEPROM_MAX_XFER);
++		struct sm_eeprom_ext_get_in in = {
++			.ctrlid = SM_EEPROM_CTRL_ID,
++			.addr = offset,
++			.len = n,
++		};
++		struct sm_eeprom_ext_get_out out = { 0 };
++		struct scmi_msg msg = {
++			.protocol_id = SCMI_PROTOCOL_ID_IMX_MISC,
++			.message_id = SCMI_IMX_MISC_CONTROL_EXT_GET,
++			.in_msg = (u8 *)&in,
++			.in_msg_sz = sizeof(in),
++			.out_msg = (u8 *)&out,
++			.out_msg_sz = sizeof(out),
++		};
++		uint i;
++
++		ret = devm_scmi_process_msg(dev, &msg);
++		if (ret)
++			return ret;
++		if (out.status)
++			return scmi_to_linux_errno(out.status);
++		if (out.numval != n)
++			return -EIO;
++
++		for (i = 0; i < n; i++)
++			buf[i] = out.val[i];
++
++		offset += n;
++		buf += n;
++		len -= n;
++	}
++
++	return 0;
++}
++
++static int sm_eeprom_write(uint offset, const u8 *buf, uint len)
++{
++	struct udevice *dev;
++	int ret;
++
++	if (offset >= SM_EEPROM_SIZE || len > SM_EEPROM_SIZE - offset)
++		return -EINVAL;
++
++	ret = sm_eeprom_scmi_dev(&dev);
++	if (ret)
++		return ret;
++
++	while (len) {
++		/* The SM takes up to one page per call */
++		uint n = min_t(uint, len, SM_EEPROM_PAGE - offset % SM_EEPROM_PAGE);
++		struct sm_eeprom_ext_set_in in = {
++			.ctrlid = SM_EEPROM_CTRL_ID,
++			.addr = offset,
++			.len = n,
++			.numval = n,
++		};
++		struct sm_eeprom_ext_set_out out = { 0 };
++		struct scmi_msg msg = {
++			.protocol_id = SCMI_PROTOCOL_ID_IMX_MISC,
++			.message_id = SCMI_IMX_MISC_CONTROL_EXT_SET,
++			.in_msg = (u8 *)&in,
++			.in_msg_sz = offsetof(struct sm_eeprom_ext_set_in, val) + n * sizeof(u32),
++			.out_msg = (u8 *)&out,
++			.out_msg_sz = sizeof(out),
++		};
++		uint i;
++
++		for (i = 0; i < n; i++)
++			in.val[i] = buf[i];
++
++		ret = devm_scmi_process_msg(dev, &msg);
++		if (ret)
++			return ret;
++		if (out.status)
++			return scmi_to_linux_errno(out.status);
++
++		offset += n;
++		buf += n;
++		len -= n;
++	}
++
++	return 0;
++}
++
++static int sm_eeprom_i2c_probe_chip(struct udevice *bus, uint chip_addr,
++				    uint chip_flags)
++{
++	u8 b;
++
++	if (chip_addr != SM_EEPROM_CHIP_ADDR)
++		return -ENXIO;
++
++	/* A one-byte read checks the SM control and that the EEPROM answers */
++	return sm_eeprom_read(0, &b, 1);
++}
++
++static int sm_eeprom_i2c_xfer(struct udevice *bus, struct i2c_msg *msg, int nmsgs)
++{
++	struct sm_eeprom_i2c_priv *priv = dev_get_priv(bus);
++	int ret;
++
++	if (nmsgs < 1 || msg[0].addr != SM_EEPROM_CHIP_ADDR)
++		return -ENXIO;
++
++	/* Address write followed by a read */
++	if (nmsgs == 2 && !(msg[0].flags & I2C_M_RD) && msg[0].len == 1 &&
++	    (msg[1].flags & I2C_M_RD) && msg[1].addr == SM_EEPROM_CHIP_ADDR) {
++		ret = sm_eeprom_read(msg[0].buf[0], msg[1].buf, msg[1].len);
++		if (!ret)
++			priv->offset = msg[0].buf[0] + msg[1].len;
++		return ret;
++	}
++
++	if (nmsgs != 1)
++		return -EOPNOTSUPP;
++
++	/* Read from the current address */
++	if (msg[0].flags & I2C_M_RD) {
++		ret = sm_eeprom_read(priv->offset, msg[0].buf, msg[0].len);
++		if (!ret)
++			priv->offset += msg[0].len;
++		return ret;
++	}
++
++	/* Zero-length write: probe */
++	if (msg[0].len == 0)
++		return sm_eeprom_i2c_probe_chip(bus, msg[0].addr, 0);
++
++	/* Address only (sets the current address), or address + data */
++	priv->offset = msg[0].buf[0];
++	if (msg[0].len == 1)
++		return 0;
++	ret = sm_eeprom_write(msg[0].buf[0], msg[0].buf + 1, msg[0].len - 1);
++	if (!ret)
++		priv->offset += msg[0].len - 1;
++	return ret;
++}
++
++static int sm_eeprom_i2c_set_bus_speed(struct udevice *bus, unsigned int speed)
++{
++	/* The SM sets the LPI2C1 speed */
++	return 0;
++}
++
++static const struct dm_i2c_ops sm_eeprom_i2c_ops = {
++	.xfer		= sm_eeprom_i2c_xfer,
++	.probe_chip	= sm_eeprom_i2c_probe_chip,
++	.set_bus_speed	= sm_eeprom_i2c_set_bus_speed,
++};
++
++static const struct udevice_id sm_eeprom_i2c_ids[] = {
++	{ .compatible = "cargt,imx95-sm-eeprom-i2c" },
++	{ }
++};
++
++U_BOOT_DRIVER(cargt_sm_eeprom_i2c) = {
++	.name		= "cargt_sm_eeprom_i2c",
++	.id		= UCLASS_I2C,
++	.of_match	= sm_eeprom_i2c_ids,
++	.ops		= &sm_eeprom_i2c_ops,
++	.priv_auto	= sizeof(struct sm_eeprom_i2c_priv),
++};

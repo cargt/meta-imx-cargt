@@ -1,0 +1,355 @@
+From 09782453e5cf78555ab73413ad324add649f8bbf Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Fri, 9 Oct 2026 11:36:26 -0500
+Subject: [PATCH 1/3] oei: ddr: cargt: select between several DDR timing
+ configurations at runtime
+
+One OEI image boots SOM variants populated with different DRAM parts.
+
+- oei/ddr/cargt_ddr.c (CARGT_MULTI_DDR): use the configuration named by
+  the board (Cargt_Ddr_Get_Cfg_Id(); weak, CARGT_DDR_FORCE_ID for tests).
+  If it is unknown or fails to train, try the others in list order
+  (bootstrap). QuickBoot is only allowed for the identified configuration,
+  since saved training data does not record which configuration produced
+  it; a QuickBoot failure falls back to a full training.
+- Ddrc_Get_Sdram_Type() uses the configuration being initialized
+  (g_dram_timing) instead of the single global dram_timing.
+- ddr_phy_pie may be shared between configurations, with a per
+  configuration {index, value} patch applied while it is loaded.
+
+Without CARGT_MULTI_DDR the behaviour is unchanged.
+
+Upstream-Status: Inappropriate [Cargt board specific]
+---
+ oei/ddr/cargt_ddr.c    | 118 +++++++++++++++++++++++++++++++++++++++++
+ oei/ddr/cargt_ddr.h    |  50 +++++++++++++++++
+ oei/ddr/ddr.h          |  14 +++++
+ oei/ddr/ddr_init.c     |   9 +++-
+ oei/ddr/ddrphy_train.c |  27 +++++++++-
+ oei/ddr/main.c         |  11 +++-
+ 6 files changed, 225 insertions(+), 4 deletions(-)
+ create mode 100644 oei/ddr/cargt_ddr.c
+ create mode 100644 oei/ddr/cargt_ddr.h
+
+diff --git a/oei/ddr/cargt_ddr.c b/oei/ddr/cargt_ddr.c
+new file mode 100644
+index 0000000..07599bb
+--- /dev/null
++++ b/oei/ddr/cargt_ddr.c
+@@ -0,0 +1,118 @@
++// SPDX-License-Identifier: BSD-3-Clause
++/*
++ * Copyright 2026 Cargt
++ */
++#include <stdbool.h>
++#include <stddef.h>
++#include <stdio.h>
++#include "oei.h"
++#include "cargt_ddr.h"
++
++__attribute__ ((weak)) uint8_t Cargt_Ddr_Get_Cfg_Id(void)
++{
++#ifdef CARGT_DDR_FORCE_ID
++    return (uint8_t)CARGT_DDR_FORCE_ID;
++#else
++    return CARGT_DDR_CFG_ID_NONE;
++#endif
++}
++
++static const struct cargt_ddr_cfg *Cargt_Ddr_Find(uint8_t id)
++{
++    uint32_t i;
++
++    if (id == CARGT_DDR_CFG_ID_NONE)
++    {
++        return NULL;
++    }
++
++    for (i = 0; i < cargt_ddr_cfgs_num; i++)
++    {
++        if (cargt_ddr_cfgs[i].id == id)
++        {
++            return &cargt_ddr_cfgs[i];
++        }
++    }
++
++    return NULL;
++}
++
++/**
++ * Try one configuration. QuickBoot is only allowed for the configuration the
++ * unit identified itself with: saved training data does not record which
++ * configuration produced it, so it must not be applied to a fallback guess.
++ * A QuickBoot failure falls back to a full training of the same configuration.
++ */
++static int Cargt_Ddr_Try(const struct cargt_ddr_cfg *cfg, uint32_t img_id, bool allow_qb)
++{
++    int ret;
++
++    printf("DDR OEI: cargt: trying cfg %u (%s, %lu MB, %u rank)\n",
++        cfg->id, cfg->name, (unsigned long)cfg->size_mb, cfg->ranks);
++
++    g_dram_timing = cfg->timing;
++    g_ddr_force_training = !allow_qb;
++    g_ddr_qb_failed = false;
++    ret = Ddrc_Init(cfg->timing, img_id);
++
++    if (ret != 0 && g_ddr_qb_failed)
++    {
++        printf("DDR OEI: cargt: cfg %u QuickBoot failed (%d), retraining\n", cfg->id, ret);
++        g_ddr_force_training = true;
++        ret = Ddrc_Init(cfg->timing, img_id);
++    }
++
++    g_ddr_force_training = false;
++
++    if (ret != 0)
++    {
++        printf("DDR OEI: cargt: cfg %u failed (%d)\n", cfg->id, ret);
++    }
++
++    return ret;
++}
++
++int Cargt_Ddr_Init(uint32_t img_id)
++{
++    const struct cargt_ddr_cfg *preferred;
++    uint8_t id;
++    uint32_t i;
++    int ret = -1;
++
++    id = Cargt_Ddr_Get_Cfg_Id();
++    preferred = Cargt_Ddr_Find(id);
++
++    if (preferred != NULL)
++    {
++        ret = Cargt_Ddr_Try(preferred, img_id, true);
++        if (ret == 0)
++        {
++            printf("DDR OEI: cargt: using cfg %u\n", preferred->id);
++            return 0;
++        }
++        printf("DDR OEI: cargt: preferred cfg %u failed, bootstrapping\n", id);
++    }
++    else
++    {
++        printf("DDR OEI: cargt: cfg id 0x%02x unknown, bootstrapping\n", id);
++    }
++
++    for (i = 0; i < cargt_ddr_cfgs_num; i++)
++    {
++        if (&cargt_ddr_cfgs[i] == preferred)
++        {
++            continue;
++        }
++
++        ret = Cargt_Ddr_Try(&cargt_ddr_cfgs[i], img_id, false);
++        if (ret == 0)
++        {
++            printf("DDR OEI: cargt: using cfg %u (bootstrap)\n", cargt_ddr_cfgs[i].id);
++            return 0;
++        }
++    }
++
++    printf("DDR OEI: cargt: no DDR configuration trained\n");
++
++    return ret;
++}
+diff --git a/oei/ddr/cargt_ddr.h b/oei/ddr/cargt_ddr.h
+new file mode 100644
+index 0000000..fcb46d0
+--- /dev/null
++++ b/oei/ddr/cargt_ddr.h
+@@ -0,0 +1,50 @@
++/* SPDX-License-Identifier: BSD-3-Clause */
++/*
++ * Copyright 2026 Cargt
++ *
++ * Runtime selection between several DDR timing configurations, so that one
++ * OEI image can boot SOM variants populated with different DRAM parts.
++ */
++#ifndef CARGT_DDR_H
++#define CARGT_DDR_H
++
++#include <stdint.h>
++#include "ddr.h"
++
++/** No usable DDR configuration ID (blank, invalid or missing EEPROM) */
++#define CARGT_DDR_CFG_ID_NONE   0xFFU
++
++struct cargt_ddr_cfg
++{
++    uint8_t id;                         /** ddr_cfg_id stored in the Cargt EEPROM */
++    uint8_t ranks;                      /** informational, printed on the console */
++    uint32_t size_mb;                   /** informational, printed on the console */
++    const char *name;
++    struct dram_timing_info *timing;
++};
++
++/**
++ * Provided by the board. The order of the list is the bootstrap order used
++ * when the preferred configuration is unknown or fails to train: put the
++ * configurations with more ranks first, since a 1-rank configuration can
++ * train on a 2-rank part and silently expose only half of the memory.
++ */
++extern const struct cargt_ddr_cfg cargt_ddr_cfgs[];
++extern const uint32_t cargt_ddr_cfgs_num;
++
++/**
++ * Board hook returning the DDR configuration ID of this unit, or
++ * CARGT_DDR_CFG_ID_NONE if it is not known. The weak default returns
++ * CARGT_DDR_FORCE_ID when built with it, CARGT_DDR_CFG_ID_NONE otherwise.
++ */
++uint8_t Cargt_Ddr_Get_Cfg_Id(void);
++
++/**
++ * Initialize DDR with the preferred configuration, falling back to the
++ * other configurations in list order if it is unknown or fails to train.
++ *
++ * @return 0 on success, the last Ddrc_Init() error otherwise
++ */
++int Cargt_Ddr_Init(uint32_t img_id);
++
++#endif /* CARGT_DDR_H */
+diff --git a/oei/ddr/ddr.h b/oei/ddr/ddr.h
+index 2b6dae3..51a0778 100644
+--- a/oei/ddr/ddr.h
++++ b/oei/ddr/ddr.h
+@@ -134,9 +134,23 @@ struct dram_timing_info
+     unsigned int prog_csr;
+     struct ddrphy_cfg_param *ddrphy_prog_csr;
+     unsigned int ddrphy_prog_csr_num;
++
++    /**
++     * Entries replacing those of a ddrphy_pie table shared between several
++     * timing configurations, as {index in ddrphy_pie, value} sorted by index
++     * (Cargt multi-DDR)
++     */
++    struct ddrphy_cfg_param *ddrphy_pie_patch;
++    unsigned int ddrphy_pie_patch_num;
+ };
+ 
+ extern struct dram_timing_info dram_timing;
++/** Timing configuration being initialized, set before calling Ddrc_Init() */
++extern struct dram_timing_info *g_dram_timing;
++/** Skip the QuickBoot flow and always run the training flow */
++extern bool g_ddr_force_training;
++/** Set by Ddrc_Init() when the QuickBoot flow ran and failed */
++extern bool g_ddr_qb_failed;
+ 
+ enum sdram_type Ddrc_Get_Sdram_Type(void);
+ int Ddrc_Init(struct dram_timing_info *timing_info, uint32_t img_id);
+diff --git a/oei/ddr/ddr_init.c b/oei/ddr/ddr_init.c
+index 85bbf77..312ffe6 100644
+--- a/oei/ddr/ddr_init.c
++++ b/oei/ddr/ddr_init.c
+@@ -11,6 +11,10 @@
+ #include "oei.h"
+ #include "soc_ddr.h"
+ 
++struct dram_timing_info *g_dram_timing;
++bool g_ddr_force_training;
++bool g_ddr_qb_failed;
++
+ /* Local Functions */
+ 
+ #if (!defined(DDR_NO_PHY))
+@@ -146,7 +150,7 @@ static void Ddr_PhyColdReset(void)
+ 
+ enum sdram_type Ddrc_Get_Sdram_Type(void)
+ {
+-    struct dram_timing_info *dtiming = &dram_timing;
++    struct dram_timing_info *dtiming = g_dram_timing;
+     uint32_t i, num = dtiming->ddrc_cfg_num, reg, ddr_dram_cfg;
+     struct ddrc_cfg_param *ddrc_cfg;
+     enum sdram_type type = SDRAM_LPDDR5; /* default value */
+@@ -199,10 +203,11 @@ int Ddrc_Init(struct dram_timing_info *dtiming, uint32_t img_id)
+ 
+ #if (!defined(DDR_NO_PHY))
+     /** Try to configure PHY in QuickBoot mode */
+-    qb_ret = Ddr_Cfg_Phy_Qb(dtiming, fsp_id, img_id);
++    qb_ret = g_ddr_force_training ? 1 : Ddr_Cfg_Phy_Qb(dtiming, fsp_id, img_id);
+     if (qb_ret < 0)
+     {
+         /** QuckBoot flow failure, return error */
++        g_ddr_qb_failed = true;
+         return qb_ret;
+     }
+     else if (qb_ret > 0)
+diff --git a/oei/ddr/ddrphy_train.c b/oei/ddr/ddrphy_train.c
+index b9e9a8d..67d8e0b 100644
+--- a/oei/ddr/ddrphy_train.c
++++ b/oei/ddr/ddrphy_train.c
+@@ -23,6 +23,30 @@ static void Ddr_Phy_Delay40(unsigned int drate)
+ #endif
+ }
+ 
++/**
++ * Write a shared table, substituting the patch values in place so that the
++ * PHY sees exactly the sequence of the original, unshared table. Patch
++ * entries are {index in cfg, value}, sorted by index.
++ */
++static void Ddr_Phy_Cfg_Set_Patched(struct ddrphy_cfg_param *cfg, unsigned int num,
++    struct ddrphy_cfg_param *patch, unsigned int patch_num)
++{
++    unsigned int i, j = 0;
++
++    for (i = 0; i < num; i++, cfg++)
++    {
++        if (j < patch_num && patch[j].reg == i)
++        {
++            Dwc_Ddrphy_Apb_Wr(cfg->reg, patch[j].val);
++            j++;
++        }
++        else
++        {
++            Dwc_Ddrphy_Apb_Wr(cfg->reg, cfg->val);
++        }
++    }
++}
++
+ int Ddr_Cfg_Phy(struct dram_timing_info *dtiming)
+ {
+     struct dram_fsp_msg *fsp_msg;
+@@ -140,7 +164,8 @@ int Ddr_Cfg_Phy(struct dram_timing_info *dtiming)
+     }
+ 
+     /* Load PHY Init Engine Image */
+-    Ddr_Phy_Cfg_Set(dtiming->ddrphy_pie, dtiming->ddrphy_pie_num);
++    Ddr_Phy_Cfg_Set_Patched(dtiming->ddrphy_pie, dtiming->ddrphy_pie_num,
++        dtiming->ddrphy_pie_patch, dtiming->ddrphy_pie_patch_num);
+ 
+     Dwc_Ddrphy_Apb_Wr(0xd0000, 0x1); /* CSR bus: MCU/PIE/DMA++,TDR/APB-- */
+ 
+diff --git a/oei/ddr/main.c b/oei/ddr/main.c
+index 5eca010..81bba6b 100644
+--- a/oei/ddr/main.c
++++ b/oei/ddr/main.c
+@@ -14,6 +14,10 @@
+ 
+ #include "fsl_sysctr.h"
+ 
++#ifdef CARGT_MULTI_DDR
++#include "cargt_ddr.h"
++#endif
++
+ #ifdef DDR_IEE
+ #include "iee.h"
+ #endif
+@@ -105,7 +109,12 @@ int oei_main(uint32_t argc, uint32_t *argv)
+         return OEI_FAIL;
+     }
+ 
+-    ret = Ddrc_Init(&dram_timing, id);
++#ifdef CARGT_MULTI_DDR
++    ret = Cargt_Ddr_Init(id);
++#else
++    g_dram_timing = &dram_timing;
++    ret = Ddrc_Init(g_dram_timing, id);
++#endif
+ 
+     Ddr_Post_Init();
+ 
+-- 
+2.34.1
+

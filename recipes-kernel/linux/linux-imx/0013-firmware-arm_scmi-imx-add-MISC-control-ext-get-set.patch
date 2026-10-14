@@ -1,0 +1,164 @@
+From 3b1bd335871fd12947eb654cffcc5100d4ff65f4 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Fri, 9 Oct 2026 16:28:55 -0500
+Subject: [PATCH 13/14] firmware: arm_scmi: imx: add MISC control ext get/set
+
+The i.MX System Manager MISC protocol has CONTROL_EXT_SET (0x20) and
+CONTROL_EXT_GET (0x21): control access with an address and an array of
+values, used for board controls that wrap a device, such as raw access
+to an I2C device behind the SM. Add them to the vendor protocol ops as
+misc_ctrl_ext_set() and misc_ctrl_ext_get().
+
+Upstream-Status: Inappropriate [Cargt board specific]
+---
+ .../arm_scmi/vendors/imx/imx-sm-misc.c        | 104 ++++++++++++++++++
+ include/linux/scmi_imx_protocol.h             |   4 +
+ 2 files changed, 108 insertions(+)
+
+diff --git a/drivers/firmware/arm_scmi/vendors/imx/imx-sm-misc.c b/drivers/firmware/arm_scmi/vendors/imx/imx-sm-misc.c
+index b5a3be23427b..a788f77d9bdb 100644
+--- a/drivers/firmware/arm_scmi/vendors/imx/imx-sm-misc.c
++++ b/drivers/firmware/arm_scmi/vendors/imx/imx-sm-misc.c
+@@ -31,6 +31,8 @@ enum scmi_imx_misc_protocol_cmd {
+ 	SCMI_IMX_MISC_CFG_INFO_GET = 0xC,
+ 	SCMI_IMX_MISC_SYSLOG_GET = 0xD,
+ 	SCMI_IMX_MISC_BOARD_INFO = 0xE,
++	SCMI_IMX_MISC_CTRL_EXT_SET = 0x20,
++	SCMI_IMX_MISC_CTRL_EXT_GET = 0x21,
+ };
+ 
+ struct scmi_imx_misc_info {
+@@ -308,6 +310,106 @@ static int scmi_imx_misc_ctrl_get(const struct scmi_protocol_handle *ph,
+ 	return ret;
+ }
+ 
++struct scmi_imx_misc_ctrl_ext_set_in {
++	__le32 id;
++	__le32 addr;
++	__le32 len;
++	__le32 num;
++	__le32 value[];
++};
++
++struct scmi_imx_misc_ctrl_ext_get_in {
++	__le32 id;
++	__le32 addr;
++	__le32 len;
++};
++
++struct scmi_imx_misc_ctrl_ext_get_out {
++	__le32 num;
++	__le32 val[];
++};
++
++static int scmi_imx_misc_ctrl_ext_set(const struct scmi_protocol_handle *ph,
++				      u32 ctrl_id, u32 addr, u32 num,
++				      const u32 *val)
++{
++	struct scmi_imx_misc_ctrl_ext_set_in *in;
++	struct scmi_xfer *t;
++	int ret, i;
++	int max_msg_size = ph->hops->get_max_msg_size(ph);
++	int max_num = (max_msg_size - sizeof(*in)) / sizeof(__le32);
++
++	ret = scmi_imx_misc_ctrl_validate_id(ph, ctrl_id);
++	if (ret)
++		return ret;
++
++	if (!num || num > max_num)
++		return -EINVAL;
++
++	ret = ph->xops->xfer_get_init(ph, SCMI_IMX_MISC_CTRL_EXT_SET,
++				      sizeof(*in) + num * sizeof(__le32), 0, &t);
++	if (ret)
++		return ret;
++
++	in = t->tx.buf;
++	in->id = cpu_to_le32(ctrl_id);
++	in->addr = cpu_to_le32(addr);
++	in->len = cpu_to_le32(num);
++	in->num = cpu_to_le32(num);
++	for (i = 0; i < num; i++)
++		in->value[i] = cpu_to_le32(val[i]);
++
++	ret = ph->xops->do_xfer(ph, t);
++
++	ph->xops->xfer_put(ph, t);
++
++	return ret;
++}
++
++static int scmi_imx_misc_ctrl_ext_get(const struct scmi_protocol_handle *ph,
++				      u32 ctrl_id, u32 addr, u32 num, u32 *val)
++{
++	struct scmi_imx_misc_ctrl_ext_get_in *in;
++	struct scmi_imx_misc_ctrl_ext_get_out *out;
++	struct scmi_xfer *t;
++	int ret, i;
++	int max_msg_size = ph->hops->get_max_msg_size(ph);
++	int max_num = (max_msg_size - sizeof(*out)) / sizeof(__le32);
++
++	ret = scmi_imx_misc_ctrl_validate_id(ph, ctrl_id);
++	if (ret)
++		return ret;
++
++	if (!num || num > max_num)
++		return -EINVAL;
++
++	ret = ph->xops->xfer_get_init(ph, SCMI_IMX_MISC_CTRL_EXT_GET,
++				      sizeof(*in), 0, &t);
++	if (ret)
++		return ret;
++
++	in = t->tx.buf;
++	in->id = cpu_to_le32(ctrl_id);
++	in->addr = cpu_to_le32(addr);
++	in->len = cpu_to_le32(num);
++
++	ret = ph->xops->do_xfer(ph, t);
++	if (!ret) {
++		out = t->rx.buf;
++		if (le32_to_cpu(out->num) != num ||
++		    num * sizeof(__le32) > t->rx.len - sizeof(*out)) {
++			ret = -EIO;
++		} else {
++			for (i = 0; i < num; i++)
++				val[i] = le32_to_cpu(out->val[i]);
++		}
++	}
++
++	ph->xops->xfer_put(ph, t);
++
++	return ret;
++}
++
+ static int scmi_imx_misc_ctrl_set(const struct scmi_protocol_handle *ph,
+ 				  u32 ctrl_id, u32 num, u32 *val)
+ {
+@@ -541,6 +643,8 @@ static int scmi_imx_misc_reset_reason(const struct scmi_protocol_handle *ph, boo
+ static const struct scmi_imx_misc_proto_ops scmi_imx_misc_proto_ops = {
+ 	.misc_ctrl_set = scmi_imx_misc_ctrl_set,
+ 	.misc_ctrl_get = scmi_imx_misc_ctrl_get,
++	.misc_ctrl_ext_set = scmi_imx_misc_ctrl_ext_set,
++	.misc_ctrl_ext_get = scmi_imx_misc_ctrl_ext_get,
+ 	.misc_ctrl_req_notify = scmi_imx_misc_ctrl_notify,
+ 	.misc_syslog = scmi_imx_misc_syslog_get,
+ 	.misc_reset_reason = scmi_imx_misc_reset_reason,
+diff --git a/include/linux/scmi_imx_protocol.h b/include/linux/scmi_imx_protocol.h
+index ab867463c08c..17cff476ed83 100644
+--- a/include/linux/scmi_imx_protocol.h
++++ b/include/linux/scmi_imx_protocol.h
+@@ -68,6 +68,10 @@ struct scmi_imx_misc_proto_ops {
+ 			     u32 num, u32 *val);
+ 	int (*misc_ctrl_get)(const struct scmi_protocol_handle *ph, u32 id,
+ 			     u32 *num, u32 *val);
++	int (*misc_ctrl_ext_set)(const struct scmi_protocol_handle *ph, u32 id,
++				 u32 addr, u32 num, const u32 *val);
++	int (*misc_ctrl_ext_get)(const struct scmi_protocol_handle *ph, u32 id,
++				 u32 addr, u32 num, u32 *val);
+ 	int (*misc_ctrl_req_notify)(const struct scmi_protocol_handle *ph,
+ 				    u32 ctrl_id, u32 evt_id, u32 flags);
+ 	int (*misc_syslog)(const struct scmi_protocol_handle *ph, u16 *size,
+-- 
+2.34.1
+

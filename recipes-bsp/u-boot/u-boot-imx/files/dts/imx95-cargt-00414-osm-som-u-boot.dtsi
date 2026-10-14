@@ -11,6 +11,7 @@
 
 / {
 	aliases {
+		i2c0 = &sm_eeprom_i2c;
 		pci0 = &netc_bus0;
 		pci1 = &netc_bus1;
 		usb0 = &usb3_dwc3;
@@ -21,6 +22,18 @@
 
 	chosen {
 		bootargs = "console=ttyLP0,115200 earlycon";
+	};
+
+	/*
+	 * SOM EEPROM (M24C02 at 0x50). It is on LPI2C1 with the PMICs, which
+	 * the System Manager owns, so U-Boot reaches it through the SM
+	 * BRD_SM_CTRL_EEPROM board control (board/cargt/imx95_00414/
+	 * sm_eeprom_i2c.c). Bus 0: "i2c dev 0; i2c md 0x50 0 0x30".
+	 */
+	sm_eeprom_i2c: i2c-sm-eeprom {
+		compatible = "cargt,imx95-sm-eeprom-i2c";
+		#address-cells = <1>;
+		#size-cells = <0>;
 	};
 
 	usbg2: usbg2 {
