@@ -1,0 +1,1 @@
+imx95-15x15-lpddr4x-frdm 1.0

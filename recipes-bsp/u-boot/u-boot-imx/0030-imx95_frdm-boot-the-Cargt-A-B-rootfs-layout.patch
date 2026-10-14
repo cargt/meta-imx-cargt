@@ -1,0 +1,59 @@
+From 76e629fb4bc3190b6d0778a5a419539309324eac Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 8 Oct 2026 10:57:39 -0500
+Subject: [PATCH] imx95_frdm: boot the Cargt A/B rootfs layout
+
+Cargt images use cargt-dev.wks.in: no FAT boot partition, two ext4 rootfs
+partitions (p1/p2) with the kernel and dtbs in each rootfs's /boot, and
+swupdate's update.sh selecting the active one with fw_setenv mmcpart.
+
+Load the kernel, dtb, boot script and signed container with ext4load from
+${mmcpart}, look for them under boot/, and pass
+root=/dev/mmcblk${mmcdev}p${mmcpart} so the kernel mounts the partition
+U-Boot loaded from. Same change as the Cargt boards' env (see
+0003-Update-u-boot-imx-to-boot-Cargt-Linux-image.patch). Applies to both
+imx95_15x15_frdm and imx95_19x19_frdm_pro, which share this env file.
+
+Upstream-Status: Inappropriate [Cargt specific]
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ board/nxp/imx95_frdm/imx95_frdm.env | 13 +++++++------
+ 1 file changed, 7 insertions(+), 6 deletions(-)
+
+diff --git a/board/nxp/imx95_frdm/imx95_frdm.env b/board/nxp/imx95_frdm/imx95_frdm.env
+index 47fbd689de3..e2af01a6a5f 100644
+--- a/board/nxp/imx95_frdm/imx95_frdm.env
++++ b/board/nxp/imx95_frdm/imx95_frdm.env
+@@ -65,7 +65,7 @@ emmc_dev=0
+ sd_dev=1
+ scriptaddr=0x93500000
+ kernel_addr_r=CONFIG_SYS_LOAD_ADDR
+-image=Image
++image=boot/Image
+ splashimage=0xA0000000
+ console=ttyLP0,115200 earlycon
+ fdt_addr_r=0x93000000
+@@ -79,13 +79,14 @@ mmcdev=CONFIG_ENV_MMC_DEVICE_INDEX
+ mmcpart=1
+ mmcroot=/dev/mmcblk1p2 rootwait rw
+ mmcautodetect=yes
+-mmcargs=setenv bootargs ${jh_clk} ${mcore_args} console=${console} root=${mmcroot}
++mmcargs=setenv bootargs ${jh_clk} ${mcore_args} console=${console}
++	root=/dev/mmcblk${mmcdev}p${mmcpart} rootwait rw
+ prepare_mcore=setenv mcore_args pd_ignore_unused;
+-loadbootscript=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};
++loadbootscript=ext4load mmc ${mmcdev}:${mmcpart} ${loadaddr} ${script};
+ bootscript=echo Running bootscript from mmc ...; source
+-loadimage=fatload mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}
+-loadfdt=fatload mmc ${mmcdev}:${mmcpart} ${fdt_addr_r} ${fdtfile}
+-loadcntr=fatload mmc ${mmcdev}:${mmcpart} ${cntr_addr} ${cntr_file}
++loadimage=ext4load mmc ${mmcdev}:${mmcpart} ${loadaddr} ${image}
++loadfdt=ext4load mmc ${mmcdev}:${mmcpart} ${fdt_addr_r} boot/${fdtfile}
++loadcntr=ext4load mmc ${mmcdev}:${mmcpart} ${cntr_addr} ${cntr_file}
+ auth_os=booti ${cntr_addr}
+ boot_os=booti ${loadaddr} - ${fdt_addr_r};
+ mmcboot=echo Booting from mmc ...;
+-- 
+2.34.1
+
