@@ -116,7 +116,7 @@ Remove with `fw_setenv ethaddr; fw_setenv eth1addr` once real MACs are fused.
      | 2 | MT62F4G32D8DV-023 (LPDDR5X, 16 GB) | 2 rank, x8 byte mode, 6400 | Not validated on hardware: checked against the Micron Y42M datasheet and the NXP 19x19 LPDDR5 EVK table (same organization; identical message block) |
      | 1 | MT62F512M32D2DR-031 WT:B (2 GB) | 1 rank, x16, 6400 | DDR Tool training + stress at 6400 (2026-10-07) |
    - [x] Multi-DDR OEI on a 00414 with a blank EEPROM (2026-10-09, SD boot): `EEPROM blank or not a Cargt record` (LPI2C1 read OK, the M24C02 answers but is unprogrammed), bootstrap tried cfg 2 (16 GB) which failed in under a second, then cfg 1 (2 GB) trained in 2.54 s; the SM then took LPI2C1 for the PMICs and booted normally. U-Boot: DRAM 1.8 GiB; Linux MemTotal 1703 MB.
-   - [ ] Boot `imx-boot` on a 00414 with a programmed EEPROM: expect `DDR OEI: cargt: EEPROM v3 ... -> cfg id 0x01` and `using cfg 1` on LPUART1, no bootstrap.
+   - [x] Boot `imx-boot` on a 00414 with a programmed EEPROM (2026-10-14, a provisioned SOM, eMMC): `DDR OEI: cargt: EEPROM v3, 2048 MB, 1 rank -> cfg id 0x01`, `trying cfg 1`, training complete in 2.54 s, `using cfg 1`, `err = 0`; no bootstrap. U-Boot: DRAM 1.8 GiB. U-Boot also reports this SoC as Extended Industrial temperature grade (-40 to 125 C).
    - [ ] 16 GB part on hardware: training, stress, margins (needs a board with MT62F4G32D8DV).
    - [ ] Spread spectrum on/off at 6400 for each part during prototype validation (decide before EMC testing).
 2. **LPI2C1 is owned by the SM.** The RX8111 RTC (0x32) and the M24C02 EEPROM (0x50) share the bus with the PMICs.
