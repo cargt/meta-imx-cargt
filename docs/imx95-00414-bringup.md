@@ -77,6 +77,8 @@ Sources used:
 - [ ] UART_B (lpuart5, MikroBus)
 - [ ] `/data` mounted from `LABEL=data` (base-files fstab)
 
+- [x] U-Boot prints the SOM EEPROM record at boot (u-boot-imx 0032), and `cargt_eeprom read` works: serial (decimal and hex), part number, date, DRAM rank/size/speed, DDR config ID, CRC. Confirmed on 220565 over USB serial download on 2026-10-15. Still to do: confirm after an eMMC boot. The fastboot `bootloader` write went to boot0, but this board booted from the user area (`PARTITION_CONFIG 0x00`).
+
 ## PREEMPT_RT (NXP Real-time Edge 3.5)
 
 Distro `cargt-imx-rt`, image `cargt-image-rt` / `cargt-image-rt-swu` (00414-00365 only so far). Built in its own build directory, because adding `meta-real-time-edge` also patches ATF, imx-mkimage, linuxptp, iproute2 and lldpd for every machine:
