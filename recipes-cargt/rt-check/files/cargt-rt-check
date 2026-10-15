@@ -94,8 +94,10 @@ ip -br link show type can > "$OUT/can.txt" 2>&1
 info "CAN: $(awk '{print $1}' "$OUT/can.txt" | xargs)"
 if [ -n "$eeprom" ] && [ "$(head -c 4 "$eeprom" 2>/dev/null)" = CRGT ]; then
     pass "SOM EEPROM record readable ($eeprom)"
-else
+elif tr '\0' '\n' < /proc/device-tree/compatible | grep -q '^cargt,'; then
     fail "SOM EEPROM record not readable (cargt-sm-eeprom adapter: ${eeprom:-missing})"
+else
+    info "no Cargt SOM EEPROM (not a Cargt SOM)"
 fi
 ls /sys/class/typec 2>/dev/null | grep -q port && pass "Type-C ports: $(ls /sys/class/typec | grep -v partner | xargs)" || info "no Type-C ports registered"
 for z in /sys/class/thermal/thermal_zone*; do
