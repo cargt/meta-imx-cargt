@@ -22,5 +22,12 @@ echo "BBLAYERS += \"\${BSPDIR}/sources/meta-browser/meta-chromium\"" >> conf/bbl
 echo "BBLAYERS += \"\${BSPDIR}/sources/meta-imx-cargt\"" >> conf/bblayers.conf
 echo "BBLAYERS += \"\${BSPDIR}/sources/meta-swupdate\"" >> conf/bblayers.conf
 
+# NXP Real-time Edge layers for the PREEMPT_RT distro. Kept out of other builds:
+# meta-real-time-edge also patches ATF, imx-mkimage, linuxptp, iproute2 and lldpd.
+if [ "$DISTRO" = "cargt-imx-rt" ]; then
+    echo "BBLAYERS += \"\${BSPDIR}/sources/meta-rtos-industrial\"" >> conf/bblayers.conf
+    echo "BBLAYERS += \"\${BSPDIR}/sources/meta-real-time-edge\"" >> conf/bblayers.conf
+fi
+
 echo ""
 echo "Cargt i.MX setup complete and it can generate Yocto images now."

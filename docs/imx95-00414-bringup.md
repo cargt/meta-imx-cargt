@@ -77,6 +77,26 @@ Sources used:
 - [ ] UART_B (lpuart5, MikroBus)
 - [ ] `/data` mounted from `LABEL=data` (base-files fstab)
 
+## PREEMPT_RT (NXP Real-time Edge 3.5)
+
+Distro `cargt-imx-rt`, image `cargt-image-rt` / `cargt-image-rt-swu` (00414-00365 only so far). Built in its own build directory, because adding `meta-real-time-edge` also patches ATF, imx-mkimage, linuxptp, iproute2 and lldpd for every machine:
+
+```
+cd <BSP directory>   # the repo checkout that holds imx-cargt-setup.sh
+DISTRO=cargt-imx-rt MACHINE=imx95-cargt-00414-00365 source imx-cargt-setup.sh -b build-rt
+bitbake cargt-image-rt-swu
+```
+
+- Kernel: NXP `real-time-edge-linux` `linux_6.18.20` (lf-6.18.20 plus PREEMPT_RT, TSN and DSA), pinned by meta-real-time-edge. All Cargt kernel patches, dts and config fragments apply on top unchanged. `imx_v8_defconfig` in that tree sets `CONFIG_PREEMPT_RT=y`, and `cargt_rt_kernel_config_mods.cfg` repeats it so that the config audit warns if it is ever dropped.
+- U-Boot, OEI and System Manager are the Cargt BSP ones (`mx95cargt00414`), the same as in `cargt-imx-xwayland`. The distro uses its own `cargt-rt` override, not NXP's `real-time-edge`. Under that override, meta-real-time-edge replaces the whole linux-imx and u-boot-imx `SRC_URI`, which drops every Cargt patch and dts. It also switches to `real-time-edge-uboot` and the EVK `mx95rte` SM config.
+- Userspace: cargt-image-dev plus the RTE networking (linuxptp, tsntool, isochron, rt-tests), industrial (IgH EtherCAT on ENETC, open62541, Modbus), system and tools (rteval) packagegroups. `packagegroup-real-time-edge-rtos` (EVK M-core demos) is left out.
+- Not taken from RTE yet: SM patch `0001-devices-MIMX95-Disable-DDR-Auto-Clock-Gating` (gated on `real-time-edge`). It reduces DDR wake-up latency spikes. If the cyclictest worst case shows them, consider adding it to the Cargt SM bbappend.
+
+- [x] `bitbake cargt-image-rt-swu` (imx95-cargt-00414-00365, 2026-10-15). The kernel is `6.18.20-rt4`, and the built `.config` has `CONFIG_PREEMPT_RT=y` as well as the 00414 options (`CONFIG_I2C_CARGT_SM_EEPROM`, `CONFIG_MDIO_GPIO`).
+- [ ] Boots; `uname -a` shows `PREEMPT_RT`, and `/sys/kernel/realtime` is 1
+- [ ] `cyclictest -m -S -p 98 -i 1000 -D 1h` under `stress-ng` load: record max latency
+- [ ] ETH_A/ETH_B PTP (`ptp4l`) and EtherCAT master on ENETC
+
 ## Interim MAC addresses (until the eFuses are programmed)
 
 The MAC fuses are blank and the SOM EEPROM is on the SM-owned LPI2C1, so

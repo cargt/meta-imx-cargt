@@ -1,0 +1,135 @@
+#!/bin/bash
+# cargt-rt-check: PREEMPT_RT bring-up check for the cargt-imx-rt distro.
+#
+# Runs the kernel and system checks, then cyclictest idle and under stress-ng
+# load, and writes everything to one report directory:
+#   <out>/report.txt         summary (also printed)
+#   <out>/cyclictest-*.txt   full cyclictest output with histograms
+#   <out>/dmesg.txt, ...     raw logs
+#
+# Usage: cargt-rt-check [-d DURATION] [-o DIR] [-n]
+#   -d  cyclictest duration per run, cyclictest/stress-ng syntax (default 15m)
+#   -o  output directory (default /data/rt-check/<serial>-<date>)
+#   -n  skip the latency runs (system checks only)
+
+DURATION=15m
+OUT=
+LATENCY=1
+
+while getopts "d:o:nh" opt; do
+    case $opt in
+        d) DURATION=$OPTARG ;;
+        o) OUT=$OPTARG ;;
+        n) LATENCY=0 ;;
+        *) sed -n '2,15p' "$0" | sed 's/^# \{0,1\}//'; exit 1 ;;
+    esac
+done
+
+[ "$(id -u)" = 0 ] || { echo "run as root"; exit 1; }
+
+# SOM serial from the Cargt "CRGT" EEPROM record (big-endian u32 at offset 20),
+# reached through the cargt-sm-eeprom adapter. Falls back to the SoC unique ID.
+eeprom=
+for n in /sys/bus/i2c/devices/i2c-*/name; do
+    if [ "$(cat "$n")" = cargt-sm-eeprom ]; then
+        bus=$(basename "$(dirname "$n")"); eeprom=/sys/bus/i2c/devices/${bus#i2c-}-0050/eeprom
+    fi
+done
+serial=$(cat /sys/devices/soc0/serial_number 2>/dev/null || echo unknown)
+if [ -n "$eeprom" ] && [ "$(head -c 4 "$eeprom" 2>/dev/null)" = CRGT ]; then
+    serial=$((16#$(od -An -tx1 -j20 -N4 "$eeprom" | tr -d ' \n')))
+fi
+
+if [ -z "$OUT" ]; then
+    base=/data/rt-check
+    [ -d /data ] || base=/tmp/rt-check
+    OUT=$base/$serial-$(date +%Y%m%d-%H%M%S)
+fi
+mkdir -p "$OUT" || exit 1
+REPORT=$OUT/report.txt
+: > "$REPORT"
+
+log()  { echo "$*" | tee -a "$REPORT"; }
+pass() { log "  PASS  $*"; }
+fail() { log "  FAIL  $*"; FAILS=$((FAILS + 1)); }
+info() { log "  info  $*"; }
+FAILS=0
+
+log "cargt-rt-check $(date -Iseconds)"
+log "host $(hostname)  serial $serial  out $OUT"
+log ""
+
+log "== Kernel"
+info "$(uname -a)"
+uname -v | grep -q PREEMPT_RT && pass "uname reports PREEMPT_RT" || fail "uname has no PREEMPT_RT"
+[ "$(cat /sys/kernel/realtime 2>/dev/null)" = 1 ] && pass "/sys/kernel/realtime = 1" || fail "/sys/kernel/realtime is not 1"
+info "cmdline: $(cat /proc/cmdline)"
+info "cpufreq governors: $(cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor 2>/dev/null | sort | uniq -c | xargs)"
+log ""
+
+log "== System"
+systemctl --failed --no-legend --plain > "$OUT/systemd-failed.txt" 2>&1
+if [ -s "$OUT/systemd-failed.txt" ]; then
+    fail "failed units: $(awk '{print $1}' "$OUT/systemd-failed.txt" | xargs)"
+else
+    pass "no failed systemd units"
+fi
+dmesg > "$OUT/dmesg.txt"
+dmesg --level=err,crit,alert,emerg > "$OUT/dmesg-errors.txt" 2>/dev/null
+info "dmesg errors: $(wc -l < "$OUT/dmesg-errors.txt") lines (dmesg-errors.txt)"
+grep -qiE 'BUG: |sleeping function called from invalid context|scheduling while atomic' "$OUT/dmesg.txt" \
+    && fail "RT locking splat in dmesg (grep 'invalid context|scheduling while atomic' dmesg.txt)" \
+    || pass "no RT locking splats in dmesg"
+
+for ifc in eth0 eth1; do
+    if [ -e /sys/class/net/$ifc ]; then
+        st=$(cat /sys/class/net/$ifc/operstate)
+        sp=$(cat /sys/class/net/$ifc/speed 2>/dev/null)
+        [ "$st" = up ] && pass "$ifc up ${sp}Mb/s" || info "$ifc $st (no cable?)"
+    else
+        fail "$ifc missing"
+    fi
+done
+ip -br link show type can > "$OUT/can.txt" 2>&1
+info "CAN: $(awk '{print $1}' "$OUT/can.txt" | xargs)"
+if [ -n "$eeprom" ] && [ "$(head -c 4 "$eeprom" 2>/dev/null)" = CRGT ]; then
+    pass "SOM EEPROM record readable ($eeprom)"
+else
+    fail "SOM EEPROM record not readable (cargt-sm-eeprom adapter: ${eeprom:-missing})"
+fi
+ls /sys/class/typec 2>/dev/null | grep -q port && pass "Type-C ports: $(ls /sys/class/typec | grep -v partner | xargs)" || info "no Type-C ports registered"
+for z in /sys/class/thermal/thermal_zone*; do
+    [ -r "$z/temp" ] && info "$(cat "$z/type") $(( $(cat "$z/temp") / 1000 ))C"
+done
+log ""
+
+# cyclictest: one SCHED_FIFO 98 thread per CPU, 1 ms interval, memory locked.
+run_cyclictest() {
+    name=$1
+    cyclictest -m -S -p 98 -i 1000 -h 400 -D "$DURATION" -q > "$OUT/cyclictest-$name.txt" 2>&1
+    max=$(awk '/^# Max Latencies:/ {m=0; for (i=4; i<=NF; i++) if ($i+0 > m) m=$i+0; print m}' "$OUT/cyclictest-$name.txt")
+    per=$(awk '/^# Max Latencies:/ {for (i=4; i<=NF; i++) printf "%d ", $i}' "$OUT/cyclictest-$name.txt")
+    ovf=$(awk '/^# Histogram Overflows:/ {s=0; for (i=4; i<=NF; i++) s+=$i; print s}' "$OUT/cyclictest-$name.txt")
+    if [ -z "$max" ]; then
+        fail "cyclictest $name did not finish (see cyclictest-$name.txt)"
+    else
+        log "  $name: max ${max} us  (per CPU: ${per% })  histogram overflows (>400 us): ${ovf:-0}"
+    fi
+}
+
+if [ "$LATENCY" = 1 ]; then
+    log "== Latency (cyclictest -m -S -p 98 -i 1000, $DURATION per run)"
+    run_cyclictest idle
+    ncpu=$(nproc)
+    stress-ng --cpu "$ncpu" --vm 2 --vm-bytes 25% --io 2 --timer 2 \
+        -t "$DURATION" --metrics-brief > "$OUT/stress-ng.txt" 2>&1 &
+    spid=$!
+    sleep 5
+    run_cyclictest load
+    kill "$spid" 2>/dev/null
+    wait "$spid" 2>/dev/null
+    log ""
+fi
+
+log "== Result: $FAILS failure(s). Report: $REPORT"
+[ "$FAILS" = 0 ]
