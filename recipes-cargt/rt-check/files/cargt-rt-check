@@ -65,6 +65,15 @@ uname -v | grep -q PREEMPT_RT && pass "uname reports PREEMPT_RT" || fail "uname 
 [ "$(cat /sys/kernel/realtime 2>/dev/null)" = 1 ] && pass "/sys/kernel/realtime = 1" || fail "/sys/kernel/realtime is not 1"
 info "cmdline: $(cat /proc/cmdline)"
 info "cpufreq governors: $(cat /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor 2>/dev/null | sort | uniq -c | xargs)"
+deep=$(ls /sys/devices/system/cpu/cpu*/cpuidle/state[1-9]*/disable 2>/dev/null | wc -l)
+deep_off=$(cat /sys/devices/system/cpu/cpu*/cpuidle/state[1-9]*/disable 2>/dev/null | grep -c 1)
+if [ "$deep" = 0 ]; then
+    info "no deep CPU idle states"
+elif [ "$deep_off" = "$deep" ]; then
+    pass "deep CPU idle states disabled ($deep_off/$deep)"
+else
+    info "deep CPU idle states enabled ($((deep - deep_off))/$deep); real-time apps must hold /dev/cpu_dma_latency"
+fi
 log ""
 
 log "== System"

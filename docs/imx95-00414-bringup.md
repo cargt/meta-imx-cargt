@@ -123,6 +123,7 @@ bitbake cargt-image-rt-swu
 
   NetworkManager drops manual addresses on a port with no DHCP server (it retries DHCP every 45 s and flushes the port). For point-to-point tests use `nmcli dev set <if> managed no`, or give the port a static connection.
 - [x] EtherCAT drivers no longer autoload (`cargt-rt-config`, modprobe.d blacklist). Before, udev loaded `ec_netc_blk_ctrl` (which failed with "Driver 'nxp-netc-blk-ctrl' is already registered"), `ec_enetc4`, `fsl_ecat_enetc4` and an unconfigured EtherCAT master on every boot.
+- [x] Deep CPU idle (`cpu-pd-wait`, state1) is disabled by default (`cargt-rt-config`, tmpfiles.d). With it allowed, a 1 ms SCHED_FIFO loop that does not hold `/dev/cpu_dma_latency` measured a 264-271 us worst case. With it disabled the worst case was 41-49 us, and CPU 5 entered state1 0 times (FRDM-IMX95, 2026-10-16). cyclictest holds `/dev/cpu_dma_latency` itself, so the earlier cyclictest numbers were not affected.
 - [ ] Isolation boot arguments are not persistent yet. They are set per boot from the U-Boot prompt (`setenv mcore_args '...'; run bsp_bootcmd`).
 - [ ] EtherCAT master on ENETC
 
