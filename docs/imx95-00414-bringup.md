@@ -81,7 +81,7 @@ Sources used:
 
 ## PREEMPT_RT (NXP Real-time Edge 3.5)
 
-Distro `cargt-imx-rt`, image `cargt-image-rt` / `cargt-image-rt-swu` (00414-00365 only so far). Built in its own build directory, because adding `meta-real-time-edge` also patches ATF, imx-mkimage, linuxptp, iproute2 and lldpd for every machine:
+Distro `cargt-imx-rt`, image `cargt-image-rt` / `cargt-image-rt-swu` (all three 00414 machines, plus `imx95-15x15-lpddr4x-frdm`). Built in its own build directory, because adding `meta-real-time-edge` also patches ATF, imx-mkimage, linuxptp, iproute2 and lldpd for every machine:
 
 ```
 cd <BSP directory>   # the repo checkout that holds imx-cargt-setup.sh
@@ -92,12 +92,26 @@ bitbake cargt-image-rt-swu
 - Kernel: NXP `real-time-edge-linux` `linux_6.18.20` (lf-6.18.20 plus PREEMPT_RT, TSN and DSA), pinned by meta-real-time-edge. All Cargt kernel patches, dts and config fragments apply on top unchanged. `imx_v8_defconfig` in that tree sets `CONFIG_PREEMPT_RT=y`, and `cargt_rt_kernel_config_mods.cfg` repeats it so that the config audit warns if it is ever dropped.
 - U-Boot, OEI and System Manager are the Cargt BSP ones (`mx95cargt00414`), the same as in `cargt-imx-xwayland`. The distro uses its own `cargt-rt` override, not NXP's `real-time-edge`. Under that override, meta-real-time-edge replaces the whole linux-imx and u-boot-imx `SRC_URI`, which drops every Cargt patch and dts. It also switches to `real-time-edge-uboot` and the EVK `mx95rte` SM config.
 - Userspace: cargt-image-dev plus the RTE networking (linuxptp, tsntool, isochron, rt-tests), industrial (IgH EtherCAT on ENETC, open62541, Modbus), system and tools (rteval) packagegroups. `packagegroup-real-time-edge-rtos` (EVK M-core demos) is left out.
-- Not taken from RTE yet: SM patch `0001-devices-MIMX95-Disable-DDR-Auto-Clock-Gating` (gated on `real-time-edge`). It reduces DDR wake-up latency spikes. If the cyclictest worst case shows them, consider adding it to the Cargt SM bbappend.
+- RT kernel config (`cargt_rt_kernel_config_mods.cfg`): `performance` cpufreq governor by default, and `NO_HZ_FULL` / `RCU_NOCB_CPU` built in (inactive unless `nohz_full=` / `rcu_nocbs=` are passed).
+- Not taken from RTE yet: SM patch `0001-devices-MIMX95-Disable-DDR-Auto-Clock-Gating` (gated on `real-time-edge`). Under load the DDR is busy anyway, so it is not expected to move the loaded worst case. It might help idle. Not tested.
+- `cargt-rt-check` (in the RT image): kernel and system checks, then cyclictest idle and under stress-ng. `cargt-rt-check -d 15m` writes a report to `/data/rt-check/<serial>-<date>/`.
 
 - [x] `bitbake cargt-image-rt-swu` (imx95-cargt-00414-00365, 2026-10-15). The kernel is `6.18.20-rt4`, and the built `.config` has `CONFIG_PREEMPT_RT=y` as well as the 00414 options (`CONFIG_I2C_CARGT_SM_EEPROM`, `CONFIG_MDIO_GPIO`).
-- [ ] Boots; `uname -a` shows `PREEMPT_RT`, and `/sys/kernel/realtime` is 1
-- [ ] `cyclictest -m -S -p 98 -i 1000 -D 1h` under `stress-ng` load: record max latency
-- [ ] ETH_A/ETH_B PTP (`ptp4l`) and EtherCAT master on ENETC
+- [x] Boots on 220565 and on an FRDM-IMX95. `uname -a` shows `PREEMPT_RT`, `/sys/kernel/realtime` is 1, and no RT locking splats appear (2026-10-15).
+- [x] Latency, cyclictest `-m -p 98 -i 1000` (2026-10-15/16). The 00414 and the FRDM-IMX95 give the same numbers, so this is the SoC plus kernel config, not the board:
+
+  | Setup | Avg idle | Max idle | Avg load | Max load |
+  |---|---|---|---|---|
+  | ondemand, all CPUs, 15 min (220565) | 23 us | 83 us | 13 us | 106 us |
+  | performance, all CPUs, 10 h soak (220565) | - | - | 13 us | 118 us |
+  | performance, `isolcpus=domain,managed_irq,5 irqaffinity=0-4`, CPU 5, 10 h (FRDM) | - | - | 6 us | **48 us** |
+  | same, CPU 4 (not isolated) | - | - | 13 us | 130 us |
+  | plus `nohz_full=5 rcu_nocbs=5`, CPU 5, 10 min (220565 and FRDM) | 6 us | 31-42 us | 9-10 us | 48 us |
+
+  Load is stress-ng `--cpu --vm 25% --io --timer` (pinned to CPUs 0-4 when CPU 5 is isolated). There were 0 samples over 400 us, 0 stress-ng failures, and no throttling at 1800 MHz all night (peak 73 C on 220565, open bench). The `ondemand` governor added about 16 us to the average idle latency, hence `performance` by default. For periodic RT tasks, isolate a CPU with `isolcpus` and `irqaffinity`. `nohz_full` did not lower the loaded worst case and made idle wake-ups slower.
+- [x] PTP between 220565 `eth1` (grandmaster) and FRDM `eth0` (slave) on a direct cable, L2 hardware timestamps, overnight under the soak load: median offset 8 ns, p99 35 ns, p99.9 223 ns, path delay 713-715 ns. There were 4 sync faults in 13 h, where `ptp4l` (SCHED_OTHER) was starved by stress-ng for about 340 ms. Run `ptp4l` with `chrt -f`.
+- [ ] Isolation boot arguments are not persistent yet. They are set per boot from the U-Boot prompt (`setenv mcore_args '...'; run bsp_bootcmd`).
+- [ ] EtherCAT master on ENETC
 
 ## Interim MAC addresses (until the eFuses are programmed)
 
