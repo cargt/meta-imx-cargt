@@ -13,6 +13,7 @@ IMAGE_INSTALL += " \
     packagegroup-real-time-edge-industrial \
     packagegroup-real-time-edge-tools \
     cargt-rt-check \
+    cargt-rt-config \
 "
 
 export IMAGE_BASENAME = "cargt-image-rt"
