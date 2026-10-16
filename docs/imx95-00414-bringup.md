@@ -110,6 +110,19 @@ bitbake cargt-image-rt-swu
 
   Load is stress-ng `--cpu --vm 25% --io --timer` (pinned to CPUs 0-4 when CPU 5 is isolated). There were 0 samples over 400 us, 0 stress-ng failures, and no throttling at 1800 MHz all night (peak 73 C on 220565, open bench). The `ondemand` governor added about 16 us to the average idle latency, hence `performance` by default. For periodic RT tasks, isolate a CPU with `isolcpus` and `irqaffinity`. `nohz_full` did not lower the loaded worst case and made idle wake-ups slower.
 - [x] PTP between 220565 `eth1` (grandmaster) and FRDM `eth0` (slave) on a direct cable, L2 hardware timestamps, overnight under the soak load: median offset 8 ns, p99 35 ns, p99.9 223 ns, path delay 713-715 ns. There were 4 sync faults in 13 h, where `ptp4l` (SCHED_OTHER) was starved by stress-ng for about 340 ms. Run `ptp4l` with `chrt -f`.
+- [x] 00414 peripherals on the RT kernel (220565, 2026-10-16), against the dev-image results above:
+
+  | Area | Result |
+  |---|---|
+  | ETH_A / ETH_B | 941 Mb/s each way, 940 + 940 Mb/s bidirectional on ETH_B (cable to the FRDM), 0 errors |
+  | CAN_A <-> CAN_B | 5000/5000 frames each way at 1 Mbit/s, both controllers ERROR-ACTIVE with counters at 0 |
+  | OS08A20 + NEO ISP | 3840x2160 at 29.6 fps (`LIBCAMERA_PIPELINES_MATCH_LIST=nxp/neo cam -c1 --capture=60`) |
+  | microSD | read 23.6 MB/s (3.3 V high speed, by design) |
+  | USB-C (C port) | SuperSpeed in both orientations, read 123/125 MB/s. The first enumeration at boot once failed with `error -71` and succeeded on the retry |
+  | 10.1" LVDS (GLT1011280800IS1) + ILI251x touch | 1280x800, Weston up, touch works (confirmed on the panel) |
+
+  NetworkManager drops manual addresses on a port with no DHCP server (it retries DHCP every 45 s and flushes the port). For point-to-point tests use `nmcli dev set <if> managed no`, or give the port a static connection.
+- [x] EtherCAT drivers no longer autoload (`cargt-rt-config`, modprobe.d blacklist). Before, udev loaded `ec_netc_blk_ctrl` (which failed with "Driver 'nxp-netc-blk-ctrl' is already registered"), `ec_enetc4`, `fsl_ecat_enetc4` and an unconfigured EtherCAT master on every boot.
 - [ ] Isolation boot arguments are not persistent yet. They are set per boot from the U-Boot prompt (`setenv mcore_args '...'; run bsp_bootcmd`).
 - [ ] EtherCAT master on ENETC
 
