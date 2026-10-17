@@ -47,7 +47,11 @@ MACHINE_SOCARCH_FILTER:append:mx8mp-nxp-bsp = " jsoncpp crypto-af-alg keyctl-caa
 DEFAULTTUNE:mx93-nxp-bsp   ?= "armv8a-crc-crypto"
 # imx-base.inc sets DEFAULTTUNE:mx95-generic-bsp ?= "cortexa55", which comes
 # after mx9-nxp-bsp in OVERRIDES and would otherwise win.
-DEFAULTTUNE:mx95-nxp-bsp   ?= "armv8a-crc-crypto"
+# i.MX95 has a GPU (Mali) and other machine features than i.MX93/8MP, so it must not share the
+# armv8a package arch with them: the machines would overwrite/delete each other's packages in the
+# shared armv8a deploy dir/feed. armv8-2a-crypto packages as "armv8-2a", used by no other Cargt SoC
+# (imx93/imx8mp: armv8a, imx91: cortexa55). Hard assignment: imx-base.inc also sets mx95 with ?=.
+DEFAULTTUNE:mx95-nxp-bsp = "armv8-2a-crypto"
 
 PACKAGECONFIG:append:pn-gstreamer1.0-plugins-ugly = " x264"
 
