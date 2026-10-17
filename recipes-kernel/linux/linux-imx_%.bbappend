@@ -204,3 +204,16 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'cargt-router', 'file://car
             ${@bb.utils.contains('MACHINE_FEATURES', 't1l', 'file://cargt_t1l_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', 'ST7789T3', 'file://cargt_st7789t3_kernel_config_mods.cfg', '', d)} \
             "
+
+# cargt-imx-rt distro: NXP Real-time Edge PREEMPT_RT kernel. real-time-edge-linux
+# linux_6.18.20 is lf-6.18.20 plus PREEMPT_RT/TSN/DSA, and every Cargt patch above
+# applies to it unchanged. The REAL_TIME_EDGE_LINUX_* pin comes from
+# meta-real-time-edge's own linux-imx bbappend, so it follows that layer's
+# release. Only the source moves; SRC_URI keeps our patches, dts and fragments
+# (meta-real-time-edge's SRC_URI:real-time-edge would replace them all).
+LINUX_IMX_SRC:cargt-rt = "${REAL_TIME_EDGE_LINUX_SRC};branch=${SRCBRANCH}"
+SRCBRANCH:cargt-rt = "${REAL_TIME_EDGE_LINUX_BRANCH}"
+SRCREV:cargt-rt = "${REAL_TIME_EDGE_LINUX_SRCREV}"
+# imx_v8_defconfig in that tree already selects PREEMPT_RT; the fragment makes
+# kernel-yocto's config audit fail loudly if it ever stops doing so.
+SRC_URI:append:cargt-rt = " file://cargt_rt_kernel_config_mods.cfg"
