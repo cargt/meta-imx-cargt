@@ -88,3 +88,18 @@ PACKAGECONFIG:remove:mx91-nxp-bsp:pn-qtbase = "gles2"
 PACKAGECONFIG:append:mx91-nxp-bsp:pn-qtbase = " no-opengl linuxfb"
 
 PACKAGECONFIG:append:pn-networkmanager = " modemmanager ppp"
+# Recipes packaged for a shared (tune/SoC) arch must build identically for every
+# machine sharing it, or the machines overwrite each other's packages in the feed.
+# These only recommend a machine-specific package, which doesn't change their
+# contents, so keep that dependency out of their signatures (as meta-freescale
+# does for imx-gpu-viv->kernel-module-imx-gpu-viv).
+SIGGEN_EXCLUDE_SAFE_RECIPE_DEPS:append = " \
+    openssl->cryptodev-module \
+    alsa-utils->alsa-state \
+    systemd->cargt-network-config \
+"
+# smw is built against the machine's OP-TEE TA dev kit, so it is machine-specific,
+# and so are the EdgeLock 2GO apps linked against it.
+PACKAGE_ARCH:pn-smw = "${MACHINE_ARCH}"
+PACKAGE_ARCH:pn-el2go-agent = "${MACHINE_ARCH}"
+PACKAGE_ARCH:pn-oem-prov-app = "${MACHINE_ARCH}"
