@@ -26,7 +26,13 @@ SKIP_META_TPM_SANITY_CHECK = "1"
 
 # Set a more generic tuning for code reuse across parts
 DEFAULTTUNE:mx8-nxp-bsp    ?= "armv8a-crc-crypto"
-DEFAULTTUNE:mx8m-nxp-bsp   ?= "armv8a-crc-crypto"
+# i.MX8M builds with "virtualization" in DISTRO_FEATURES (added for mx8 above,
+# as in meta-imx), which changes recipes such as systemd (meta-virtualization
+# turns on its openssl PACKAGECONFIG). It must not share the armv8a package
+# arch with i.MX93, or the machines overwrite each other's packages in the
+# shared feed. cortexa53-crypto matches meta-freescale's mx8m default. Hard
+# assignment because meta-imx's fsl-imx-base.inc also sets it with ?=.
+DEFAULTTUNE:mx8m-nxp-bsp = "cortexa53-crypto"
 DEFAULTTUNE:mx8qm-nxp-bsp  ?= "armv8a-crc-crypto"
 DEFAULTTUNE:mx8x-nxp-bsp   ?= "armv8a-crc-crypto"
 DEFAULTTUNE:mx8ulp-nxp-bsp ?= "armv8a-crc-crypto"
