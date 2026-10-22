@@ -9,6 +9,9 @@ SRC_URI = " \
 
 inherit swupdate
 
+# sw-description/update.sh only exist for these machines (see cargt-image-rt-swu/)
+COMPATIBLE_MACHINE = "(imx95-cargt-00414-.*|imx95-15x15-lpddr4x-frdm)"
+
 LICENSE = "MIT"
 LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda2f7b4f302"
 
