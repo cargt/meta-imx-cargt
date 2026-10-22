@@ -14,6 +14,10 @@ sets the SoC RTC, write the same time to the RX8111 (clear XST/VLF, STOP,
 write sec..year, run), as the Linux rtc-rx8111 driver does. Linux keeps
 using rtc0, so hwclock, NTP and the kernel RTC sync need no changes.
 
+Add BRD_SM_CTRL_RX8111 (board control 9): raw RX8111 register access
+through SCMI MISC control ext get/set (registers 0x00-0x3F, 1-16 bytes
+per call), for diagnostics and RTC tests from Linux and U-Boot.
+
 The EVK PCA2131 board RTC (rtcId 1) is left as it was; it is not fitted.
 
 Upstream-Status: Inappropriate [Cargt board specific]
@@ -36,10 +40,10 @@ index 077fa06..a7066e9 100755
      return status;
  }
 diff --git a/boards/cargt00414/sm/brd_sm_bbm.c b/boards/cargt00414/sm/brd_sm_bbm.c
-index f053c31..edc88da 100755
+index f053c31..44ac118 100755
 --- a/boards/cargt00414/sm/brd_sm_bbm.c
 +++ b/boards/cargt00414/sm/brd_sm_bbm.c
-@@ -45,15 +45,40 @@
+@@ -45,15 +45,42 @@
  #include "sm.h"
  #include "brd_sm.h"
  #include "lmm.h"
@@ -58,6 +62,8 @@ index f053c31..edc88da 100755
 +#define RX8111_REG_FLAG     0x1EU
 +#define RX8111_REG_CTRL     0x1FU
 +#define RX8111_NUM_TIME     7U
++#define RX8111_NUM_REG      0x40U  /* register space for raw access */
++#define RX8111_MAX_XFER     16U    /* bytes per raw access */
 +#define RX8111_FLAG_XST     0x01U   /* oscillation stopped */
 +#define RX8111_FLAG_VLF     0x02U   /* voltage low, time lost */
 +#define RX8111_CTRL_STOP    0x01U
@@ -80,7 +86,7 @@ index f053c31..edc88da 100755
  static bool days2date(uint32_t days, uint32_t *year, uint32_t *month,
      uint32_t *day, uint32_t *weekday);
  static bool date2days(uint32_t year, uint32_t month, uint32_t day,
-@@ -213,6 +238,17 @@ int32_t BRD_SM_BbmRtcTimeSet(uint32_t rtcId, uint64_t val, bool ticks)
+@@ -213,6 +240,17 @@ int32_t BRD_SM_BbmRtcTimeSet(uint32_t rtcId, uint64_t val, bool ticks)
      if (rtcId < DEV_SM_NUM_RTC)
      {
          status = DEV_SM_BbmRtcTimeSet(rtcId, val, ticks);
@@ -98,7 +104,7 @@ index f053c31..edc88da 100755
      }
      else if (!g_pca2131Present)
      {
-@@ -540,6 +576,195 @@ void BRD_SM_BbmHandler(void)
+@@ -540,6 +578,263 @@ void BRD_SM_BbmHandler(void)
  
  /*==========================================================================*/
  
@@ -122,6 +128,74 @@ index f053c31..edc88da 100755
 +            (void) DEV_SM_BbmRtcTimeSet(0U, secs, false);
 +        }
 +    }
++}
++
++/*--------------------------------------------------------------------------*/
++/* Raw RX8111 register read (board control BRD_SM_CTRL_RX8111)              */
++/*--------------------------------------------------------------------------*/
++int32_t BRD_SM_BbmRx8111RegRead(uint32_t addr, uint32_t numRtn, uint32_t *rtn)
++{
++    int32_t status = SM_ERR_SUCCESS;
++    uint8_t buf[RX8111_MAX_XFER];
++
++    if (!s_rx8111Present)
++    {
++        status = SM_ERR_NOT_SUPPORTED;
++    }
++    else if ((numRtn == 0U) || (numRtn > RX8111_MAX_XFER)
++        || (addr >= RX8111_NUM_REG) || ((addr + numRtn) > RX8111_NUM_REG))
++    {
++        status = SM_ERR_INVALID_PARAMETERS;
++    }
++    else if (!RX8111_Read((uint8_t) addr, (uint8_t) numRtn, buf))
++    {
++        status = SM_ERR_HARDWARE_ERROR;
++    }
++    else
++    {
++        for (uint32_t idx = 0U; idx < numRtn; idx++)
++        {
++            rtn[idx] = (uint32_t) buf[idx];
++        }
++    }
++
++    /* Return status */
++    return status;
++}
++
++/*--------------------------------------------------------------------------*/
++/* Raw RX8111 register write (board control BRD_SM_CTRL_RX8111)             */
++/*--------------------------------------------------------------------------*/
++int32_t BRD_SM_BbmRx8111RegWrite(uint32_t addr, uint32_t numVal,
++    const uint32_t *val)
++{
++    int32_t status = SM_ERR_SUCCESS;
++    uint8_t buf[RX8111_MAX_XFER];
++
++    if (!s_rx8111Present)
++    {
++        status = SM_ERR_NOT_SUPPORTED;
++    }
++    else if ((numVal == 0U) || (numVal > RX8111_MAX_XFER)
++        || (addr >= RX8111_NUM_REG) || ((addr + numVal) > RX8111_NUM_REG))
++    {
++        status = SM_ERR_INVALID_PARAMETERS;
++    }
++    else
++    {
++        for (uint32_t idx = 0U; idx < numVal; idx++)
++        {
++            buf[idx] = U32_U8(val[idx]);
++        }
++
++        if (!RX8111_Write((uint8_t) addr, (uint8_t) numVal, buf))
++        {
++            status = SM_ERR_HARDWARE_ERROR;
++        }
++    }
++
++    /* Return status */
++    return status;
 +}
 +
 +/*--------------------------------------------------------------------------*/
@@ -151,7 +225,7 @@ index f053c31..edc88da 100755
 +static bool RX8111_Write(uint8_t reg, uint8_t len, const uint8_t *buf)
 +{
 +    static LPI2C_Type *const s_i2cBases[] = LPI2C_BASE_PTRS;
-+    uint8_t data[RX8111_NUM_TIME];
++    uint8_t data[RX8111_MAX_XFER];
 +    lpi2c_master_transfer_t xfer =
 +    {
 +        .flags = (uint32_t) kLPI2C_TransferDefaultFlag,
@@ -165,7 +239,7 @@ index f053c31..edc88da 100755
 +
 +    bool rc = false;
 +
-+    if (len <= RX8111_NUM_TIME)
++    if (len <= RX8111_MAX_XFER)
 +    {
 +        for (uint8_t idx = 0U; idx < len; idx++)
 +        {
@@ -295,10 +369,10 @@ index f053c31..edc88da 100755
  /* Convert days since 1-1-1970 to date/time                                 */
  /*--------------------------------------------------------------------------*/
 diff --git a/boards/cargt00414/sm/brd_sm_bbm.h b/boards/cargt00414/sm/brd_sm_bbm.h
-index 2f17244..1f72724 100755
+index 2f17244..ab467f7 100755
 --- a/boards/cargt00414/sm/brd_sm_bbm.h
 +++ b/boards/cargt00414/sm/brd_sm_bbm.h
-@@ -234,6 +234,14 @@ int32_t BRD_SM_BbmRtcAlarmSet(uint32_t rtcId, bool enable, uint64_t val);
+@@ -234,6 +234,24 @@ int32_t BRD_SM_BbmRtcAlarmSet(uint32_t rtcId, bool enable, uint64_t val);
   */
  void BRD_SM_BbmHandler(void);
  
@@ -310,6 +384,63 @@ index 2f17244..1f72724 100755
 + */
 +void BRD_SM_BbmRx8111Init(void);
 +
++/*!
++ * Raw RX8111 register access (board control BRD_SM_CTRL_RX8111).
++ *
++ * addr is the register (0x00-0x3F), one byte per value word, 1-16 per
++ * call. Used for diagnostics and RTC tests.
++ */
++int32_t BRD_SM_BbmRx8111RegRead(uint32_t addr, uint32_t numRtn, uint32_t *rtn);
++int32_t BRD_SM_BbmRx8111RegWrite(uint32_t addr, uint32_t numVal,
++    const uint32_t *val);
++
  /** @} */
  
  #endif /* BRD_SM_BBM_H */
+diff --git a/boards/cargt00414/sm/brd_sm_control.c b/boards/cargt00414/sm/brd_sm_control.c
+index 5bfde92..368ef1b 100755
+--- a/boards/cargt00414/sm/brd_sm_control.c
++++ b/boards/cargt00414/sm/brd_sm_control.c
+@@ -190,6 +190,10 @@ int32_t BRD_SM_ControlExtSet(uint32_t ctrlId, uint32_t addr,
+         {
+             status = BRD_SM_EepromWrite(addr, numVal, val);
+         }
++        else if (ctrlId == BRD_SM_CTRL_RX8111)
++        {
++            status = BRD_SM_BbmRx8111RegWrite(addr, numVal, val);
++        }
+         else
+         {
+             status = SM_ERR_NOT_SUPPORTED;
+@@ -228,6 +232,10 @@ int32_t BRD_SM_ControlExtGet(uint32_t ctrlId, uint32_t addr,
+         {
+             status = BRD_SM_EepromRead(addr, numRtn, rtn);
+         }
++        else if (ctrlId == BRD_SM_CTRL_RX8111)
++        {
++            status = BRD_SM_BbmRx8111RegRead(addr, numRtn, rtn);
++        }
+         else
+         {
+             status = SM_ERR_NOT_SUPPORTED;
+diff --git a/boards/cargt00414/sm/brd_sm_control.h b/boards/cargt00414/sm/brd_sm_control.h
+index 7e95f76..f522e7f 100755
+--- a/boards/cargt00414/sm/brd_sm_control.h
++++ b/boards/cargt00414/sm/brd_sm_control.h
+@@ -67,7 +67,7 @@
+ /** @} */
+ 
+ /*! Number of board controls */
+-#define BRD_SM_NUM_CTRL  9UL
++#define BRD_SM_NUM_CTRL  10UL
+ 
+ /*! Total number of controls */
+ #define SM_NUM_CTRL  (DEV_SM_NUM_CTRL + BRD_SM_NUM_CTRL)
+@@ -85,6 +85,7 @@
+ #define BRD_SM_CTRL_PCA2131     (DEV_SM_NUM_CTRL + 6U)  /*!< PCA2131 raw access */
+ #define BRD_SM_CTRL_TEST_A      (DEV_SM_NUM_CTRL + 7U)  /*!< Test action */
+ #define BRD_SM_CTRL_EEPROM      (DEV_SM_NUM_CTRL + 8U)  /*!< Cargt SOM EEPROM raw access */
++#define BRD_SM_CTRL_RX8111      (DEV_SM_NUM_CTRL + 9U)  /*!< Cargt SOM RX8111 RTC raw access */
+ /** @} */
+ 
+ /* Types */

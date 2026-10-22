@@ -1,0 +1,229 @@
+From fde6fe2e0ac916d6d093b6f217261a2c9023453c Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 22 Oct 2026 13:35:25 -0500
+Subject: [PATCH] i2c: cargt-sm-eeprom: also forward the RX8111 RTC
+
+The Cargt i.MX 95 SM now exposes the SOM RX8111 RTC (0x32, on the same
+SM-owned bus as the EEPROM) as board control BRD_SM_CTRL_RX8111: raw
+registers 0x00-0x3F, 1-16 bytes per call.
+
+Look the chip up in a small table (address, board control, size, write
+page) instead of hard-coding the EEPROM, add 0x32, keep a current
+address per chip, and advertise SMBus emulation so i2cget/i2cdump work.
+The SM keeps the SoC RTC and the RX8111 in step itself, so no RTC driver
+is bound to 0x32; this is for diagnostics and RTC tests.
+
+Upstream-Status: Inappropriate [Cargt board specific]
+---
+ drivers/i2c/busses/i2c-cargt-sm-eeprom.c | 114 ++++++++++++++++-------
+ 1 file changed, 79 insertions(+), 35 deletions(-)
+
+diff --git a/drivers/i2c/busses/i2c-cargt-sm-eeprom.c b/drivers/i2c/busses/i2c-cargt-sm-eeprom.c
+index 5e275813c568..d06490c9ec91 100644
+--- a/drivers/i2c/busses/i2c-cargt-sm-eeprom.c
++++ b/drivers/i2c/busses/i2c-cargt-sm-eeprom.c
+@@ -11,6 +11,11 @@
+  * word, up to 16 bytes per call, writes within one page; the SM waits out the
+  * write cycle). This driver presents it as an I2C adapter with one chip at
+  * 0x50, so the standard at24 driver and its sysfs "eeprom" file work.
++ *
++ * The RX8111 RTC (0x32) on the same bus is forwarded the same way, to board
++ * control BRD_SM_CTRL_RX8111 (raw registers 0x00-0x3F), for diagnostics and
++ * RTC tests with i2c-tools. The SM itself keeps the SoC RTC and the RX8111
++ * in step, so no RTC driver should be bound to it.
+  */
+ 
+ #include <linux/err.h>
+@@ -21,35 +26,57 @@
+ #include <linux/scmi_imx_protocol.h>
+ #include <linux/scmi_protocol.h>
+ 
+-#define SM_EEPROM_CHIP_ADDR	0x50
+-#define SM_EEPROM_SIZE		256
+-#define SM_EEPROM_PAGE		16
+-#define SM_EEPROM_MAX_XFER	16
++#define SM_MAX_XFER		16
++
++/* A chip behind the SM, reached through a raw-access board control */
++struct cargt_sm_chip {
++	u16 addr;		/* I2C address */
++	u32 ctrl_id;		/* SCMI board control (BIT(15) | board control index) */
++	unsigned int size;	/* bytes/registers */
++	unsigned int page;	/* writes must not cross this boundary, 0 = none */
++};
+ 
+-/* BRD_SM_CTRL_EEPROM is board control 8 in the Cargt i.MX 95 SM */
+-#define SM_EEPROM_CTRL_ID	(BIT(15) | 8)
++static const struct cargt_sm_chip cargt_sm_chips[] = {
++	/* M24C02 EEPROM: BRD_SM_CTRL_EEPROM, board control 8 */
++	{ .addr = 0x50, .ctrl_id = BIT(15) | 8, .size = 256, .page = 16 },
++	/* RX8111 RTC: BRD_SM_CTRL_RX8111, board control 9 */
++	{ .addr = 0x32, .ctrl_id = BIT(15) | 9, .size = 0x40, .page = 0 },
++};
+ 
+ struct cargt_sm_eeprom {
+ 	struct i2c_adapter adap;
+ 	const struct scmi_imx_misc_proto_ops *ops;
+ 	struct scmi_protocol_handle *ph;
+ 	struct device_node *np;
+-	unsigned int offset;	/* current address, for reads without an address write */
++	/* current address per chip, for reads without an address write */
++	unsigned int offset[ARRAY_SIZE(cargt_sm_chips)];
+ };
+ 
+-static int cargt_sm_eeprom_read(struct cargt_sm_eeprom *ee, unsigned int off,
+-				u8 *buf, unsigned int len)
++static int cargt_sm_chip_index(u16 addr)
++{
++	int i;
++
++	for (i = 0; i < ARRAY_SIZE(cargt_sm_chips); i++)
++		if (cargt_sm_chips[i].addr == addr)
++			return i;
++
++	return -ENXIO;
++}
++
++static int cargt_sm_eeprom_read(struct cargt_sm_eeprom *ee,
++				const struct cargt_sm_chip *chip,
++				unsigned int off, u8 *buf, unsigned int len)
+ {
+-	u32 val[SM_EEPROM_MAX_XFER];
++	u32 val[SM_MAX_XFER];
+ 	unsigned int i, n;
+ 	int ret;
+ 
+-	if (off >= SM_EEPROM_SIZE || len > SM_EEPROM_SIZE - off)
++	if (off >= chip->size || len > chip->size - off)
+ 		return -EINVAL;
+ 
+ 	while (len) {
+-		n = min_t(unsigned int, len, SM_EEPROM_MAX_XFER);
+-		ret = ee->ops->misc_ctrl_ext_get(ee->ph, SM_EEPROM_CTRL_ID, off, n, val);
++		n = min_t(unsigned int, len, SM_MAX_XFER);
++		ret = ee->ops->misc_ctrl_ext_get(ee->ph, chip->ctrl_id, off, n, val);
+ 		if (ret)
+ 			return ret;
+ 		for (i = 0; i < n; i++)
+@@ -62,22 +89,25 @@ static int cargt_sm_eeprom_read(struct cargt_sm_eeprom *ee, unsigned int off,
+ 	return 0;
+ }
+ 
+-static int cargt_sm_eeprom_write(struct cargt_sm_eeprom *ee, unsigned int off,
+-				 const u8 *buf, unsigned int len)
++static int cargt_sm_eeprom_write(struct cargt_sm_eeprom *ee,
++				 const struct cargt_sm_chip *chip,
++				 unsigned int off, const u8 *buf, unsigned int len)
+ {
+-	u32 val[SM_EEPROM_MAX_XFER];
++	u32 val[SM_MAX_XFER];
+ 	unsigned int i, n;
+ 	int ret;
+ 
+-	if (off >= SM_EEPROM_SIZE || len > SM_EEPROM_SIZE - off)
++	if (off >= chip->size || len > chip->size - off)
+ 		return -EINVAL;
+ 
+ 	while (len) {
+-		/* The SM takes up to one page per call */
+-		n = min_t(unsigned int, len, SM_EEPROM_PAGE - off % SM_EEPROM_PAGE);
++		/* The SM takes up to SM_MAX_XFER bytes, within one page */
++		n = min_t(unsigned int, len, SM_MAX_XFER);
++		if (chip->page)
++			n = min_t(unsigned int, n, chip->page - off % chip->page);
+ 		for (i = 0; i < n; i++)
+ 			val[i] = buf[i];
+-		ret = ee->ops->misc_ctrl_ext_set(ee->ph, SM_EEPROM_CTRL_ID, off, n, val);
++		ret = ee->ops->misc_ctrl_ext_set(ee->ph, chip->ctrl_id, off, n, val);
+ 		if (ret)
+ 			return ret;
+ 		off += n;
+@@ -92,20 +122,32 @@ static int cargt_sm_eeprom_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
+ 				int num)
+ {
+ 	struct cargt_sm_eeprom *ee = i2c_get_adapdata(adap);
++	const struct cargt_sm_chip *chip;
++	unsigned int *offset;
++	int i, idx, ret;
+ 	u8 probe;
+-	int i, ret;
+ 
+-	for (i = 0; i < num; i++)
+-		if (msgs[i].addr != SM_EEPROM_CHIP_ADDR)
+-			return -ENXIO;
++	if (num < 1)
++		return -EINVAL;
++
++	idx = cargt_sm_chip_index(msgs[0].addr);
++	if (idx < 0)
++		return idx;
++	for (i = 1; i < num; i++)
++		if (msgs[i].addr != msgs[0].addr)
++			return -EOPNOTSUPP;
++
++	chip = &cargt_sm_chips[idx];
++	offset = &ee->offset[idx];
+ 
+ 	/* Address write followed by a read */
+ 	if (num == 2 && !(msgs[0].flags & I2C_M_RD) && msgs[0].len == 1 &&
+ 	    (msgs[1].flags & I2C_M_RD)) {
+-		ret = cargt_sm_eeprom_read(ee, msgs[0].buf[0], msgs[1].buf, msgs[1].len);
++		ret = cargt_sm_eeprom_read(ee, chip, msgs[0].buf[0], msgs[1].buf,
++					   msgs[1].len);
+ 		if (ret)
+ 			return ret;
+-		ee->offset = msgs[0].buf[0] + msgs[1].len;
++		*offset = msgs[0].buf[0] + msgs[1].len;
+ 		return num;
+ 	}
+ 
+@@ -114,27 +156,28 @@ static int cargt_sm_eeprom_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
+ 
+ 	/* Read from the current address */
+ 	if (msgs[0].flags & I2C_M_RD) {
+-		ret = cargt_sm_eeprom_read(ee, ee->offset, msgs[0].buf, msgs[0].len);
++		ret = cargt_sm_eeprom_read(ee, chip, *offset, msgs[0].buf,
++					   msgs[0].len);
+ 		if (ret)
+ 			return ret;
+-		ee->offset += msgs[0].len;
++		*offset += msgs[0].len;
+ 		return 1;
+ 	}
+ 
+-	/* Zero-length write: probe, a one-byte read checks the SM and the EEPROM */
++	/* Zero-length write: probe, a one-byte read checks the SM and the chip */
+ 	if (!msgs[0].len) {
+-		ret = cargt_sm_eeprom_read(ee, 0, &probe, 1);
++		ret = cargt_sm_eeprom_read(ee, chip, 0, &probe, 1);
+ 		return ret ? ret : 1;
+ 	}
+ 
+ 	/* Address only (sets the current address), or address + data */
+-	ee->offset = msgs[0].buf[0];
++	*offset = msgs[0].buf[0];
+ 	if (msgs[0].len > 1) {
+-		ret = cargt_sm_eeprom_write(ee, msgs[0].buf[0], msgs[0].buf + 1,
+-					    msgs[0].len - 1);
++		ret = cargt_sm_eeprom_write(ee, chip, msgs[0].buf[0],
++					    msgs[0].buf + 1, msgs[0].len - 1);
+ 		if (ret)
+ 			return ret;
+-		ee->offset += msgs[0].len - 1;
++		*offset += msgs[0].len - 1;
+ 	}
+ 
+ 	return 1;
+@@ -142,7 +185,8 @@ static int cargt_sm_eeprom_xfer(struct i2c_adapter *adap, struct i2c_msg *msgs,
+ 
+ static u32 cargt_sm_eeprom_func(struct i2c_adapter *adap)
+ {
+-	return I2C_FUNC_I2C;
++	/* SMBus emulation (byte/word/block over xfer) for i2c-tools */
++	return I2C_FUNC_I2C | I2C_FUNC_SMBUS_EMUL;
+ }
+ 
+ static const struct i2c_algorithm cargt_sm_eeprom_algo = {
+-- 
+2.34.1
+
