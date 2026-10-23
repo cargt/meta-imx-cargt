@@ -1,0 +1,33 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2026 Cargt
+ *
+ * Shared parts of the OS08A20 camera variants on the 00414 + 00365.
+ *
+ * Both 00365 camera connectors (J21 = CSI-1 / OSM CSI_A, J22 = CSI-2 /
+ * OSM CSI_B) share I2C_A (LPI2C2) and the CAM_PWR power enable (pca9555
+ * P07, POWER-EN on both connectors). CAM_PWR is a regulator so that two
+ * sensors can share it: the regulator core reference-counts it, which a
+ * reset GPIO claimed by each sensor could not do. The NXP ox05b1s driver
+ * enables its supplies before the first SCCB access.
+ */
+
+/ {
+	reg_cam_pwr: regulator-cam-pwr {
+		compatible = "regulator-fixed";
+		regulator-name = "CAM_PWR";
+		regulator-min-microvolt = <3300000>;
+		regulator-max-microvolt = <3300000>;
+		gpio = <&pca9555_20 7 GPIO_ACTIVE_HIGH>;
+		enable-active-high;
+		startup-delay-us = <10000>;
+	};
+};
+
+&isi {
+	status = "okay";
+};
+
+&neoisp0 {
+	status = "okay";
+};

@@ -46,9 +46,17 @@ SRC_URI += " \
             file://dts/freescale/imx93-cargt-00363-00365-glt028240320is1.dtsi \
             file://dts/freescale/imx95-cargt-00414-osm-som.dts \
             file://dts/freescale/imx95-cargt-00414-00365.dts \
-            file://dts/freescale/imx95-cargt-00414-00365-os08a20.dtsi \
+            file://dts/freescale/imx95-cargt-00414-00365-os08a20-common.dtsi \
+            file://dts/freescale/imx95-cargt-00414-00365-os08a20-csi-a.dtsi \
+            file://dts/freescale/imx95-cargt-00414-00365-os08a20-csi-b.dtsi \
+            file://dts/freescale/imx95-cargt-00414-00365-os08a20-csi1.dtsi \
+            file://dts/freescale/imx95-cargt-00414-00365-os08a20-csi1.dts \
             file://dts/freescale/imx95-cargt-00414-00365-os08a20-csi2.dtsi \
-            file://dts/freescale/imx95-cargt-00414-00365-glt1011280800is1-csi2.dts \
+            file://dts/freescale/imx95-cargt-00414-00365-os08a20-csi2.dts \
+            file://dts/freescale/imx95-cargt-00414-00365-os08a20-csi-dual.dtsi \
+            file://dts/freescale/imx95-cargt-00414-00365-os08a20-csi-dual.dts \
+            file://dts/freescale/imx95-cargt-00414-00365-headless.dtsi \
+            file://dts/freescale/imx95-cargt-00414-00365-headless.dts \
             file://dts/freescale/imx95-cargt-00414-00365-glt0557201280is1.dts \
             file://dts/freescale/imx95-cargt-00414-00365-glt0557201280is1.dtsi \
             file://dts/freescale/imx95-cargt-00414-00365-glt1011280800is1.dts \
@@ -66,7 +74,10 @@ do_patch:append() {
     for dtb in imx95-cargt-00414-osm-som.dtb imx95-cargt-00414-00365.dtb \
                imx95-cargt-00414-00365-glt0557201280is1.dtb \
                imx95-cargt-00414-00365-glt1011280800is1.dtb \
-               imx95-cargt-00414-00365-glt1011280800is1-csi2.dtb \
+               imx95-cargt-00414-00365-os08a20-csi1.dtb \
+               imx95-cargt-00414-00365-os08a20-csi2.dtb \
+               imx95-cargt-00414-00365-os08a20-csi-dual.dtb \
+               imx95-cargt-00414-00365-headless.dtb \
                imx95-cargt-00414-00428.dtb; do
         grep -qxF "dtb-\$(CONFIG_ARCH_MXC) += $dtb" ${S}/arch/arm64/boot/dts/freescale/Makefile || \
             echo "dtb-\$(CONFIG_ARCH_MXC) += $dtb" >> ${S}/arch/arm64/boot/dts/freescale/Makefile
@@ -87,6 +98,7 @@ SRC_URI += "file://0001-arm64-dts-freescale-register-Cargt-board-dtb-y-entri.pat
             file://0012-drm-bridge-imx95-mipi-dsi-round-htotal-to-whole-lane.patch \
             file://0013-firmware-arm_scmi-imx-add-MISC-control-ext-get-set.patch \
             file://0014-i2c-busses-add-Cargt-i.MX-95-SOM-EEPROM-adapter-thro.patch \
+            file://0015-i2c-cargt-sm-eeprom-also-forward-the-RX8111-RTC.patch \
             "
 
 # Re-audited 2026-07-16 while diagnosing "bluetooth doesn't come up on its own":

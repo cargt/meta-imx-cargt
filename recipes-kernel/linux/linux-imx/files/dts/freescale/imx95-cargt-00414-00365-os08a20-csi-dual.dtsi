@@ -1,0 +1,35 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2026 Cargt
+ *
+ * Two OS08A20-H92A-1C cameras on the shared I2C_A bus: 0x36 on CSI-1 (J21,
+ * OSM CSI_A, MIPI CSI0) and 0x10 on CSI-2 (J22, OSM CSI_B, MIPI CSI1
+ * through the combo PHY). The module address is set by its SID strap. Both
+ * share CAM_PWR (see -common). Cannot be combined with the MIPI-DSI display.
+ */
+
+#include "imx95-cargt-00414-00365-os08a20-common.dtsi"
+#include "imx95-cargt-00414-00365-os08a20-csi-a.dtsi"
+
+&lpi2c2 {
+	os08a20_csi_b: camera@10 {
+		compatible = "ovti,os08a20";
+		reg = <0x10>;
+		clocks = <&dummy>;
+		avdd-supply = <&reg_cam_pwr>;
+		dovdd-supply = <&reg_cam_pwr>;
+		dvdd-supply = <&reg_cam_pwr>;
+		orientation = <2>;
+		rotation = <0>;
+
+		port {
+			os08a20_csi_b_ep: endpoint {
+				remote-endpoint = <&mipi_csi1_ep>;
+				data-lanes = <1 2 3 4>;
+				clock-lanes = <0>;
+			};
+		};
+	};
+};
+
+#include "imx95-cargt-00414-00365-os08a20-csi-b.dtsi"

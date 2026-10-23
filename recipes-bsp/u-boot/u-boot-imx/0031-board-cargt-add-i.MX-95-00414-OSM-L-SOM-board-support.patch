@@ -338,7 +338,7 @@ index 00000000000..0d1dbd62bfc
 +			printf("power on hsio is failed\n");
 +	}
 +
-+	if (IS_ENABLED(CONFIG_SPL_IMX_QB))
++	if (IS_ENABLED(CONFIG_SPL_IMX_QB) && qb_check())
 +		spl_qb_save();
 +}
 +

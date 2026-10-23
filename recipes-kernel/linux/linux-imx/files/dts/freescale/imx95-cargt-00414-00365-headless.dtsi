@@ -1,0 +1,76 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2026 Cargt
+ *
+ * Headless display pipeline for the 00414 SOM + 00365 carrier: GPU without a
+ * panel, e.g. for temperature testing.
+ *
+ * On i.MX 95 the DRM device (card0 and renderD128), which GBM/EGL and so the
+ * Mali GPU userspace need, belongs to the display controller (imx95-dpu), and
+ * the DPU only binds once its whole output pipeline has probed. With the
+ * GLT1011280800IS1 device tree and no panel attached, the panel waits forever
+ * for the MAX25221 regulator on the panel, so there is no render node.
+ *
+ * This keeps the same DPU -> pixel link -> LDB -> LVDS0 path as the 10.1"
+ * LVDS variant (so the DPU, LDB PLL and LVDS PHY run as they would with that
+ * panel) and ends it at a 1280x800 panel with no supplies, backlight, touch
+ * or I2C devices. Nothing on the carrier is powered: LVDS_EN (pca9555 P05)
+ * and LVDS_I2C_SEL (P17) stay at their defaults, and LVDS0 drives an open
+ * connector.
+ */
+
+/ {
+	panel_lvds0: panel-lvds0 {
+		/* timing only (1280x800, 71 MHz): the same mode as GLT1011280800IS1 */
+		compatible = "boe,ev121wxm-n10-1850";
+
+		port {
+			panel_lvds0_in: endpoint {
+				remote-endpoint = <&lvds0_out>;
+			};
+		};
+	};
+};
+
+&dpu {
+	status = "okay";
+};
+
+&display_pixel_link {
+	status = "okay";
+};
+
+&pixel_interleaver {
+	#address-cells = <1>;
+	#size-cells = <0>;
+	status = "okay";
+
+	channel@0 {
+		reg = <0>;
+		status = "okay";
+	};
+};
+
+/* LDB PLL 497 MHz = 7 x 71 MHz pixel clock, as in the GLT1011280800IS1 dtsi */
+&ldb {
+	assigned-clocks = <&scmi_clk IMX95_CLK_LDBPLL_VCO>,
+			  <&scmi_clk IMX95_CLK_LDBPLL>;
+	assigned-clock-rates = <2982000000>, <497000000>;
+	status = "okay";
+
+	channel@0 {
+		status = "okay";
+
+		port@1 {
+			reg = <1>;
+
+			lvds0_out: endpoint {
+				remote-endpoint = <&panel_lvds0_in>;
+			};
+		};
+	};
+};
+
+&ldb0_phy {
+	status = "okay";
+};

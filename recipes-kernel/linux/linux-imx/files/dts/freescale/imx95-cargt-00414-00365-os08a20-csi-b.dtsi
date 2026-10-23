@@ -1,0 +1,132 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2026 Cargt
+ *
+ * CSI-2 (J22, OSM CSI_B) receive path for an OS08A20. The including file
+ * defines the sensor node (its I2C address differs between the single and
+ * dual-camera variants) with an endpoint labelled os08a20_csi_b_ep.
+ *
+ * On the 00414, OSM CSI_B is the i.MX 95 DSI/CSI combo PHY (MIPI CSI1 via
+ * combo_rx), reached through the TMUX646 switch (U4) shared with OSM DSI:
+ * DSI_nOE (XSPI1_DATA5, GPIO5_IO05) low enables it and CSI_nDSI_SEL
+ * (XSPI1_DATA6, GPIO5_IO06) low selects CSI_B (high = DSI). So CSI-2 cannot
+ * be combined with the MIPI-DSI display DT. The graph follows the NXP
+ * imx95-19x19-evk-os08a20-combo overlay: CSI1 -> formatter 1 -> ISI port 3,
+ * with the DSI-side CSRs disabled.
+ */
+
+/* The combo PHY is shared with DSI: keep the DSI-side CSRs out of the way */
+&display_stream_csr {
+	status = "disabled";
+};
+
+&display_master_csr {
+	status = "disabled";
+};
+
+&mipi_tx_phy_csr {
+	status = "disabled";
+};
+
+&mipi_dsi_intf {
+	status = "okay";
+};
+
+&combo_rx {
+	status = "okay";
+};
+
+&mipi_csi1 {
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+
+			mipi_csi1_ep: endpoint {
+				remote-endpoint = <&os08a20_csi_b_ep>;
+				data-lanes = <1 2 3 4>;
+				clock-lanes = <0>;
+			};
+		};
+
+		port@1 {
+			reg = <1>;
+
+			mipi_csi1_out: endpoint {
+				remote-endpoint = <&formatter_1_in>;
+			};
+		};
+	};
+};
+
+&csi_pixel_formatter_1 {
+	status = "okay";
+
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@0 {
+			reg = <0>;
+
+			formatter_1_in: endpoint {
+				remote-endpoint = <&mipi_csi1_out>;
+			};
+		};
+
+		port@1 {
+			reg = <1>;
+
+			formatter_1_out: endpoint {
+				remote-endpoint = <&isi_in_3>;
+			};
+		};
+	};
+};
+
+&isi {
+	ports {
+		#address-cells = <1>;
+		#size-cells = <0>;
+
+		port@3 {
+			reg = <3>;
+
+			isi_in_3: endpoint {
+				remote-endpoint = <&formatter_1_out>;
+			};
+		};
+	};
+};
+
+&gpio5 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_csi_b_mux>;
+
+	csi-b-noe-hog {
+		gpio-hog;
+		gpios = <5 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "DSI_nOE";
+	};
+
+	csi-b-sel-hog {
+		gpio-hog;
+		gpios = <6 GPIO_ACTIVE_HIGH>;
+		output-low;
+		line-name = "CSI_nDSI_SEL";
+	};
+};
+
+&scmi_iomuxc {
+	pinctrl_csi_b_mux: csibmuxgrp {
+		fsl,pins = <
+			IMX95_PAD_XSPI1_DATA5__GPIO5_IO_BIT5		0x31e	/* DSI_nOE */
+			IMX95_PAD_XSPI1_DATA6__GPIO5_IO_BIT6		0x31e	/* CSI_nDSI_SEL */
+		>;
+	};
+};

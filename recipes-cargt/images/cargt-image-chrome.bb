@@ -68,6 +68,7 @@ IMAGE_INSTALL += " \
     ${@bb.utils.contains('MACHINE_FEATURES', 'nfc-click', 'libnfc-nci-linux', '', d)} \
     teleport \
     swupdate swupdate-progress swupdate-www \
+    grow-data-part \
     board-version \
     v4l-utils \
 "

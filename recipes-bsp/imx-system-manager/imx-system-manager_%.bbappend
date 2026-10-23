@@ -15,6 +15,7 @@ CARGT_SM_00414 = "${@'1' if d.getVar('SYSTEM_MANAGER_CONFIG') == 'mx95cargt00414
 SRC_URI:append = "${@' \
     file://0001-boards-cargt00414-make-EVK-bus-expander-and-RTC-optional.patch \
     file://0002-boards-cargt00414-add-SOM-EEPROM-board-control.patch \
+    file://0003-boards-cargt00414-load-the-SoC-RTC-from-the-RX8111.patch \
     file://mx95cargt00414.cfg \
     ' if d.getVar('CARGT_SM_00414') else ''}"
 
