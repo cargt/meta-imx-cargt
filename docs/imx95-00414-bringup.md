@@ -68,7 +68,7 @@ Sources used:
   - Camera DTs (all with the 10.1" LVDS panel; both cameras on I2C_A, OS08A20-H92A-1C): `imx95-cargt-00414-00365-os08a20-csi1` (CSI-1, 0x36), `-os08a20-csi2` (CSI-2, 0x36), `-os08a20-csi-dual` (CSI-1 at 0x36, CSI-2 at 0x10). The base `imx95-cargt-00414-00365` DT has no camera. CAM_PWR (pca9555 P07) is one fixed regulator shared by both sensors.
   - [x] Both cameras at once (2026-10-14, 220565, `-os08a20-csi-dual` hand-installed): `cam` captures from both at about 29.5 fps each; a side-by-side GStreamer view runs at about 50 fps with `imxvideoconvert_g2d` + `compositor` (`imxcompositor_g2d` stalls with two live sources). The sensor offers 1920x1080 at 60 fps or 3840x2160 at 30 fps. [ ] Re-check with the layer-built DTBs.
 - [x] Headless GPU (2026-10-14, 220564, no panel): `imx95-cargt-00414-00365-headless` keeps the 10.1" DPU → pixel link → LDB → LVDS0 pipeline with a supply-less 1280x800 panel. On i.MX 95 the DRM device (`card0`, `renderD128`) that GBM/EGL need belongs to the DPU, and with the 10.1" DT and no panel the DPU never binds (the panel waits for the MAX25221 on the panel), so there is no render node. With the headless DT, Weston runs and glmark2 off-screen reaches about 95% GPU busy at 1000 MHz. Used for temperature testing. [ ] Re-check with the layer-built DTB.
-- [ ] `/data` (LABEL=data, last partition) is mounted from the base-files fstab and `grow-data-part` grows it to the end of the eMMC on first boot (online `sfdisk -N` + `partx -u` + `resize2fs`, no reboot). Done by hand on 220564 (17.1 GiB, 2026-10-14); check on a fresh flash.
+- [ ] `/data` (LABEL=data, last partition of the boot disk) is grown and mounted by `grow-data-part`: it grows it to the end of the eMMC on first boot (online `sfdisk -N` + `partx -u` + `resize2fs`, no reboot). Done by hand on 220564 (17.1 GiB, 2026-10-14); check on a fresh flash.
 - [ ] PCIe (OSM PCIe_A = PCIE1/pcie0, J4, NVMe on an M.2 adapter): root port up, but "Phy link never came up"; LTSSM cycles DETECT_QUIET/DETECT_ACT (no receiver detected on our TX pair), also at Gen1 with PCIE_PWR_EN on from boot. Check NVMe 3.3 V, TX/RX mapping SOM → J4 → adapter, and the 100 MHz refclk.
 
 ### 00428 carrier
@@ -79,7 +79,7 @@ Sources used:
 - [ ] USB-C, OSM USB_A (usb2): role switching, plus U-Boot fastboot (`usb_gadget0`)
 - [ ] OSM USB_C (usb3) host with VBUS (GPIO_IO15)
 - [ ] UART_B (lpuart5, MikroBus)
-- [ ] `/data` mounted from `LABEL=data` (base-files fstab)
+- [x] `/data` mounted by `grow-data-part` from the boot disk (the disk in `root=`), not from fstab: with an SD card holding a Cargt image in an eMMC-booted board, `LABEL=data` in fstab mounted the SD card's partition (220565, 2026-10-23)
 
 - [x] U-Boot prints the SOM EEPROM record at boot (u-boot-imx 0032), and `cargt_eeprom read` works: serial (decimal and hex), part number, date, DRAM rank/size/speed, DDR config ID, CRC. Confirmed on 220565 over USB serial download on 2026-10-15. Still to do: confirm after an eMMC boot. The fastboot `bootloader` write went to boot0, but this board booted from the user area (`PARTITION_CONFIG 0x00`).
 

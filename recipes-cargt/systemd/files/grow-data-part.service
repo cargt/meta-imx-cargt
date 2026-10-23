@@ -1,6 +1,7 @@
 [Unit]
-Description=Grow the data partition to the end of the boot disk
+Description=Grow and mount the data partition of the boot disk on /data
 After=local-fs.target
+Before=swupdate.service
 ConditionPathExists=/dev/disk/by-label/data
 
 [Service]
