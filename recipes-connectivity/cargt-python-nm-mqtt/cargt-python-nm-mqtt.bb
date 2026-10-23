@@ -2,8 +2,8 @@ LICENSE = "CLOSED"
 LIC_FILES_CHKSUM = ""
 
 SRC_URI = "git://github.com/cargt/cargt-util-python-nm-mqtt.git;protocol=https;branch=main \
-           file://10-after-mosquitto.conf \
-          "
+           file://10-mosquitto.conf \
+           "
 
 PV = "1.0+git${SRCPV}"
 SRCREV = "${AUTOREV}"
@@ -23,10 +23,8 @@ do_install () {
 
     install -d ${D}${systemd_unitdir}/system
     install -m 0644 ${S}/cargt-python-nm-mqtt.service ${D}${systemd_unitdir}/system
-
-    # Start after the local broker (see the drop-in)
-    install -d ${D}${systemd_unitdir}/system/cargt-python-nm-mqtt.service.d
-    install -m 0644 ${UNPACKDIR}/10-after-mosquitto.conf ${D}${systemd_unitdir}/system/cargt-python-nm-mqtt.service.d/
+    install -Dm 0644 ${UNPACKDIR}/10-mosquitto.conf \
+        ${D}${systemd_unitdir}/system/cargt-python-nm-mqtt.service.d/10-mosquitto.conf
 }
 
 FILES:${PN} = "${systemd_unitdir}/system/cargt-python-nm-mqtt.service \
