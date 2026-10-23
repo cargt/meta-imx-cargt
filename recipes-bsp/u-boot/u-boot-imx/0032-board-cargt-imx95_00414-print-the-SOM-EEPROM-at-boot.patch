@@ -1,0 +1,134 @@
+From 63df7139584a0d764229a47bc79b4fb81ad38d91 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 15 Oct 2026 11:29:52 -0500
+Subject: [PATCH] board: cargt: imx95_00414: print the SOM EEPROM at boot
+
+Link the shared Cargt EEPROM code into the 00414 U-Boot proper, on the
+System Manager EEPROM bus (i2c-sm-eeprom), and print the production
+record from board_late_init(). This also adds the cargt_eeprom command.
+
+cargt_eeprom_print_prod_info() now prints the serial number in decimal
+as well as hex, the DDR configuration ID (reserved[1], struct version 3,
+as read by the i.MX 95 OEI) and the CRC. The other Cargt boards that
+call it get the same extra lines.
+
+Upstream-Status: Inappropriate [Cargt board specific]
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ board/cargt/common/cargt_eeprom.c     |  7 ++++++-
+ board/cargt/common/cargt_eeprom.h     |  4 +++-
+ board/cargt/imx95_00414/Makefile      |  1 +
+ board/cargt/imx95_00414/imx95_00414.c | 13 +++++++++++++
+ include/configs/imx95_00414.h         | 13 +++++++++++++
+ 5 files changed, 36 insertions(+), 2 deletions(-)
+
+diff --git a/board/cargt/common/cargt_eeprom.c b/board/cargt/common/cargt_eeprom.c
+index 22e016c..9850f72 100644
+--- a/board/cargt/common/cargt_eeprom.c
++++ b/board/cargt/common/cargt_eeprom.c
+@@ -215,13 +215,18 @@ void cargt_eeprom_print_prod_info(struct cargt_eeprom *ep)
+ 	printf("Cargt EEPROM Production Information:\n");
+ 	printf("\tPart number: %s\n", ep->cpn);
+ 	printf("\tProduction date: %s\n", ep->date);
+-	printf("\tSerial number: 0x%08x\n", be32_to_cpu(ep->serial));
++	printf("\tSerial number: %u (0x%08x)\n", be32_to_cpu(ep->serial),
++	       be32_to_cpu(ep->serial));
+ 	printf("\tEEPROM struct version: 0x%x\n", ep->struct_ver);
+ 	/* Print DRAM rank when available in struct version 2 */
+ 	if (ep->struct_ver >= 2)
+ 		printf("\tDRAM rank: %u\n", cargt_eeprom_get_dram_rank(ep));
+ 	printf("\tDRAM size: %d MB\n", __be16_to_cpu(ep->dramsize_mbytes));
+ 	printf("\tDRAM speed: %d MT/s\n", __be16_to_cpu(ep->dramspeed_mts));
++	/* DDR configuration ID (used by the i.MX 95 OEI) from struct version 3 */
++	if (ep->struct_ver >= 3)
++		printf("\tDDR config ID: 0x%02x\n", ep->reserved[1]);
++	printf("\tCRC32: 0x%08x (OK)\n", be32_to_cpu(ep->crc32));
+ }
+ 
+ int cargt_eeprom_is_valid(struct cargt_eeprom *ep)
+diff --git a/board/cargt/common/cargt_eeprom.h b/board/cargt/common/cargt_eeprom.h
+index 6b5df99..d91fc0a 100644
+--- a/board/cargt/common/cargt_eeprom.h
++++ b/board/cargt/common/cargt_eeprom.h
+@@ -61,7 +61,9 @@ struct __packed cargt_eeprom
+ 	u8 reserved[7];			/* 37 - reserved. NOTE: reserved[0] is used as
+ 					 * the DRAM rank/chip-select count by
+ 					 * cargt_eeprom_get_dram_rank() when
+-					 * struct_ver >= 2 - do not repurpose it. */
++					 * struct_ver >= 2, and reserved[1] as the
++					 * DDR configuration ID (i.MX 95 OEI) when
++					 * struct_ver >= 3 - do not repurpose them. */
+ 	u32 crc32;				/* 44 - CRC32 of this structure */
+ };
+ 
+diff --git a/board/cargt/imx95_00414/Makefile b/board/cargt/imx95_00414/Makefile
+index ef1b586..1dbfefb 100644
+--- a/board/cargt/imx95_00414/Makefile
++++ b/board/cargt/imx95_00414/Makefile
+@@ -8,6 +8,7 @@ obj-y += imx95_00414.o
+ 
+ ifndef CONFIG_SPL_BUILD
+ obj-y += sm_eeprom_i2c.o
++obj-y += ../common/cargt_eeprom.o
+ endif
+ 
+ ifdef CONFIG_SPL_BUILD
+diff --git a/board/cargt/imx95_00414/imx95_00414.c b/board/cargt/imx95_00414/imx95_00414.c
+index 61efc3f..c4802e7 100644
+--- a/board/cargt/imx95_00414/imx95_00414.c
++++ b/board/cargt/imx95_00414/imx95_00414.c
+@@ -22,6 +22,7 @@
+ #include <asm/arch/sys_proto.h>
+ #include <dm/device.h>
+ #include <dm/uclass.h>
++#include "../common/cargt_eeprom.h"
+ 
+ extern int board_fix_fdt_fuse(void *fdt);
+ 
+@@ -109,8 +110,20 @@ int board_init(void)
+ 	return 0;
+ }
+ 
++static void show_som_eeprom(void)
++{
++	struct cargt_eeprom ep;
++
++	if (cargt_eeprom_read(&ep))
++		return;
++
++	cargt_eeprom_print_prod_info(&ep);
++}
++
+ int board_late_init(void)
+ {
++	show_som_eeprom();
++
+ 	if (IS_ENABLED(CONFIG_ENV_IS_IN_MMC))
+ 		board_late_mmc_env_init();
+ 
+diff --git a/include/configs/imx95_00414.h b/include/configs/imx95_00414.h
+index 0ab1113..e38b69f 100644
+--- a/include/configs/imx95_00414.h
++++ b/include/configs/imx95_00414.h
+@@ -148,4 +148,17 @@
+ #define PHY_ANEG_TIMEOUT 20000
+ #endif
+ 
++/*
++ * SOM EEPROM for board/cargt/common/cargt_eeprom.c: the System Manager
++ * EEPROM bus (sm_eeprom_i2c.c, node i2c-sm-eeprom), U-Boot proper only.
++ */
++#define CARGT_EEPROM_I2C_NAME		"i2c-sm-eeprom"
++/*
++ * Blank-EEPROM fallbacks for cargt_eeprom_get_dram_*(). Informational only:
++ * OEI trains DDR before U-Boot runs. Same as the OEI default configuration
++ * (MT62F512M32D2DR, 2 GB, 6400 MT/s).
++ */
++#define DEFAULT_SDRAM_SIZE_MB		(2048)
++#define DEFAULT_SDRAM_SPEED_MTS		(6400)
++
+ #endif /* __IMX95_00414_H */
+-- 
+2.34.1
+
