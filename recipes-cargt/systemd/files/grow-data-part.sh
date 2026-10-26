@@ -22,8 +22,18 @@ esac
 [ -b "${root:-}" ] || { log "boot device not found (root=$root), nothing to do"; exit 0; }
 
 disk=/dev/$(lsblk -n -o PKNAME "$root" | head -n1)
-part=$(lsblk -n -p -r -o NAME,LABEL "$disk" | awk '$2 == "data" { print $1; exit }')
-[ -n "$part" ] || { log "no partition labelled data on $disk"; exit 0; }
+
+# Nothing in fstab waits for the data partition, so this can start before
+# udev has probed it: wait for udev, then give the label a few seconds.
+udevadm settle --timeout=30 || true
+tries=10
+while :; do
+	part=$(lsblk -n -p -r -o NAME,LABEL "$disk" | awk '$2 == "data" { print $1; exit }')
+	[ -z "$part" ] || break
+	tries=$((tries - 1))
+	[ "$tries" -gt 0 ] || { log "no partition labelled data on $disk"; exit 0; }
+	sleep 1
+done
 
 grow() {
 	last=$(lsblk -n -p -r -o NAME,TYPE "$disk" | awk '$2 == "part" { p = $1 } END { print p }')
@@ -48,8 +58,10 @@ grow() {
 
 grow
 
-# Mount it on /data. udev may also have auto-mounted it under /run/media;
-# mounting the same filesystem twice is fine.
+# Mount it on /data. udev may also auto-mount it under /run/media; mounting
+# the same filesystem twice is fine, but while udev's mount is in progress the
+# device is held exclusively and mount fails with "Can't open blockdev", so
+# retry for a few seconds.
 if mountpoint -q /data; then
 	cur=$(findmnt -n -o SOURCE /data)
 	[ "$(readlink -f "$cur")" = "$part" ] && exit 0
@@ -57,5 +69,10 @@ if mountpoint -q /data; then
 	umount /data
 fi
 mkdir -p /data
-mount -t ext4 "$part" /data
+tries=10
+until mount -t ext4 "$part" /data; do
+	tries=$((tries - 1))
+	[ "$tries" -gt 0 ] || { log "could not mount $part on /data"; exit 1; }
+	sleep 1
+done
 log "mounted $part on /data"

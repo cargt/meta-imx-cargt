@@ -1,8 +1,7 @@
 [Unit]
 Description=Grow and mount the data partition of the boot disk on /data
-After=local-fs.target
+After=local-fs.target systemd-udev-trigger.service
 Before=swupdate.service
-ConditionPathExists=/dev/disk/by-label/data
 
 [Service]
 Type=oneshot
