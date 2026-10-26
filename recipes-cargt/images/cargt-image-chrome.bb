@@ -100,5 +100,4 @@ nfs_symlink() {
     ln -fs ${IMAGE_ROOTFS} ${TMPDIR}/../rootfs
 }
 
-# GPU/CPU stress and benchmark tools for i.MX 95 bring-up
-IMAGE_INSTALL:append:mx95-nxp-bsp = " stress-ng glmark2"
+# stress-ng and glmark2 are in cargt-image-stress-test
