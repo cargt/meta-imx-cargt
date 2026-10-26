@@ -25,7 +25,8 @@ install_launchers() {
     fi    
     if ! grep -q "icon=/usr/share/weston/icon/chromium.png" ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini
     then
-       printf "\n[launcher]\nicon=/usr/share/weston/icon/chromium.png\npath=QMLSCENE_DEVICE=softwarecontext /usr/lib/chromium//chromium-bin --use-gl=egl --ozone-platform=wayland --disable-features=VizDisplayCompositor --no-sandbox\n\n" >> ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini
+       # the chromium wrapper sets the GL flags meta-imx chose for this SoC
+       printf "\n[launcher]\nicon=/usr/share/weston/icon/chromium.png\npath=/usr/bin/chromium --no-sandbox\n\n" >> ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini
     fi    
     if ! grep -q "HOME=/root/" ${IMAGE_ROOTFS}${sysconfdir}/default/weston
     then
