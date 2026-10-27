@@ -1,0 +1,13 @@
+[Unit]
+Description=OP-TEE secure storage directory on /data
+# grow-data-part mounts /data on current images; data.mount covers an fstab entry.
+After=grow-data-part.service data.mount
+ConditionPathIsMountPoint=/data
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+ExecStart=/usr/bin/install -d -o teesuppl -g teesuppl -m 0700 /data/tee
+
+[Install]
+WantedBy=multi-user.target

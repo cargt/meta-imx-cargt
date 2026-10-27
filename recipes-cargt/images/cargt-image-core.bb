@@ -47,6 +47,7 @@ IMAGE_INSTALL += " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'networkmanager', 'networkmanager networkmanager-nmcli', '', d)} \
     swupdate swupdate-progress swupdate-www \
     grow-data-part \
+    ${@bb.utils.contains('MACHINE_FEATURES', 'optee', 'optee-storage-data', '', d)} \
     board-version \
 "
 
