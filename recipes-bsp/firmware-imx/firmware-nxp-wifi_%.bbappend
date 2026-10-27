@@ -17,15 +17,14 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${BPN}:"
 # Upstream's lf-6.18.20_2.0.0 wifi_mod_para.conf strips the SDIW612 block down
 # to just cal_data_cfg=none, dropping ps_mode/auto_ds/host_mlme and the
 # explicit fw_name=nxp/sduart_nw61x_v1.bin.se that the older lf-6.6.3_1.0.0
-# branch shipped for this same chip. Without an explicit fw_name here, moal
-# falls back to this recipe's own module_conf_moal override (in
-# kernel-module-nxp-wlan_git.bbappend, meant for other cargt boards) which
-# forces the WLAN-only firmware instead of the IW612's combo (WiFi+BT)
-# firmware. On imx8mp-cargt-00377-00365 that leaves the shared combo
-# baseband uninitialized, so Bluetooth's own UART firmware download times out
-# and its RX line shows a garbled/periodic 500ms artifact indefinitely, even
-# though moal itself reports mlan0 up successfully. Restoring this block
-# (confirmed on hardware) fixes Bluetooth with no kernel/driver change needed.
+# branch shipped for this same chip. This block's fw_name is what selects the
+# IW612 firmware (it replaces moal's module parameters for the chip): without
+# it the IW612 does not run the combined Wi-Fi+BT firmware, and on
+# imx8mp-cargt-00377-00365 that left the shared combo baseband uninitialized,
+# so Bluetooth's own UART firmware download timed out and its RX line showed
+# a garbled/periodic 500ms artifact indefinitely, even though moal reported
+# mlan0 up. Restoring this block (confirmed on hardware) fixed Bluetooth with
+# no kernel/driver change needed.
 SRC_URI += "file://wifi_mod_para.conf"
 
 do_install:append() {
