@@ -18,3 +18,18 @@ IMAGE_INSTALL:append = " tensorflow-lite"
 IMAGE_INSTALL:append:mx95-nxp-bsp = " tensorflow-lite-neutron-delegate neutron eiq-examples-npu-utils"
 IMAGE_INSTALL:append:mx93-nxp-bsp = " tensorflow-lite-ethosu-delegate ethos-u-driver-stack"
 IMAGE_INSTALL:append:mx8mp-nxp-bsp = " tensorflow-lite-vx-delegate"
+
+# Keep Weston running on a board with no display connected (a headless DT, or
+# HDMI with no monitor): by default it exits when it has no output, which
+# leaves glmark2 nothing to run on. glmark2 --off-screen needs no output, but
+# video (waylandsink) and the Chromium kiosk do: for those, force one on the
+# kernel command line, e.g. fw_setenv cargt_bootargs video=HDMI-A-1:1920x1080@60e
+ROOTFS_POSTPROCESS_COMMAND:append = "weston_require_no_outputs; "
+
+weston_require_no_outputs() {
+    if [ -f ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini ] && \
+       ! grep -q "^require-outputs=" ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini
+    then
+        sed -i 's/^\[core\]$/[core]\nrequire-outputs=none/' ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini
+    fi
+}
