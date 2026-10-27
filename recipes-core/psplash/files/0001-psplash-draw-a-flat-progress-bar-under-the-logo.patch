@@ -1,0 +1,128 @@
+From 16c9783b6788ad4a447efaea3295879a394d609d Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Tue, 27 Oct 2026 10:57:43 -0500
+Subject: [PATCH 1/2] psplash: draw a flat progress bar under the logo
+
+Replace the bevelled bar image with a flat track as wide as the logo,
+PSPLASH_BAR_HEIGHT pixels tall and PSPLASH_BAR_GAP pixels below it, and
+centre the logo and bar on the screen as one block. Both default to the
+1280x720-class layout and can be set in psplash-colors.h.
+
+Upstream-Status: Inappropriate [Cargt branding]
+---
+ psplash.c | 70 +++++++++++++++++++++++--------------------------------
+ 1 file changed, 29 insertions(+), 41 deletions(-)
+
+diff --git a/psplash.c b/psplash.c
+index 261dd1c..4d71fee 100644
+--- a/psplash.c
++++ b/psplash.c
+@@ -14,12 +14,28 @@
+ #include "psplash-config.h"
+ #include "psplash-colors.h"
+ #include "psplash-poky-img.h"
+-#include "psplash-bar-img.h"
+ #ifdef HAVE_SYSTEMD
+ #include <systemd/sd-daemon.h>
+ #endif
+ #include FONT_HEADER
+ 
++#ifndef PSPLASH_BAR_HEIGHT
++#define PSPLASH_BAR_HEIGHT 6
++#endif
++
++#ifndef PSPLASH_BAR_GAP
++#define PSPLASH_BAR_GAP 56
++#endif
++
++/* The logo and the bar under it are centred on the screen as one block. */
++#ifdef PSPLASH_SHOW_PROGRESS_BAR
++#define LOGO_Y(fb) \
++	(((fb)->height - (POKY_IMG_HEIGHT + PSPLASH_BAR_GAP + PSPLASH_BAR_HEIGHT)) / 2)
++#else
++#define LOGO_Y(fb) (((fb)->height - POKY_IMG_HEIGHT) / 2)
++#endif
++#define BAR_Y(fb) (LOGO_Y(fb) + POKY_IMG_HEIGHT + PSPLASH_BAR_GAP)
++
+ #define SPLIT_LINE_POS(fb)                                  \
+ 	(  (fb)->height                                     \
+ 	 - ((  PSPLASH_IMG_SPLIT_DENOMINATOR                \
+@@ -67,33 +83,20 @@ psplash_draw_progress (PSplashFB *fb, int value)
+ {
+   int x, y, width, height, barwidth;
+ 
+-  /* 4 pix border */
+-  x      = ((fb->width  - BAR_IMG_WIDTH)/2) + 4 ;
+-  y      = SPLIT_LINE_POS(fb) + 4;
+-  width  = BAR_IMG_WIDTH - 8; 
+-  height = BAR_IMG_HEIGHT - 8;
++  /* A flat bar as wide as the logo: a track, filled from the left */
++  x      = (fb->width - POKY_IMG_WIDTH) / 2;
++  y      = BAR_Y(fb);
++  width  = POKY_IMG_WIDTH;
++  height = PSPLASH_BAR_HEIGHT;
+ 
+-  if (value > 0)
+-    {
+-      barwidth = (CLAMP(value,0,100) * width) / 100;
+-      psplash_fb_draw_rect (fb, x + barwidth, y, 
+-    			width - barwidth, height,
++  barwidth = (CLAMP(value,0,100) * width) / 100;
++  psplash_fb_draw_rect (fb, x + barwidth, y,
++			width - barwidth, height,
+ 			PSPLASH_BAR_BACKGROUND_COLOR);
+-      psplash_fb_draw_rect (fb, x, y, barwidth,
+-			    height, PSPLASH_BAR_COLOR);
+-    }
+-  else
+-    {
+-      barwidth = (CLAMP(-value,0,100) * width) / 100;
+-      psplash_fb_draw_rect (fb, x, y, 
+-    			width - barwidth, height,
+-			PSPLASH_BAR_BACKGROUND_COLOR);
+-      psplash_fb_draw_rect (fb, x + width - barwidth,
+-			    y, barwidth, height,
+-			    PSPLASH_BAR_COLOR);
+-    }
++  psplash_fb_draw_rect (fb, x, y, barwidth,
++			height, PSPLASH_BAR_COLOR);
+ 
+-  DBG("value: %i, width: %i, barwidth :%i\n", value, 
++  DBG("value: %i, width: %i, barwidth :%i\n", value,
+ 		width, barwidth);
+ }
+ #endif /* PSPLASH_SHOW_PROGRESS_BAR */
+@@ -305,12 +308,7 @@ main (int argc, char** argv)
+   /* Draw the Poky logo  */
+   psplash_fb_draw_image (fb, 
+ 			 (fb->width  - POKY_IMG_WIDTH)/2, 
+-#if PSPLASH_IMG_FULLSCREEN
+-			 (fb->height - POKY_IMG_HEIGHT)/2,
+-#else
+-			 (fb->height * PSPLASH_IMG_SPLIT_NUMERATOR
+-			  / PSPLASH_IMG_SPLIT_DENOMINATOR - POKY_IMG_HEIGHT)/2,
+-#endif
++			 LOGO_Y(fb),
+ 			 POKY_IMG_WIDTH,
+ 			 POKY_IMG_HEIGHT,
+ 			 POKY_IMG_BYTES_PER_PIXEL,
+@@ -318,16 +316,6 @@ main (int argc, char** argv)
+ 			 POKY_IMG_RLE_PIXEL_DATA);
+ 
+ #ifdef PSPLASH_SHOW_PROGRESS_BAR
+-  /* Draw progress bar border */
+-  psplash_fb_draw_image (fb, 
+-			 (fb->width  - BAR_IMG_WIDTH)/2, 
+-			 SPLIT_LINE_POS(fb),
+-			 BAR_IMG_WIDTH,
+-			 BAR_IMG_HEIGHT,
+-			 BAR_IMG_BYTES_PER_PIXEL,
+-			 BAR_IMG_ROWSTRIDE,
+-			 BAR_IMG_RLE_PIXEL_DATA);
+-
+   psplash_draw_progress (fb, 0);
+ #endif
+ 
+-- 
+2.34.1
+

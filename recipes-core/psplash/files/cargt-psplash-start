@@ -1,0 +1,34 @@
+#!/bin/sh
+# Start psplash on framebuffer $1 (e.g. fb0) in the configured theme,
+# turned to match the panel and with a logo sized to the screen.
+
+fb=${1:-fb0}
+CARGT_SPLASH_THEME=light
+[ -r /etc/default/psplash ] && . /etc/default/psplash
+
+# Weston turns the UI by the panel's DT "rotation" (panel orientation);
+# psplash draws straight to the framebuffer, so turn it the same way.
+# psplash's --angle runs the other way round from the DT rotation.
+angle=0
+for r in $(find /proc/device-tree/ -maxdepth 5 -path '*panel*' -name rotation 2>/dev/null); do
+    node=${r%/rotation}
+    if [ -r "$node/status" ] && ! grep -q okay "$node/status"; then
+        continue
+    fi
+    set -- $(od -An -tu1 "$r")
+    angle=$(( (360 - (($1 << 24) | ($2 << 16) | ($3 << 8) | $4)) % 360 ))
+    break
+done
+
+# 480 px logo unless the short side of the screen is too small for it
+size=480
+if [ -r /sys/class/graphics/$fb/virtual_size ]; then
+    IFS=, read w h < /sys/class/graphics/$fb/virtual_size
+    [ "$w" -lt "$h" ] && h=$w
+    [ "$h" -lt 400 ] && size=200
+fi
+
+bin=/usr/libexec/psplash/psplash-$CARGT_SPLASH_THEME-$size
+[ -x "$bin" ] || bin=/usr/bin/psplash
+
+exec $bin --fbdev ${fb#fb} --no-console-switch --angle $angle

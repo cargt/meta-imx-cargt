@@ -1,0 +1,317 @@
+From 3b4c29ef2997975798f627bc410c42590f7b9cf0 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Tue, 27 Oct 2026 11:00:59 -0500
+Subject: [PATCH 2/2] psplash-systemd: estimate progress from boot time
+
+systemd's Progress property is finished jobs over queued jobs. Jobs keep
+being queued during boot, so the bar stalled, jumped, and reached 100%
+when the boot transaction ended rather than when the UI appeared.
+
+Estimate progress from time since kernel start against how long the
+previous boots took to bring the UI up instead, stored in
+/var/lib/psplash/boot-msec and blended 70/30 with each new boot. Use
+sysinit.target, basic.target and multi-user.target as floors, cap the
+time estimate at 90% and creep toward 95% after it, and update ten
+times a second over one bus connection. Quit once one of the units in
+PSPLASH_READY_UNITS (default: weston.service graphical.target) is
+active, or when systemd reports a progress of 1.0.
+
+Upstream-Status: Inappropriate [Cargt policy]
+---
+ psplash-systemd.c | 228 ++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 179 insertions(+), 49 deletions(-)
+
+diff --git a/psplash-systemd.c b/psplash-systemd.c
+index 840bd4e..85485fc 100644
+--- a/psplash-systemd.c
++++ b/psplash-systemd.c
+@@ -5,85 +5,194 @@
+  *
+  * Author: Stefan Agner <stefan.agner@toradex.com>
+  *
++ * Progress is estimated from time since kernel start against how long the
++ * previous boots took to bring the UI up, with systemd targets as floors, so
++ * the bar moves steadily instead of following systemd's job count.
++ *
+  * SPDX-License-Identifier: GPL-2.0-or-later
+  */
+ 
+ #include <errno.h>
+ #include <stdio.h>
+ #include <stdlib.h>
++#include <string.h>
++#include <time.h>
+ #include <fcntl.h>
+ #include <unistd.h>
++#include <sys/stat.h>
+ #include <systemd/sd-bus.h>
+ #include <systemd/sd-event.h>
+ #include "psplash.h"
+ 
+-#define PSPLASH_UPDATE_USEC 1000000
++#define PSPLASH_UPDATE_USEC 100000
++
++/* Expected time from kernel start to UI ready when no boot has been recorded */
++#define DEFAULT_BOOT_MSEC 20000
++#define BOOT_TIME_DIR     "/var/lib/psplash"
++#define BOOT_TIME_FILE    BOOT_TIME_DIR "/boot-msec"
++
++/* Time-based progress runs to this, then creeps toward CREEP_LIMIT */
++#define TIME_LIMIT  90.0
++#define CREEP_LIMIT 95.0
++
++/* Hold the full bar this long before quitting */
++#define DONE_HOLD_USEC 200000
++
++/* Units that mean the UI is up; the first active one ends the splash */
++#define DEFAULT_READY_UNITS "weston.service graphical.target"
+ 
+ typedef uint64_t usec_t;
+ 
++static const struct {
++	const char *unit;
++	double floor;
++} milestones[] = {
++	{ "sysinit.target",    25.0 },
++	{ "basic.target",      45.0 },
++	{ "multi-user.target", 80.0 },
++};
++
+ static int pipe_fd;
++static sd_bus *bus;
++static double expected_msec;
++static int have_record;
++static const char *ready_units;
+ 
+-int get_progress(void)
++static double boot_msec(void)
++{
++	struct timespec ts;
++
++	clock_gettime(CLOCK_BOOTTIME, &ts);
++	return ts.tv_sec * 1000.0 + ts.tv_nsec / 1000000.0;
++}
++
++static double read_expected_msec(void)
++{
++	FILE *f = fopen(BOOT_TIME_FILE, "r");
++	double msec = 0;
++
++	if (f) {
++		if (fscanf(f, "%lf", &msec) != 1)
++			msec = 0;
++		fclose(f);
++	}
++
++	have_record = msec > 1000;
++	return have_record ? msec : DEFAULT_BOOT_MSEC;
++}
++
++/*
++ * Blend this boot into the stored estimate so one slow boot (first boot,
++ * a filesystem check) doesn't throw the next one off.
++ */
++static void write_expected_msec(double msec)
++{
++	FILE *f;
++	double blended = have_record ? 0.7 * expected_msec + 0.3 * msec : msec;
++
++	mkdir(BOOT_TIME_DIR, 0755);
++	f = fopen(BOOT_TIME_FILE ".tmp", "w");
++	if (!f)
++		return;
++	fprintf(f, "%.0f\n", blended);
++	if (fclose(f) == 0)
++		rename(BOOT_TIME_FILE ".tmp", BOOT_TIME_FILE);
++}
++
++static int unit_active(const char *unit)
+ {
+ 	sd_bus_error error = SD_BUS_ERROR_NULL;
+-	static double current_progress = 0;
+-	double progress = 0;
+-	sd_bus *bus = NULL;
+-	int r;
+-	char buffer[20];
+-	int len;
++	char *path = NULL, *state = NULL;
++	int active = 0;
+ 
+-        /* Connect to the system bus */
+-	r = sd_bus_new(&bus);
+-	if (r < 0)
+-		goto finish;
++	if (sd_bus_path_encode("/org/freedesktop/systemd1/unit", unit, &path) < 0)
++		return 0;
+ 
+-	r = sd_bus_set_address(bus, "unix:path=/run/systemd/private");
+-	if (r < 0)
+-		goto finish;
++	if (sd_bus_get_property_string(bus,
++		"org.freedesktop.systemd1",
++		path,
++		"org.freedesktop.systemd1.Unit",
++		"ActiveState",
++		&error,
++		&state) >= 0)
++		active = !strcmp(state, "active");
+ 
+-	r = sd_bus_start(bus);
+-	if (r < 0) {
+-		fprintf(stderr, "Failed to connect to systemd private bus: %s\n", strerror(-r));
+-		goto finish;
+-        }
+-
+-        /* Issue the method call and store the respons message in m */
+-	r = sd_bus_get_property_trivial(bus,
+-		"org.freedesktop.systemd1",           /* service to contact */
+-		"/org/freedesktop/systemd1",          /* object path */
+-		"org.freedesktop.systemd1.Manager",   /* interface name */
+-		"Progress",                           /* method name */
+-		&error,                               /* object to return error in */
+-		'd',                                  /* return message on success */
+-		&progress);                           /* value */
+-	if (r < 0) {
++	sd_bus_error_free(&error);
++	free(state);
++	free(path);
++
++	return active;
++}
++
++static int ui_ready(void)
++{
++	sd_bus_error error = SD_BUS_ERROR_NULL;
++	char units[256], *unit, *save;
++	double progress = 0;
++
++	snprintf(units, sizeof(units), "%s", ready_units);
++	for (unit = strtok_r(units, " ", &save); unit; unit = strtok_r(NULL, " ", &save))
++		if (unit_active(unit))
++			return 1;
++
++	/* Boot finished without any of them, e.g. no display stack */
++	if (sd_bus_get_property_trivial(bus,
++		"org.freedesktop.systemd1",
++		"/org/freedesktop/systemd1",
++		"org.freedesktop.systemd1.Manager",
++		"Progress",
++		&error,
++		'd',
++		&progress) < 0)
+ 		fprintf(stderr, "Failed to get progress: %s\n", error.message);
+-		goto finish;
+-	}
++	sd_bus_error_free(&error);
+ 
+-	/*
+-	 * Systemd's progress seems go backwards at times. Prevent that
+-	 * progress bar on psplash goes backward by just communicating the
+-	 * highest observed progress so far.
+-	 */
+-	if (current_progress < progress)
+-		current_progress = progress;
++	return progress == 1.0;
++}
+ 
+-	len = snprintf(buffer, 20, "PROGRESS %d", (int)(current_progress * 100));
++static void send_progress(int value)
++{
++	char buffer[20];
++	int len;
++
++	len = snprintf(buffer, sizeof(buffer), "PROGRESS %d", value);
+ 	write(pipe_fd, buffer, len + 1);
++}
+ 
+-	if (progress == 1.0) {
+-		printf("Systemd reported progress of 1.0, quit psplash.\n");
++int get_progress(void)
++{
++	static double current_progress = 0;
++	double elapsed = boot_msec();
++	double t = elapsed / expected_msec;
++	double progress;
++	unsigned int i;
++
++	if (ui_ready()) {
++		send_progress(100);
++		usleep(DONE_HOLD_USEC);
++		printf("UI ready after %.0f ms (expected %.0f ms), quit psplash.\n",
++		       elapsed, expected_msec);
+ 		write(pipe_fd, "QUIT", 5);
+-		r = -1;
++		write_expected_msec(elapsed);
++		return -1;
+ 	}
+ 
+-finish:
+-	sd_bus_error_free(&error);
+-	sd_bus_unref(bus);
++	if (t <= 1.0)
++		progress = TIME_LIMIT * t;
++	else
++		progress = CREEP_LIMIT - (CREEP_LIMIT - TIME_LIMIT) / (1.0 + 2.0 * (t - 1.0));
+ 
+-	return r;
++	for (i = 0; i < sizeof(milestones) / sizeof(milestones[0]); i++)
++		if (progress < milestones[i].floor && unit_active(milestones[i].unit))
++			progress = milestones[i].floor;
++
++	/* Never let the bar go backward */
++	if (current_progress < progress)
++		current_progress = progress;
++
++	send_progress((int)current_progress);
++
++	return 0;
+ }
+ 
+ int psplash_handler(sd_event_source *s,
+@@ -110,7 +219,7 @@ err:
+ 
+ int main()
+ {
+-	sd_event *event;
++	sd_event *event = NULL;
+ 	sd_event_source *event_source = NULL;
+ 	int r;
+ 	sigset_t ss;
+@@ -130,6 +239,26 @@ int main()
+ 		exit(EXIT_FAILURE);
+ 	}
+ 
++	ready_units = getenv("PSPLASH_READY_UNITS");
++	if (!ready_units || !*ready_units)
++		ready_units = DEFAULT_READY_UNITS;
++	expected_msec = read_expected_msec();
++
++	/* Connect to systemd's private bus once; it is up before D-Bus is */
++	r = sd_bus_new(&bus);
++	if (r < 0)
++		goto finish;
++
++	r = sd_bus_set_address(bus, "unix:path=/run/systemd/private");
++	if (r < 0)
++		goto finish;
++
++	r = sd_bus_start(bus);
++	if (r < 0) {
++		fprintf(stderr, "Failed to connect to systemd private bus: %s\n", strerror(-r));
++		goto finish;
++	}
++
+ 	r = sd_event_default(&event);
+ 	if (r < 0)
+ 		goto finish;
+@@ -173,6 +302,7 @@ int main()
+ 	r = sd_event_loop(event);
+ finish:
+ 	event = sd_event_unref(event);
++	bus = sd_bus_flush_close_unref(bus);
+ 	close(pipe_fd);
+ 
+ 	return r < 0 ? EXIT_FAILURE : EXIT_SUCCESS;
+-- 
+2.34.1
+
