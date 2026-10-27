@@ -27,8 +27,6 @@ PREFERRED_VERSION_gstreamer1.0-plugins-ugly:mx9-nxp-bsp = "1.28.%"
 PREFERRED_VERSION_gstreamer1.0-libav:mx9-nxp-bsp        = "1.28.%"
 PREFERRED_VERSION_gstreamer1.0-rtsp-server:mx9-nxp-bsp  = "1.28.%"
 
-PREFERRED_VERSION_xen-tools = "4.18.imx+stable"
-PREFERRED_VERSION_xen = "4.18.imx+stable"
 # QEMUVERSION intentionally left unpinned here: meta-imx-bsp's
 # imx-base-extend.inc already sets sensible per-machine defaults
 # (10.2.0, 10.2.5.imx for mx95-nxp-bsp) via weak (??=) assignment.
