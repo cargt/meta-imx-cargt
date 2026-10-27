@@ -76,14 +76,15 @@ PACKAGECONFIG:remove:mx93-nxp-bsp:pn-qtbase = "no-opengl linuxfb"
 PACKAGECONFIG:remove:pn-lvgl = "fbdev gridnav"
 
 # i.MX 91 has no GPU, so vulkan is always stripped, and x11 along with it
-# since weston-xwayland requires opengl. Most i.MX 91 boards are also headless,
-# so wayland/opengl are stripped too -- except imx91-cargt-00363-00365, which
-# supports the 00379 MikroBus SPI display via tinydrm/DRM-KMS. Weston itself is
-# unconditionally gated on the opengl DISTRO_FEATURE upstream (it always
-# DEPENDS on virtual/egl, even when actually rendering via pixman at runtime),
-# so opengl stays enabled there too -- satisfied by Mesa's llvmpipe software
-# rasterizer, not real GPU hardware (there still isn't any on this SoC).
-DISTRO_FEATURES:remove:mx91-nxp-bsp = "${@bb.utils.contains('MACHINE', 'imx91-cargt-00363-00365', 'vulkan x11', 'wayland opengl vulkan x11', d)}"
+# since weston-xwayland requires opengl. wayland/opengl stay enabled for the
+# 00379 MikroBus SPI display (tinydrm/DRM-KMS) on imx91-cargt-00363-00365:
+# Weston is gated on the opengl DISTRO_FEATURE upstream (it always DEPENDS on
+# virtual/egl, even when rendering via pixman), which Mesa's llvmpipe software
+# rasterizer satisfies -- there is still no GPU on this SoC.
+# Every i.MX 91 machine gets the same DISTRO_FEATURES, headless ones included:
+# they all share the cortexa55 package arch, and machines with different
+# DISTRO_FEATURES would overwrite each other's packages in the shared feed.
+DISTRO_FEATURES:remove:mx91-nxp-bsp = "vulkan x11"
 PACKAGECONFIG:remove:mx91-nxp-bsp:pn-qtbase = "gles2"
 PACKAGECONFIG:append:mx91-nxp-bsp:pn-qtbase = " no-opengl linuxfb"
 
