@@ -31,6 +31,7 @@ IMAGE_INSTALL += " \
     ${@bb.utils.contains('MACHINE_FEATURES', 'lora', 'sx1302-hal lora-packet-forwarder-systemd','', d)} \
     imx-test \
     firmwared \
+    cargt-network-config \
     packagegroup-imx-core-tools \
     packagegroup-imx-security \
     curl \
