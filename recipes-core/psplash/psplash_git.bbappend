@@ -85,6 +85,18 @@ do_install:append() {
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
         install -Dm 0644 ${UNPACKDIR}/zz-cargt.conf \
             ${D}${systemd_system_unitdir}/psplash-start@.service.d/zz-cargt.conf
+
+        # Start the splash with sysinit rather than when udev gets round to
+        # fb0, which is seconds after the kernel made /dev/fb0. udev still
+        # starts it if fb0 turns up later.
+        sed -i -e '/^After=dev-%i.device/d' -e '/^Wants=dev-%i.device/d' \
+            -e '/^\[Unit\]/a ConditionPathExists=/dev/%i' \
+            ${D}${systemd_system_unitdir}/psplash-start@.service
+        install -d ${D}${systemd_system_unitdir}/sysinit.target.wants
+        ln -sf ../psplash-start@.service \
+            ${D}${systemd_system_unitdir}/sysinit.target.wants/psplash-start@fb0.service
+        ln -sf ../psplash-systemd.service \
+            ${D}${systemd_system_unitdir}/sysinit.target.wants/psplash-systemd.service
     fi
 }
 
@@ -92,5 +104,6 @@ FILES:${PN} += " \
     ${libexecdir}/psplash \
     ${sysconfdir}/default/psplash \
     ${systemd_system_unitdir}/psplash-start@.service.d \
+    ${systemd_system_unitdir}/sysinit.target.wants \
 "
 CONFFILES:${PN} += "${sysconfdir}/default/psplash"
