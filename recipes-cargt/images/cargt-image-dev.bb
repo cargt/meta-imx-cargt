@@ -52,7 +52,7 @@ IMAGE_INSTALL += " \
     mc \
     git \
     ${@bb.utils.contains('DISTRO_FEATURES', 'connman', 'connman-tools connman-tests connman-client', '', d)} \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'networkmanager', 'networkmanager networkmanager-nmcli', '', d)} \
+    ${@bb.utils.contains('DISTRO_FEATURES', 'networkmanager', 'networkmanager networkmanager-nmcli networkmanager-nmtui', '', d)} \
     dtc \
     libiio libiio-tests \
     packagegroup-core-buildessential \
