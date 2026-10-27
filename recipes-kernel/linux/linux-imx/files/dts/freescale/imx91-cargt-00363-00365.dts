@@ -15,7 +15,9 @@
                 rtc0 = &rtc_i2c;
                 rtc1 = &bbnsm_rtc;
                 serial0 = &lpuart1;
+                serial1 = &lpuart2;
                 serial4 = &lpuart5;
+                serial5 = &lpuart6;
         };
 
         reg_usdhc2_vmmc: regulator-usdhc2 {
