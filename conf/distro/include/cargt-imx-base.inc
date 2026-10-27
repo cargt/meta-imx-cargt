@@ -32,7 +32,7 @@ DEFAULTTUNE:mx8-nxp-bsp    ?= "armv8a-crc-crypto"
 # turns on its openssl PACKAGECONFIG). It must not share the armv8a package
 # arch with i.MX93, or the machines overwrite each other's packages in the
 # shared feed. cortexa53-crypto matches meta-freescale's mx8m default. Hard
-# assignment because meta-imx's fsl-imx-base.inc also sets it with ?=.
+# assignment so a ?= default set earlier for this override can't win.
 DEFAULTTUNE:mx8m-nxp-bsp = "cortexa53-crypto"
 DEFAULTTUNE:mx8qm-nxp-bsp  ?= "armv8a-crc-crypto"
 DEFAULTTUNE:mx8x-nxp-bsp   ?= "armv8a-crc-crypto"
@@ -41,22 +41,17 @@ DEFAULTTUNE:mx9-nxp-bsp    ?= "armv8a-crc-crypto"
 # i.MX91 builds with different DISTRO_FEATURES than i.MX93 (no x11/vulkan, see
 # below), so it must not share the armv8a package arch with i.MX93: the two
 # machines would overwrite/delete each other's packages in the shared feed.
-# cortexa55 matches meta-freescale's mx91 default. Hard assignment because
-# meta-imx's fsl-imx-base.inc also sets DEFAULTTUNE:mx91-nxp-bsp with ?=.
+# cortexa55 matches meta-freescale's mx91 default. Hard assignment so a ?=
+# default set earlier for this override can't win.
 DEFAULTTUNE:mx91-nxp-bsp = "cortexa55"
-
-# These recipes are built differently on i.MX8MP (CAAM / ISP dependencies, jsoncpp epoch)
-# but would otherwise be packaged for the shared armv8a arch, so i.MX8MP and i.MX93 builds
-# delete each other's copies from the shared armv8a deploy dir/feed. Make them SoC-specific
-# on i.MX8MP (armv8a-mx8mp, already in its PACKAGE_FEED_ARCHS).
-MACHINE_SOCARCH_FILTER:append:mx8mp-nxp-bsp = " jsoncpp crypto-af-alg keyctl-caam smw"
 DEFAULTTUNE:mx93-nxp-bsp   ?= "armv8a-crc-crypto"
 # imx-base.inc sets DEFAULTTUNE:mx95-generic-bsp ?= "cortexa55", which comes
 # after mx9-nxp-bsp in OVERRIDES and would otherwise win.
 # i.MX95 has a GPU (Mali) and other machine features than i.MX93/8MP, so it must not share the
 # armv8a package arch with them: the machines would overwrite/delete each other's packages in the
 # shared armv8a deploy dir/feed. armv8-2a-crypto packages as "armv8-2a", used by no other Cargt SoC
-# (imx93/imx8mp: armv8a, imx91: cortexa55). Hard assignment: imx-base.inc also sets mx95 with ?=.
+# (imx93: armv8a, imx8mp: cortexa53-crypto, imx91: cortexa55). Hard assignment so imx-base.inc's ?=
+# default for mx95-generic-bsp can't win.
 DEFAULTTUNE:mx95-nxp-bsp = "armv8-2a-crypto"
 
 PACKAGECONFIG:append:pn-gstreamer1.0-plugins-ugly = " x264"
