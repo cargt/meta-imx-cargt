@@ -26,6 +26,7 @@ IMAGE_INSTALL += " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11 wayland', 'weston-xwayland xterm', '', d)} \
     imx-test \
     firmwared \
+    cargt-network-config \
     packagegroup-imx-core-tools \
     packagegroup-imx-security \
     curl \
