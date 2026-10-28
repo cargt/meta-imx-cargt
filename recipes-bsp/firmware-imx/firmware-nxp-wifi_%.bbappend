@@ -28,8 +28,24 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${BPN}:"
 # (confirmed on hardware) fixes Bluetooth with no kernel/driver change needed.
 SRC_URI += "file://wifi_mod_para.conf"
 
+# Wi-Fi regulatory country (ISO 3166 alpha-2). It is written into every active
+# chip block of wifi_mod_para.conf as reg_alpha2, together with
+# disable_regd_by_driver=0: moal ignores reg_alpha2 unless that is cleared.
+# Without a country the radio stays on the world domain ("country 00"), where
+# every 5 GHz channel is no-IR, so an access point on band a fails with
+# "Failed to start AP functionality". nxp-wifi.service makes sure cfg80211 has
+# its regulatory database and the country is applied before wpa_supplicant
+# starts. Products sold elsewhere override it, for example
+# CARGT_WIFI_COUNTRY = "DE" in local.conf or the machine .conf. Empty leaves
+# the driver on the world domain.
+CARGT_WIFI_COUNTRY ?= "US"
+
 do_install:append() {
     install -m 0644 ${UNPACKDIR}/wifi_mod_para.conf ${D}${nonarch_base_libdir}/firmware/nxp/wifi_mod_para.conf
+    if [ -n "${CARGT_WIFI_COUNTRY}" ]; then
+        sed -i -E 's/^([A-Z0-9]+ = \{)$/\1\n\tdisable_regd_by_driver=0\n\treg_alpha2=${CARGT_WIFI_COUNTRY}/' \
+            ${D}${nonarch_base_libdir}/firmware/nxp/wifi_mod_para.conf
+    fi
 }
 
 # 0001-FwImage-update-firmware-to-mxm18505.p14.patch (a binary firmware blob

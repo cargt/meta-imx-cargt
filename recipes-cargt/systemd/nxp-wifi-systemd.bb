@@ -13,3 +13,6 @@ do_install() {
 }
 
 
+
+# iw loads the regulatory database and checks the country (see nxp-wifi.service).
+RDEPENDS:${PN} += "iw"
