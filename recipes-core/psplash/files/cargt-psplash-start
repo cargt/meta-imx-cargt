@@ -6,19 +6,40 @@ fb=${1:-fb0}
 CARGT_SPLASH_THEME=light
 [ -r /etc/default/psplash ] && . /etc/default/psplash
 
+# True if a DT node and every node above it are enabled
+enabled() {
+    n=$1
+    while [ "$n" != /proc/device-tree ]; do
+        if [ -r "$n/status" ] && ! grep -q ok "$n/status"; then
+            return 1
+        fi
+        n=${n%/*}
+    done
+}
+
+# True if $fb is on the DRM device that drives a panel, not e.g. HDMI on
+# another LCDIF. A framebuffer that isn't DRM can't be told apart.
+on_panel() {
+    d=/sys/class/graphics/$fb/device/drm
+    [ -d "$d" ] || return 0
+    for c in $d/card*/card*-DSI-* $d/card*/card*-LVDS-* $d/card*/card*-DPI-*; do
+        [ -e "$c" ] && return 0
+    done
+    return 1
+}
+
 # Weston turns the UI by the panel's DT "rotation" (panel orientation);
 # psplash draws straight to the framebuffer, so turn it the same way.
 # psplash's --angle runs the other way round from the DT rotation.
 angle=0
-for r in $(find /proc/device-tree/ -maxdepth 5 -path '*panel*' -name rotation 2>/dev/null); do
-    node=${r%/rotation}
-    if [ -r "$node/status" ] && ! grep -q okay "$node/status"; then
-        continue
-    fi
-    set -- $(od -An -tu1 "$r")
-    angle=$(( (360 - (($1 << 24) | ($2 << 16) | ($3 << 8) | $4)) % 360 ))
-    break
-done
+if on_panel; then
+    for r in $(find /proc/device-tree/ -maxdepth 8 -path '*panel*' -name rotation 2>/dev/null); do
+        enabled "${r%/rotation}" || continue
+        set -- $(od -An -tu1 "$r")
+        angle=$(( (360 - (($1 << 24) | ($2 << 16) | ($3 << 8) | $4)) % 360 ))
+        break
+    done
+fi
 
 # 480 px logo unless the short side of the screen is too small for it
 size=480
