@@ -16,6 +16,7 @@ SRC_URI += " \
     file://cargt-psplash-start \
     file://zz-cargt.conf \
     file://cargt-fbcon-detach.service \
+    file://cargt-fbcon-attach.service \
 "
 
 # /usr/bin/psplash stays a working fallback: the light theme, 480 px logo.
@@ -100,10 +101,14 @@ do_install:append() {
             ${D}${systemd_system_unitdir}/sysinit.target.wants/psplash-systemd.service
 
         # Keep fbcon off the display under the splash and through Weston's
-        # VT switch; it can be bound again by hand for a text console.
-        install -m 0644 ${UNPACKDIR}/cargt-fbcon-detach.service ${D}${systemd_system_unitdir}/
+        # VT switch, then attach it again for the text consoles.
+        install -m 0644 ${UNPACKDIR}/cargt-fbcon-detach.service \
+            ${UNPACKDIR}/cargt-fbcon-attach.service ${D}${systemd_system_unitdir}/
         ln -sf ../cargt-fbcon-detach.service \
             ${D}${systemd_system_unitdir}/sysinit.target.wants/cargt-fbcon-detach.service
+        install -d ${D}${systemd_system_unitdir}/graphical.target.wants
+        ln -sf ../cargt-fbcon-attach.service \
+            ${D}${systemd_system_unitdir}/graphical.target.wants/cargt-fbcon-attach.service
     fi
 }
 
@@ -112,6 +117,7 @@ FILES:${PN} += " \
     ${sysconfdir}/default/psplash \
     ${systemd_system_unitdir}/psplash-start@.service.d \
     ${systemd_system_unitdir}/sysinit.target.wants \
-    ${systemd_system_unitdir}/cargt-fbcon-detach.service \
+    ${systemd_system_unitdir}/graphical.target.wants \
+    ${systemd_system_unitdir}/cargt-fbcon-*.service \
 "
 CONFFILES:${PN} += "${sysconfdir}/default/psplash"

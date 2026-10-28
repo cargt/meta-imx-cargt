@@ -1,9 +1,8 @@
 [Unit]
 Description=Detach the framebuffer console from the display
-# The console is on serial. On the display fbcon only shows a cursor under
-# the splash and clears the screen when Weston's unit switches VT. To get a
-# text console on the display back, e.g. for Ctrl+Alt+F2:
-#   echo 1 > /sys/class/vtconsole/vtcon1/bind
+# Until Weston is up, fbcon on the display only shows a cursor under the
+# splash and clears the screen when Weston's unit switches VT.
+# cargt-fbcon-attach puts it back afterwards.
 DefaultDependencies=no
 Before=psplash-start@fb0.service sysinit.target
 
