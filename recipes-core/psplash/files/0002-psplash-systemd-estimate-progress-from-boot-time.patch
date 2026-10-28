@@ -1,4 +1,4 @@
-From f8d391373d694a77f4e5f3a3e0d0a498cd0a15c1 Mon Sep 17 00:00:00 2001
+From 3ba883b7ea8535e9c7f6000c33d0554ef37ce0bf Mon Sep 17 00:00:00 2001
 From: Tim Carney <tim.carney@cargt.com>
 Date: Tue, 27 Oct 2026 11:00:59 -0500
 Subject: [PATCH 2/2] psplash-systemd: estimate progress from boot time
@@ -13,20 +13,21 @@ previous boots took to bring the UI up instead, stored in
 starting from 20 s, so a slow first boot doesn't set the pace. Use
 sysinit.target, basic.target and multi-user.target as floors, cap the
 time estimate at 90% and creep toward 95% after it, and update ten
-times a second over one bus connection. Quit once one of the units in
+times a second. Ask systemd five times a second over one bus
+connection, and stop asking about targets the bar has passed. Quit once one of the units in
 PSPLASH_READY_UNITS (default: weston.service graphical.target) is
 active, or when systemd reports a progress of 1.0.
 
 Upstream-Status: Inappropriate [Cargt policy]
 ---
- psplash-systemd.c | 227 ++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 178 insertions(+), 49 deletions(-)
+ psplash-systemd.c | 235 ++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 186 insertions(+), 49 deletions(-)
 
 diff --git a/psplash-systemd.c b/psplash-systemd.c
-index 840bd4e..b333b1d 100644
+index 840bd4e..a15b7bf 100644
 --- a/psplash-systemd.c
 +++ b/psplash-systemd.c
-@@ -5,85 +5,193 @@
+@@ -5,85 +5,201 @@
   *
   * Author: Stefan Agner <stefan.agner@toradex.com>
   *
@@ -51,6 +52,9 @@ index 840bd4e..b333b1d 100644
  
 -#define PSPLASH_UPDATE_USEC 1000000
 +#define PSPLASH_UPDATE_USEC 100000
++
++/* Ask systemd about units every this many updates (5 Hz) */
++#define BUS_QUERY_TICKS 2
 +
 +/* Expected time from kernel start to UI ready when no boot has been recorded */
 +#define DEFAULT_BOOT_MSEC 20000
@@ -229,12 +233,14 @@ index 840bd4e..b333b1d 100644
 +int get_progress(void)
 +{
 +	static double current_progress = 0;
++	static unsigned int tick;
++	int query = tick++ % BUS_QUERY_TICKS == 0;
 +	double elapsed = boot_msec();
 +	double t = elapsed / expected_msec;
 +	double progress;
 +	unsigned int i;
 +
-+	if (ui_ready()) {
++	if (query && ui_ready()) {
 +		send_progress(100);
 +		usleep(DONE_HOLD_USEC);
 +		printf("UI ready after %.0f ms (expected %.0f ms), quit psplash.\n",
@@ -254,13 +260,16 @@ index 840bd4e..b333b1d 100644
 +		progress = CREEP_LIMIT - (CREEP_LIMIT - TIME_LIMIT) / (1.0 + 2.0 * (t - 1.0));
  
 -	return r;
-+	for (i = 0; i < sizeof(milestones) / sizeof(milestones[0]); i++)
++	/* Never let the bar go backward */
++	if (progress < current_progress)
++		progress = current_progress;
++
++	/* Only targets the bar hasn't passed yet are worth asking about */
++	for (i = 0; query && i < sizeof(milestones) / sizeof(milestones[0]); i++)
 +		if (progress < milestones[i].floor && unit_active(milestones[i].unit))
 +			progress = milestones[i].floor;
 +
-+	/* Never let the bar go backward */
-+	if (current_progress < progress)
-+		current_progress = progress;
++	current_progress = progress;
 +
 +	send_progress((int)current_progress);
 +
@@ -268,7 +277,7 @@ index 840bd4e..b333b1d 100644
  }
  
  int psplash_handler(sd_event_source *s,
-@@ -110,7 +218,7 @@ err:
+@@ -110,7 +226,7 @@ err:
  
  int main()
  {
@@ -277,7 +286,7 @@ index 840bd4e..b333b1d 100644
  	sd_event_source *event_source = NULL;
  	int r;
  	sigset_t ss;
-@@ -130,6 +238,26 @@ int main()
+@@ -130,6 +246,26 @@ int main()
  		exit(EXIT_FAILURE);
  	}
  
@@ -304,7 +313,7 @@ index 840bd4e..b333b1d 100644
  	r = sd_event_default(&event);
  	if (r < 0)
  		goto finish;
-@@ -173,6 +301,7 @@ int main()
+@@ -173,6 +309,7 @@ int main()
  	r = sd_event_loop(event);
  finish:
  	event = sd_event_unref(event);
