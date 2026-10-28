@@ -71,14 +71,6 @@
 	bootph-some-ram;
 };
 
-&reg_carrier_pwr_en {
-	bootph-pre-ram;
-};
-
-&pinctrl_reg_carrer_pwr_en{
-	bootph-pre-ram;
-};
-
 &reg_usdhc2_vmmc {
 	u-boot,off-on-delay-us = <20000>;
 	bootph-pre-ram;
@@ -166,7 +158,7 @@
 };
 
 &ethphy1 {
-	reset-gpios = <&pca9555_20 0 GPIO_ACTIVE_HIGH>;
+	reset-gpios = <&pca9555_20 0 GPIO_ACTIVE_LOW>;
 	reset-assert-us = <15000>;
 	reset-deassert-us = <100000>;
 };
@@ -181,12 +173,12 @@
 
 &usbotg1 {
 	status = "okay";
-	//extcon = <&ptn5110>;
+	//extcon = <&ptn5110_51>;
 };
 
 &usbotg2 {
 	status = "okay";
-	//extcon = <&ptn5110_2>;
+	//extcon = <&ptn5110_52>;
 };
 
 &s4muap {
