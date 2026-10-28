@@ -8,6 +8,11 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 # (CARGT_WESTON_THEME in weston-init.bbappend).
 CARGT_SPLASH_THEME ?= "light"
 
+# The theme can differ per machine and lands in /etc/default/psplash, so
+# the package is per machine, not per SoC as meta-imx has it.
+PACKAGE_ARCH = "${MACHINE_ARCH}"
+PACKAGE_ARCH:imx-generic-bsp = "${MACHINE_ARCH}"
+
 SRC_URI += " \
     file://0001-psplash-draw-a-flat-progress-bar-under-the-logo.patch \
     file://0002-psplash-systemd-estimate-progress-from-boot-time.patch \
