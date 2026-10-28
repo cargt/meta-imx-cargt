@@ -1,4 +1,4 @@
-From 3b4c29ef2997975798f627bc410c42590f7b9cf0 Mon Sep 17 00:00:00 2001
+From f8d391373d694a77f4e5f3a3e0d0a498cd0a15c1 Mon Sep 17 00:00:00 2001
 From: Tim Carney <tim.carney@cargt.com>
 Date: Tue, 27 Oct 2026 11:00:59 -0500
 Subject: [PATCH 2/2] psplash-systemd: estimate progress from boot time
@@ -9,7 +9,8 @@ when the boot transaction ended rather than when the UI appeared.
 
 Estimate progress from time since kernel start against how long the
 previous boots took to bring the UI up instead, stored in
-/var/lib/psplash/boot-msec and blended 70/30 with each new boot. Use
+/var/lib/psplash/boot-msec. Each boot is blended 70/30 into it,
+starting from 20 s, so a slow first boot doesn't set the pace. Use
 sysinit.target, basic.target and multi-user.target as floors, cap the
 time estimate at 90% and creep toward 95% after it, and update ten
 times a second over one bus connection. Quit once one of the units in
@@ -18,14 +19,14 @@ active, or when systemd reports a progress of 1.0.
 
 Upstream-Status: Inappropriate [Cargt policy]
 ---
- psplash-systemd.c | 228 ++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 179 insertions(+), 49 deletions(-)
+ psplash-systemd.c | 227 ++++++++++++++++++++++++++++++++++++----------
+ 1 file changed, 178 insertions(+), 49 deletions(-)
 
 diff --git a/psplash-systemd.c b/psplash-systemd.c
-index 840bd4e..85485fc 100644
+index 840bd4e..b333b1d 100644
 --- a/psplash-systemd.c
 +++ b/psplash-systemd.c
-@@ -5,85 +5,194 @@
+@@ -5,85 +5,193 @@
   *
   * Author: Stefan Agner <stefan.agner@toradex.com>
   *
@@ -80,7 +81,6 @@ index 840bd4e..85485fc 100644
  static int pipe_fd;
 +static sd_bus *bus;
 +static double expected_msec;
-+static int have_record;
 +static const char *ready_units;
  
 -int get_progress(void)
@@ -103,18 +103,18 @@ index 840bd4e..85485fc 100644
 +		fclose(f);
 +	}
 +
-+	have_record = msec > 1000;
-+	return have_record ? msec : DEFAULT_BOOT_MSEC;
++	return msec > 1000 ? msec : DEFAULT_BOOT_MSEC;
 +}
 +
 +/*
 + * Blend this boot into the stored estimate so one slow boot (first boot,
-+ * a filesystem check) doesn't throw the next one off.
++ * a filesystem check) doesn't throw the next one off. With no record yet
++ * the estimate is DEFAULT_BOOT_MSEC, so the first boot is blended as well.
 + */
 +static void write_expected_msec(double msec)
 +{
 +	FILE *f;
-+	double blended = have_record ? 0.7 * expected_msec + 0.3 * msec : msec;
++	double blended = 0.7 * expected_msec + 0.3 * msec;
 +
 +	mkdir(BOOT_TIME_DIR, 0755);
 +	f = fopen(BOOT_TIME_FILE ".tmp", "w");
@@ -268,7 +268,7 @@ index 840bd4e..85485fc 100644
  }
  
  int psplash_handler(sd_event_source *s,
-@@ -110,7 +219,7 @@ err:
+@@ -110,7 +218,7 @@ err:
  
  int main()
  {
@@ -277,7 +277,7 @@ index 840bd4e..85485fc 100644
  	sd_event_source *event_source = NULL;
  	int r;
  	sigset_t ss;
-@@ -130,6 +239,26 @@ int main()
+@@ -130,6 +238,26 @@ int main()
  		exit(EXIT_FAILURE);
  	}
  
@@ -304,7 +304,7 @@ index 840bd4e..85485fc 100644
  	r = sd_event_default(&event);
  	if (r < 0)
  		goto finish;
-@@ -173,6 +302,7 @@ int main()
+@@ -173,6 +301,7 @@ int main()
  	r = sd_event_loop(event);
  finish:
  	event = sd_event_unref(event);
