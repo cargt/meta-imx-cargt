@@ -1,0 +1,67 @@
+From 8a70c3158517a3c4fb54dc41afe74c5b3d477e42 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Wed, 28 Oct 2026 16:26:04 -0500
+Subject: [PATCH] screen-share: transform damage to output coordinates with G2D
+ too
+
+NXP's screen-share skips weston_region_global_to_output() when
+use-g2d=true, on the assumption that the G2D renderer needs no
+global-to-output transform. That only holds for an untransformed output
+at position 0,0. On a rotated output (for example a 720x1280 panel with
+rotation 90, which Weston shows as 1280x720) the damage stays in global
+coordinates, so screen-share asks G2D to read a 1280-wide rectangle from
+the 720-wide framebuffer. g2d_blitEx() fails, the error is ignored, and
+the RDP client receives a black frame. Rectangles that do fit read the
+wrong, unrotated area.
+
+The cache image is already in output (framebuffer) coordinates and
+shared_output_update() already applies the output transform when it
+copies the cache to the shared buffer, so the G2D path only needs the
+same damage transform as the GL path. The G2D read_pixels flips rows
+itself, so the y-origin adjustment stays GL-only.
+
+Also check the read_pixels return value: log the failure and skip the
+rectangle instead of copying an unfilled buffer into the cache.
+
+Upstream-Status: Inappropriate [fixes NXP's downstream use-g2d code in screen-share]
+Signed-off-by: Tim Carney <tim.carney@cargt.com>
+---
+ frontend/screen-share.c | 17 +++++++++--------
+ 1 file changed, 9 insertions(+), 8 deletions(-)
+
+diff --git a/frontend/screen-share.c b/frontend/screen-share.c
+index 0c07067..f86adec 100644
+--- a/frontend/screen-share.c
++++ b/frontend/screen-share.c
+@@ -897,12 +897,8 @@ shared_output_repainted(struct wl_listener *listener, void *data)
+ 
+ 	/* Get damage in output coordinates */
+ 	pixman_region32_init(&output_damage);
+-	if (use_g2d)
+-		/* 2D no need global to output coordinate transform */
+-		pixman_region32_copy(&output_damage, global_output_damage);
+-	else
+-		weston_region_global_to_output(&output_damage, so->output,
+-					       global_output_damage);
++	weston_region_global_to_output(&output_damage, so->output,
++				       global_output_damage);
+ 
+ 	if (shared_output_ensure_tmp_data(so, &output_damage) < 0)
+ 		goto err_pixman_init;
+@@ -924,9 +920,14 @@ shared_output_repainted(struct wl_listener *listener, void *data)
+ 		else
+ 			y_orig = y;
+ 
+-		so->output->compositor->renderer->read_pixels(
++		if (so->output->compositor->renderer->read_pixels(
+ 			so->output, read_format,
+-			so->tmp_data, x, y_orig, width, height);
++			so->tmp_data, x, y_orig, width, height) < 0) {
++			weston_log("screen-share: failed to read %dx%d at %d,%d "
++				   "from output %s\n", width, height, x, y_orig,
++				   so->output->name);
++			continue;
++		}
+ 
+ 		damaged_image = pixman_image_create_bits(pixman_format,
+ 							 width, height,
