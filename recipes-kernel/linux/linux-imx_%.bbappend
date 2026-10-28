@@ -216,6 +216,8 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'cargt-router', 'file://car
             ${@bb.utils.contains('MACHINE_FEATURES', 't1l', 'file://cargt_t1l_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', 'ST7789T3', 'file://cargt_st7789t3_kernel_config_mods.cfg', '', d)} \
             "
+# OP-TEE trusted keys only where there is no CAAM (see the fragment's comment).
+SRC_URI:append:mx9-nxp-bsp = " file://cargt_imx9_trusted_keys_kernel_config_mods.cfg"
 
 # cargt-imx-rt distro: NXP Real-time Edge PREEMPT_RT kernel. real-time-edge-linux
 # linux_6.18.20 is lf-6.18.20 plus PREEMPT_RT/TSN/DSA, and every Cargt patch above
