@@ -1,0 +1,54 @@
+From 47e9157e0b6c569c4fcfbfccf24b770bf840ea82 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Wed, 28 Oct 2026 17:10:00 -0500
+Subject: [PATCH] Input: ili210x - bound each run of the polling ISR
+
+The threaded ISR polls for as long as the controller reports a contact.
+On an edge-triggered IRQ every INT edge that arrives meanwhile is
+accounted as unhandled by note_interrupt(), because threads_handled only
+moves when the thread returns. A contact held for a few minutes (or a
+stuck one) therefore gets the IRQ disabled with "nobody cared", and the
+touchscreen stays dead after the contact ends.
+
+Return after at most ILI2XXX_POLL_MAX ms. The controller keeps asserting
+INT for every report while a contact is held, so the IRQ fires again
+straight away and polling continues, while the handled count keeps up.
+
+Upstream-Status: Pending
+---
+ drivers/input/touchscreen/ili210x.c | 5 ++++-
+ 1 file changed, 4 insertions(+), 1 deletion(-)
+
+diff --git a/drivers/input/touchscreen/ili210x.c b/drivers/input/touchscreen/ili210x.c
+index df6781b..33e51c9 100644
+--- a/drivers/input/touchscreen/ili210x.c
++++ b/drivers/input/touchscreen/ili210x.c
+@@ -15,6 +15,7 @@
+ #include <linux/unaligned.h>
+ 
+ #define ILI2XXX_POLL_PERIOD	15
++#define ILI2XXX_POLL_MAX	1000
+ 
+ #define ILI210X_DATA_SIZE	64
+ #define ILI211X_DATA_SIZE	43
+@@ -333,6 +334,7 @@ static irqreturn_t ili210x_irq(int irq, void *irq_data)
+ 	struct i2c_client *client = priv->client;
+ 	const struct ili2xxx_chip *chip = priv->chip;
+ 	u8 touchdata[ILI210X_DATA_SIZE] = { 0 };
++	ktime_t time_end = ktime_add_ms(ktime_get(), ILI2XXX_POLL_MAX);
+ 	bool keep_polling;
+ 	ktime_t time_next;
+ 	s64 time_delta;
+@@ -355,7 +357,8 @@ static irqreturn_t ili210x_irq(int irq, void *irq_data)
+ 			if (time_delta > 0)
+ 				usleep_range(time_delta, time_delta + 1000);
+ 		}
+-	} while (!READ_ONCE(priv->stop) && keep_polling);
++	} while (!READ_ONCE(priv->stop) && keep_polling &&
++		 ktime_before(ktime_get(), time_end));
+ 
+ 	return IRQ_HANDLED;
+ }
+-- 
+2.34.1
+
