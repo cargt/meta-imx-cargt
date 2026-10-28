@@ -4,7 +4,8 @@
 FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 
 # "light" or "dark"; written to /etc/default/psplash, which can be edited
-# on the device.
+# on the device. Light by default, going into the dark Weston desktop
+# (CARGT_WESTON_THEME in weston-init.bbappend).
 CARGT_SPLASH_THEME ?= "light"
 
 SRC_URI += " \

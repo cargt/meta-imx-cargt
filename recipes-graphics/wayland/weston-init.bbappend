@@ -3,7 +3,8 @@
 # can switch by editing background-image/background-color in weston.ini.
 FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
-# "dark" or "light"
+# "dark" or "light". Dark by default, after the light boot splash
+# (CARGT_SPLASH_THEME in psplash_git.bbappend).
 CARGT_WESTON_THEME ?= "dark"
 CARGT_WESTON_COLOR[dark] = "0xff004437"
 CARGT_WESTON_COLOR[light] = "0xfff7f9fa"
