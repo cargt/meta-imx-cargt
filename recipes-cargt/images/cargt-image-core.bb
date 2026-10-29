@@ -43,7 +43,6 @@ IMAGE_INSTALL += " \
     net-tools \
     mosquitto \
     libiio-tests \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'connman', 'connman-tools connman-tests connman-client', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'networkmanager', 'networkmanager networkmanager-nmcli', '', d)} \
     swupdate swupdate-progress swupdate-www \
     grow-data-part \
