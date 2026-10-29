@@ -357,7 +357,16 @@
 	status = "disabled";
 };
 
+/*
+ * The SOM wires WDOG_ANY (MPU_WDOG_B) through R35 to the PMIC's WDOG_B
+ * input, as on NXP's i.MX93 EVK. Without fsl,ext-reset-output the
+ * imx7ulp driver leaves CS[INT]=0 and a wdog3 timeout only wraps the
+ * counter instead of resetting the board.
+ */
 &wdog3 {
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_wdog>;
+	fsl,ext-reset-output;
 	status = "okay";
 };
 
@@ -470,6 +479,12 @@
 	pinctrl_pmic: pmicgrp {
 		fsl,pins = <
 			MX93_PAD_PDM_BIT_STREAM1__GPIO1_IO10	0x31e /* PMIC_IRQ_B */
+		>;
+	};
+
+	pinctrl_wdog: wdoggrp {
+		fsl,pins = <
+			MX93_PAD_WDOG_ANY__WDOG1_WDOG_ANY	0x31e
 		>;
 	};
 	
