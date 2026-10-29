@@ -1,0 +1,42 @@
+// SPDX-License-Identifier: (GPL-2.0+ OR MIT)
+/*
+ * Copyright 2026 Cargt
+ *
+ * Cortex-M33 remoteproc and RPMsg for the i.MX 93 00363 SOM.
+ *
+ * Linux can then start and stop M33 firmware from
+ * /sys/class/remoteproc/remoteproc0 and talk to it over RPMsg (virtio vrings
+ * in DDR, MU1 for the doorbells). The vring, vdev buffer and resource table
+ * regions are already reserved in imx93-cargt-00363-osm-som.dts; this adds
+ * the M33's own DDR region for firmware linked to run from DDR.
+ *
+ * NXP's i.MX 93 EVK firmware in /lib/firmware (rpmsg_lite_str_echo,
+ * rpmsg_lite_pingpong, ...) uses LPUART2 as its debug console, and on the
+ * 00363 that is the mikroBUS UART (pads UART2_TXD/UART2_RXD), so Linux gives
+ * LPUART2 up here. Firmware built for the 00363 can use another UART instead.
+ */
+
+/ {
+	reserved-memory {
+		m33_reserved: m33@a5000000 {
+			reg = <0 0xa5000000 0 0x1000000>;
+			no-map;
+		};
+	};
+};
+
+&cm33 {
+	mbox-names = "tx", "rx", "rxdb";
+	mboxes = <&mu1 0 1>,
+		 <&mu1 1 1>,
+		 <&mu1 3 1>;
+	memory-region = <&vdevbuffer>, <&vdev0vring0>, <&vdev0vring1>,
+			<&vdev1vring0>, <&vdev1vring1>, <&rsc_table>;
+	fsl,startup-delay-ms = <500>;
+	status = "okay";
+};
+
+/* The M33 firmware's debug console (mikroBUS UART) */
+&lpuart2 {
+	status = "disabled";
+};

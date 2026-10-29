@@ -32,6 +32,12 @@ SRC_URI += " \
             file://dts/freescale/imx93-cargt-00363-00428-glt028240320is1.dtsi \
             file://dts/freescale/imx93-cargt-00363-00428-glt0557201280is1.dts \
             file://dts/freescale/imx93-cargt-00363-00428-glt0557201280is1.dtsi \
+            file://dts/freescale/imx93-cargt-00363-rpmsg.dtsi \
+            file://dts/freescale/imx93-cargt-00363-00365-rpmsg.dts \
+            file://dts/freescale/imx93-cargt-00363-00365-glt0557201280is1-rpmsg.dts \
+            file://dts/freescale/imx93-cargt-00363-00365-glt1011280800is1-rpmsg.dts \
+            file://dts/freescale/imx93-cargt-00363-00428-rpmsg.dts \
+            file://dts/freescale/imx93-cargt-00363-00428-glt0557201280is1-rpmsg.dts \
             file://dts/freescale/imx8mp-cargt-00377-00365.dts \
             file://dts/freescale/imx8mp-cargt-00377-00365.dtsi \
             file://dts/freescale/imx8mp-cargt-00377-00365-glt0557201280is1.dts \
@@ -71,7 +77,10 @@ do_patch:append() {
 
     # Boards added after the 0001 dtb-y patch register themselves here with a
     # standalone appended line rather than growing that patch.
-    for dtb in imx95-cargt-00414-osm-som.dtb imx95-cargt-00414-00365.dtb \
+    for dtb in imx93-cargt-00363-00365-rpmsg.dtb imx93-cargt-00363-00365-glt0557201280is1-rpmsg.dtb \
+               imx93-cargt-00363-00365-glt1011280800is1-rpmsg.dtb \
+               imx93-cargt-00363-00428-rpmsg.dtb imx93-cargt-00363-00428-glt0557201280is1-rpmsg.dtb \
+               imx95-cargt-00414-osm-som.dtb imx95-cargt-00414-00365.dtb \
                imx95-cargt-00414-00365-glt0557201280is1.dtb \
                imx95-cargt-00414-00365-glt1011280800is1.dtb \
                imx95-cargt-00414-00365-os08a20-csi1.dtb \
