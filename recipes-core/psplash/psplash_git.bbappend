@@ -53,23 +53,19 @@ python do_compile () {
     workdir = d.getVar('UNPACKDIR')
     src = d.getVar('S')
     convertscript = "%s/make-image-header.sh" % src
-    colors = "%s/psplash-colors.h" % src
 
     for variant in d.getVar('CARGT_SPLASH_VARIANTS').split():
         theme, size = variant.split('-')
         bg, bar, track = d.getVarFlag('CARGT_SPLASH_COLORS', theme).split()
         height, gap = d.getVarFlag('CARGT_SPLASH_BAR', size).split()
 
-        # psplash.c includes this with quotes, so it must replace the one in ${S}
-        with open(colors, 'w') as f:
-            f.write("#ifndef _HAVE_PSPLASH_COLORS_H\n#define _HAVE_PSPLASH_COLORS_H\n")
-            f.write("#define PSPLASH_BACKGROUND_COLOR %s\n" % bg)
-            f.write("#define PSPLASH_TEXT_COLOR %s\n" % bar)
-            f.write("#define PSPLASH_BAR_COLOR %s\n" % bar)
-            f.write("#define PSPLASH_BAR_BACKGROUND_COLOR %s\n" % track)
-            f.write("#define PSPLASH_BAR_HEIGHT %s\n" % height)
-            f.write("#define PSPLASH_BAR_GAP %s\n" % gap)
-            f.write("#endif\n")
+        # 0001 lets -D override psplash-colors.h, so ${S} stays untouched
+        defs = "-DPSPLASH_BACKGROUND_COLOR=%s -DPSPLASH_TEXT_COLOR=%s " \
+               "-DPSPLASH_BAR_COLOR=%s -DPSPLASH_BAR_BACKGROUND_COLOR=%s " \
+               "-DPSPLASH_BAR_HEIGHT=%s -DPSPLASH_BAR_GAP=%s" % (bg, bar, bar, track, height, gap)
+        localdata = bb.data.createCopy(d)
+        localdata.setVar('EXTRA_OEMAKE', "%s 'CPPFLAGS=%s %s'" %
+                         (d.getVar('EXTRA_OEMAKE') or '', d.getVar('CPPFLAGS') or '', defs))
 
         logo = "cargt-logo-%s.png" % variant
         if subprocess.call([convertscript, os.path.join(workdir, logo), 'POKY'], cwd=workdir):
@@ -79,7 +75,7 @@ python do_compile () {
         # For some reason just updating the headers is not enough, we have to
         # touch the .c file in order to get it to rebuild
         os.utime("%s/psplash.c" % src, None)
-        bb.build.exec_func("oe_runmake", d)
+        bb.build.exec_func("oe_runmake", localdata)
         shutil.copyfile("psplash", "psplash-%s" % variant)
 
     shutil.copyfile("psplash-light-480", "psplash-default")

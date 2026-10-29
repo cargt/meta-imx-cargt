@@ -1,4 +1,4 @@
-From 16c9783b6788ad4a447efaea3295879a394d609d Mon Sep 17 00:00:00 2001
+From 76a36456ce19e7d3c24fdf9eba501f04b78d769a Mon Sep 17 00:00:00 2001
 From: Tim Carney <tim.carney@cargt.com>
 Date: Tue, 27 Oct 2026 10:57:43 -0500
 Subject: [PATCH 1/2] psplash: draw a flat progress bar under the logo
@@ -6,13 +6,46 @@ Subject: [PATCH 1/2] psplash: draw a flat progress bar under the logo
 Replace the bevelled bar image with a flat track as wide as the logo,
 PSPLASH_BAR_HEIGHT pixels tall and PSPLASH_BAR_GAP pixels below it, and
 centre the logo and bar on the screen as one block. Both default to the
-1280x720-class layout and can be set in psplash-colors.h.
+1280x720-class layout. They and the colours in psplash-colors.h can be
+set with -D at build time, so one source tree builds several looks.
+
+The bar only fills from the left now: a negative PROGRESS (which used to
+fill from the right) draws an empty bar.
 
 Upstream-Status: Inappropriate [Cargt branding]
 ---
- psplash.c | 70 +++++++++++++++++++++++--------------------------------
- 1 file changed, 29 insertions(+), 41 deletions(-)
+ psplash-colors.h |  8 ++++++
+ psplash.c        | 70 ++++++++++++++++++++----------------------------
+ 2 files changed, 37 insertions(+), 41 deletions(-)
 
+diff --git a/psplash-colors.h b/psplash-colors.h
+index 82a9893..ff2a60f 100644
+--- a/psplash-colors.h
++++ b/psplash-colors.h
+@@ -12,15 +12,23 @@
+ #define _HAVE_PSPLASH_COLORS_H
+ 
+ /* This is the overall background color */
++#ifndef PSPLASH_BACKGROUND_COLOR
+ #define PSPLASH_BACKGROUND_COLOR 0xec,0xec,0xe1
++#endif
+ 
+ /* This is the color of any text output */
++#ifndef PSPLASH_TEXT_COLOR
+ #define PSPLASH_TEXT_COLOR 0x6d,0x6d,0x70
++#endif
+ 
+ /* This is the color of the progress bar indicator */
++#ifndef PSPLASH_BAR_COLOR
+ #define PSPLASH_BAR_COLOR 0x6d,0x6d,0x70
++#endif
+ 
+ /* This is the color of the progress bar background */
++#ifndef PSPLASH_BAR_BACKGROUND_COLOR
+ #define PSPLASH_BAR_BACKGROUND_COLOR 0xec,0xec,0xe1
++#endif
+ 
+ #endif
 diff --git a/psplash.c b/psplash.c
 index 261dd1c..4d71fee 100644
 --- a/psplash.c
