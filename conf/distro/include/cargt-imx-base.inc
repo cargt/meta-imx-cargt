@@ -31,7 +31,7 @@ DEFAULTTUNE:mx8-nxp-bsp    ?= "armv8a-crc-crypto"
 # turns on its openssl PACKAGECONFIG). It must not share the armv8a package
 # arch with i.MX93, or the machines overwrite each other's packages in the
 # shared feed. cortexa53-crypto matches meta-freescale's mx8m default. Hard
-# assignment because meta-imx's fsl-imx-base.inc also sets it with ?=.
+# assignment so a ?= default set earlier for this override can't win.
 DEFAULTTUNE:mx8m-nxp-bsp = "cortexa53-crypto"
 DEFAULTTUNE:mx8qm-nxp-bsp  ?= "armv8a-crc-crypto"
 DEFAULTTUNE:mx8x-nxp-bsp   ?= "armv8a-crc-crypto"
@@ -40,15 +40,9 @@ DEFAULTTUNE:mx9-nxp-bsp    ?= "armv8a-crc-crypto"
 # i.MX91 builds with different DISTRO_FEATURES than i.MX93 (no wayland/opengl/
 # vulkan, see below), so it must not share the armv8a package arch with i.MX93:
 # the two machines would overwrite/delete each other's packages in the shared
-# feed. cortexa55 matches meta-freescale's mx91 default. Hard assignment because
-# meta-imx's fsl-imx-base.inc may also set DEFAULTTUNE:mx91-nxp-bsp with ?=.
+# feed. cortexa55 matches meta-freescale's mx91 default. Hard assignment so a ?=
+# default set earlier for this override can't win.
 DEFAULTTUNE:mx91-nxp-bsp = "cortexa55"
-
-# These recipes are built differently on i.MX8MP (CAAM / ISP dependencies, jsoncpp epoch)
-# but would otherwise be packaged for the shared armv8a arch, so i.MX8MP and i.MX93 builds
-# delete each other's copies from the shared armv8a deploy dir/feed. Make them SoC-specific
-# on i.MX8MP (armv8a-mx8mp, already in its PACKAGE_FEED_ARCHS).
-MACHINE_SOCARCH_FILTER:append:mx8mp-nxp-bsp = " jsoncpp crypto-af-alg keyctl-caam smw"
 DEFAULTTUNE:mx93-nxp-bsp   ?= "armv8a-crc-crypto"
 
 PACKAGECONFIG:append:pn-gstreamer1.0-plugins-ugly = " x264"
