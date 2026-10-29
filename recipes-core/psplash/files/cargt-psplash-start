@@ -1,0 +1,65 @@
+#!/bin/sh
+# Start psplash on framebuffer $1 (e.g. fb0) in the configured theme,
+# turned to match the panel and with a logo sized to the screen.
+
+fb=${1:-fb0}
+CARGT_SPLASH_THEME=light
+[ -r /etc/default/psplash ] && . /etc/default/psplash
+
+# True if a DT node and every node above it are enabled
+enabled() {
+    n=$1
+    while [ "$n" != /proc/device-tree ]; do
+        if [ -r "$n/status" ] && ! grep -q ok "$n/status"; then
+            return 1
+        fi
+        n=${n%/*}
+    done
+}
+
+# True if $fb is on the DRM device that drives a panel, not e.g. HDMI on
+# another LCDIF. A framebuffer that isn't DRM can't be told apart.
+on_panel() {
+    d=/sys/class/graphics/$fb/device/drm
+    [ -d "$d" ] || return 0
+    for c in $d/card*/card*-DSI-* $d/card*/card*-LVDS-* $d/card*/card*-DPI-*; do
+        [ -e "$c" ] && return 0
+    done
+    return 1
+}
+
+# Weston turns the UI by the panel's DT "rotation" (panel orientation);
+# psplash draws straight to the framebuffer, so turn it the same way.
+# psplash's --angle runs the other way round from the DT rotation.
+# The first enabled panel node with a rotation is used, not necessarily
+# the one on $fb: fine while a board has one rotated panel.
+angle=0
+if on_panel; then
+    for r in $(find /proc/device-tree/ -maxdepth 8 -path '*panel*' -name rotation 2>/dev/null); do
+        enabled "${r%/rotation}" || continue
+        set -- $(od -An -tu1 "$r")
+        angle=$(( (360 - (($1 << 24) | ($2 << 16) | ($3 << 8) | $4)) % 360 ))
+        break
+    done
+fi
+
+# 480 px logo (and bar) unless the screen, as turned, is narrower than that
+size=480
+if [ -r /sys/class/graphics/$fb/virtual_size ]; then
+    IFS=, read w h < /sys/class/graphics/$fb/virtual_size
+    case $angle in 90|270) w=$h ;; esac
+    [ "$w" -lt 480 ] && size=200
+fi
+
+# Until Weston is up, fbcon on the display only shows a cursor under the
+# splash and clears the screen when Weston's unit switches VT, so take it
+# off the display. Done here, not at sysinit, so a display that probes
+# late (started by udev) is covered too. cargt-fbcon-attach puts it back.
+for v in /sys/class/vtconsole/vtcon*; do
+    grep -q "frame buffer" $v/name 2>/dev/null && echo 0 > $v/bind
+done
+
+bin=/usr/libexec/psplash/psplash-$CARGT_SPLASH_THEME-$size
+[ -x "$bin" ] || bin=/usr/bin/psplash
+
+exec $bin --fbdev ${fb#fb} --no-console-switch --angle $angle

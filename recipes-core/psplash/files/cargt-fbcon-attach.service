@@ -1,0 +1,11 @@
+[Unit]
+Description=Attach the framebuffer console to the display again
+# Undoes the detach in cargt-psplash-start once the splash is gone and
+# Weston holds the display, so Ctrl+Alt+F2 etc. show a text console.
+# Wanted by multi-user.target; ordering it after that explicitly stops the
+# target from being ordered after it, which would loop via graphical.target.
+After=multi-user.target weston.service graphical.target
+
+[Service]
+Type=oneshot
+ExecStart=/bin/sh -c 'for v in /sys/class/vtconsole/vtcon*; do grep -q "frame buffer" $$v/name && echo 1 > $$v/bind; done; true'
