@@ -31,6 +31,8 @@ on_panel() {
 # Weston turns the UI by the panel's DT "rotation" (panel orientation);
 # psplash draws straight to the framebuffer, so turn it the same way.
 # psplash's --angle runs the other way round from the DT rotation.
+# The first enabled panel node with a rotation is used, not necessarily
+# the one on $fb: fine while a board has one rotated panel.
 angle=0
 if on_panel; then
     for r in $(find /proc/device-tree/ -maxdepth 8 -path '*panel*' -name rotation 2>/dev/null); do
@@ -41,12 +43,12 @@ if on_panel; then
     done
 fi
 
-# 480 px logo unless the short side of the screen is too small for it
+# 480 px logo (and bar) unless the screen, as turned, is narrower than that
 size=480
 if [ -r /sys/class/graphics/$fb/virtual_size ]; then
     IFS=, read w h < /sys/class/graphics/$fb/virtual_size
-    [ "$w" -lt "$h" ] && h=$w
-    [ "$h" -lt 400 ] && size=200
+    case $angle in 90|270) w=$h ;; esac
+    [ "$w" -lt 480 ] && size=200
 fi
 
 # Until Weston is up, fbcon on the display only shows a cursor under the
