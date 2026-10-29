@@ -203,7 +203,9 @@ SRC_URI += "file://0001-arm64-dts-freescale-register-Cargt-board-dtb-y-entri.pat
 # DELTA_KERNEL_DEFCONFIG is deprecated/unsupported as of wrynose meta-imx-bsp;
 # per-machine selection is now done by conditionally adding each .cfg to
 # SRC_URI directly. kernel-yocto auto-merges any .cfg fragment found there.
-SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'cargt-router', 'file://cargt_router_kernel_config_mods.cfg', '', d)} \
+# cargt_netfilter applies to every machine: NetworkManager is in every image.
+SRC_URI += "file://cargt_netfilter_kernel_config_mods.cfg \
+            ${@bb.utils.contains('MACHINE_FEATURES', 'cargt-router', 'file://cargt_router_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00324', 'file://cargt_00324_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00326', 'file://cargt_00326_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', '00359', 'file://cargt_00359_kernel_config_mods.cfg', '', d)} \
