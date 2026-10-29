@@ -26,6 +26,7 @@ IMAGE_INSTALL += " \
     ${@bb.utils.contains('DISTRO_FEATURES', 'x11 wayland', 'weston-xwayland xterm', '', d)} \
     imx-test \
     firmwared \
+    cargt-network-config \
     packagegroup-imx-core-tools \
     packagegroup-imx-security \
     curl \
@@ -43,7 +44,6 @@ IMAGE_INSTALL += " \
     net-tools \
     mosquitto \
     libiio-tests \
-    ${@bb.utils.contains('DISTRO_FEATURES', 'connman', 'connman-tools connman-tests connman-client', '', d)} \
     ${@bb.utils.contains('DISTRO_FEATURES', 'networkmanager', 'networkmanager networkmanager-nmcli', '', d)} \
     swupdate swupdate-progress swupdate-www \
     grow-data-part \

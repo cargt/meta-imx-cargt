@@ -1,15 +1,34 @@
 [Unit]
 Description=NXP Bluetooth service
 Requires=nxp-wifi.service
-After=nxp-wifi.service
+After=nxp-wifi.service bluetooth.service
+# bluetooth.target only pulls bluetoothd in once hci0 exists, which happens in
+# this unit, so ask for it directly.
+Wants=bluetooth.service
 
 [Service]
 Type=oneshot
+# The IW612 runs one combined Wi-Fi+BT firmware (sduart_nw61x_v1.bin.se, from
+# wifi_mod_para.conf) that moal downloads over SDIO. btnxpuart must not probe
+# until that download has finished, or it sees the chip's bootloader, pushes
+# the Bluetooth-only firmware itself, and the controller comes up with the
+# placeholder address 88:88:88:88:88:88. mlan0 only appears once moal's
+# firmware is running, and btnxpuart is blacklisted (nxp-bluetooth.conf) so
+# nothing but this unit loads it.
 ExecStartPre=/bin/sh -c 'for i in $(seq 1 30); do test -e /sys/class/net/mlan0 && exit 0; sleep 1; done; exit 1'
 ExecStartPre=/usr/bin/env modprobe btnxpuart
 ExecStartPre=/bin/sh -c '[ -e /sys/class/bluetooth/hci0 ] || [ ! -e /dev/ttymxc0 ] || /usr/bin/hciattach /dev/ttymxc0 any 115200 flow'
-ExecStart=/bin/sh -c 'for i in $(seq 1 30); do /usr/bin/hciconfig hci0 up && exit 0; sleep 1; done; exit 1'
+# Power on through bluetoothd (mgmt), never "hciconfig hci0 up". The kernel
+# registers the LE SMP channel only when a mgmt-managed controller powers on
+# (hci_powered_update_sync -> smp_register). Bringing hci0 up with the legacy
+# ioctl before bluetoothd has claimed it skips that, so LE pairing fails with
+# "security requested but not available", and bluetoothd can no longer enable
+# LL privacy ("Failed to set privacy: Rejected"). bluetoothctl waits forever
+# for bluetoothd without --timeout.
+ExecStart=/bin/sh -c 'for i in $(seq 1 30); do /usr/bin/bluetoothctl --timeout 5 power on >/dev/null 2>&1 && exit 0; sleep 1; done; exit 1'
 RemainAfterExit=yes
+# Backstop: the waits above add up to about 70 s at most
+TimeoutStartSec=90
 
 [Install]
 WantedBy=multi-user.target

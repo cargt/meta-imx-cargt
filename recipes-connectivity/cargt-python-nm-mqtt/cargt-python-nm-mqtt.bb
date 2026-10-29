@@ -3,6 +3,7 @@ LIC_FILES_CHKSUM = ""
 
 SRC_URI = "git://github.com/cargt/cargt-util-python-nm-mqtt.git;protocol=https;branch=main \
            file://10-mosquitto.conf \
+           file://20-networkmanager.conf \
            "
 
 PV = "1.0+git${SRCPV}"
@@ -25,6 +26,8 @@ do_install () {
     install -m 0644 ${S}/cargt-python-nm-mqtt.service ${D}${systemd_unitdir}/system
     install -Dm 0644 ${UNPACKDIR}/10-mosquitto.conf \
         ${D}${systemd_unitdir}/system/cargt-python-nm-mqtt.service.d/10-mosquitto.conf
+    install -Dm 0644 ${UNPACKDIR}/20-networkmanager.conf \
+        ${D}${systemd_unitdir}/system/cargt-python-nm-mqtt.service.d/20-networkmanager.conf
 }
 
 FILES:${PN} = "${systemd_unitdir}/system/cargt-python-nm-mqtt.service \

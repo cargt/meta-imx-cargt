@@ -147,7 +147,19 @@
 	"gpio2-28","gpio2-29","gpio2-30","gpio2-31"; 	// 28-31
 };
 
+/*
+ * CCM_CLKO1 (GPIO3_IO26) is the SOM's BOARD_ID0 strap. It used to be described
+ * as the IW612 out-of-band wake (nxp,wifi-wake-host under &usdhc3), copied from
+ * the NXP EVK, where this pad is the Wi-Fi WL_HOST_WAKE. On this SOM the
+ * IW612's WL_HOST_WAKE goes to OSM pin AH33 (GPIO_E_5) instead, which neither
+ * the 00365 nor the 00428 carrier routes back to the SoC, so there is no
+ * out-of-band Wi-Fi wake. The strap reads low, so the level-low wake IRQ was
+ * permanently pending and every suspend aborted with "Wakeup pending".
+ * Keep the pad muxed as a GPIO input so the strap stays readable.
+ */
 &gpio3{
+	pinctrl-names = "default";
+	pinctrl-0 = <&pinctrl_board_id0>;
 	gpio-line-names =
 	"gpio3-0","gpio3-1","gpio3-2","gpio3-3", 		// 0-3
 	"gpio3-4","gpio3-5","gpio3-6","gpio3-7", 		// 4-7
@@ -155,7 +167,7 @@
 	"gpio3-12","gpio3-13","gpio3-14","gpio3-15", 	// 12-15
 	"gpio3-16","gpio3-17","gpio3-18","gpio3-19", 	// 16-19
 	"gpio3-20","gpio3-21","gpio3-22","gpio3-23", 	// 20-23
-	"gpio3-24","gpio3-25","gpio3-26","gpio3-27", 	// 24-27
+	"gpio3-24","gpio3-25","BOARD_ID0","gpio3-27", 	// 24-27
 	"gpio3-28","gpio3-29","gpio3-30","gpio3-31"; 	// 28-31
 };
 
@@ -320,23 +332,16 @@
 
 &usdhc3 {
 	pinctrl-names = "default", "state_100mhz", "state_200mhz", "sleep";
-	pinctrl-0 = <&pinctrl_usdhc3>, <&pinctrl_usdhc3_wlan>;
-	pinctrl-1 = <&pinctrl_usdhc3_100mhz>, <&pinctrl_usdhc3_wlan>;
-	pinctrl-2 = <&pinctrl_usdhc3_200mhz>, <&pinctrl_usdhc3_wlan>;
-	pinctrl-3 = <&pinctrl_usdhc3_sleep>, <&pinctrl_usdhc3_wlan>;
+	pinctrl-0 = <&pinctrl_usdhc3>;
+	pinctrl-1 = <&pinctrl_usdhc3_100mhz>;
+	pinctrl-2 = <&pinctrl_usdhc3_200mhz>;
+	pinctrl-3 = <&pinctrl_usdhc3_sleep>;
 	vmmc-supply = <&reg_usdhc3_vmmc>;
 	bus-width = <4>;
 	keep-power-in-suspend;
 	non-removable;
 	wakeup-source;
 	status = "okay";
-
-	wifi_wake_host {
-		compatible = "nxp,wifi-wake-host";
-		interrupt-parent = <&gpio3>;
-		interrupts = <26 IRQ_TYPE_LEVEL_LOW>;
-		interrupt-names = "host-wake";
-	};
 }; 
  
 &usbotg1 {
@@ -444,9 +449,9 @@
 		>;
 	};
 
-	pinctrl_usdhc3_wlan: usdhc3wlangrp {
+	pinctrl_board_id0: boardid0grp {
 		fsl,pins = <
-			MX93_PAD_CCM_CLKO1__GPIO3_IO26			0x31e
+			MX93_PAD_CCM_CLKO1__GPIO3_IO26			0x01e
 		>;
 	};
 	

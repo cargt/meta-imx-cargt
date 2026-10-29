@@ -1,0 +1,277 @@
+/* =========================================================
+   Cargt brand skin for the SWUpdate web UI (examples/www/v2, Bootstrap 5.3)
+   Brand guidelines: "Cargt Brand Guidelines_RD03", May 2026
+   Loaded after swupdate.min.css.
+   ========================================================= */
+
+@font-face {
+  font-family: "Manrope";
+  src: url("../fonts/Manrope-Variable.woff2") format("woff2");
+  font-weight: 200 800;
+  font-style: normal;
+  font-display: swap;
+}
+
+:root,
+[data-bs-theme=light] {
+  --cargt-kaitoke-green: #004437;   /* primary */
+  --cargt-emerald: #00ac69;         /* secondary */
+  --cargt-electronic-mint: #39f2ae; /* secondary */
+  --cargt-circuit-green: #26ff91;   /* secondary */
+  --cargt-mid-gray: #9fa4aa;        /* neutral - decorative only */
+  --cargt-light-gray: #f7f9fa;      /* neutral */
+  --cargt-electric-blue: #2424ff;   /* accent - links */
+  --cargt-body-text: #262b28;
+
+  /* Theme-dependent roles */
+  --cargt-heading: var(--cargt-kaitoke-green);
+  --cargt-accent: var(--cargt-emerald);
+  --cargt-card-bg: #fff;
+  --cargt-drop-bg: #fff;
+  --cargt-drop-hover: #e9faf3;
+  --cargt-nav-bg: var(--cargt-kaitoke-green);
+
+  --bs-primary: #004437;
+  --bs-primary-rgb: 0, 68, 55;
+  --bs-link-color: #2424ff;
+  --bs-link-color-rgb: 36, 36, 255;
+  --bs-link-hover-color: #2424ff;
+  --bs-link-hover-color-rgb: 36, 36, 255;
+  --bs-body-color: #262b28;
+  --bs-body-color-rgb: 38, 43, 40;
+  --bs-body-bg: #f7f9fa;
+  --bs-body-font-family: "Manrope", -apple-system, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+[data-bs-theme=dark] {
+  --cargt-heading: var(--cargt-electronic-mint);
+  --cargt-accent: var(--cargt-circuit-green);
+  --cargt-card-bg: #16241f;
+  --cargt-drop-bg: #12201b;
+  --cargt-drop-hover: #1d3a31;
+  --cargt-nav-bg: #002a22;
+
+  --bs-primary: #39f2ae;
+  --bs-primary-rgb: 57, 242, 174;
+  --bs-link-color: #8f8fff;
+  --bs-link-color-rgb: 143, 143, 255;
+  --bs-link-hover-color: #8f8fff;
+  --bs-link-hover-color-rgb: 143, 143, 255;
+  --bs-body-color: #e6ece9;
+  --bs-body-color-rgb: 230, 236, 233;
+  --bs-body-bg: #0f1a17;
+  --bs-border-color: #2b3f38;
+  --bs-secondary-bg: #1f302a;
+}
+
+/* ===== P1: no logo watermark behind the content ===== */
+body {
+  background: var(--bs-body-bg) !important;
+  font-family: var(--bs-body-font-family);
+  font-weight: 450;
+}
+
+/* ===== Layout ===== */
+.container {
+  max-width: 960px;
+}
+.card {
+  --bs-card-bg: var(--cargt-card-bg);
+  border: 1px solid var(--bs-border-color);
+  border-radius: .75rem;
+  box-shadow: 0 1px 2px rgba(0, 0, 0, .04), 0 2px 6px rgba(0, 0, 0, .05);
+}
+.card-header {
+  background: transparent;
+  padding: 1rem 1.25rem .75rem;
+}
+.card-body {
+  padding: 1.25rem;
+}
+h1, h5 {
+  color: var(--cargt-heading);
+  font-weight: 700;
+}
+h1.display-6 {
+  font-weight: 700;
+  letter-spacing: -.01em;
+}
+.lead {
+  color: var(--cargt-accent);
+  font-weight: 600;
+  font-size: 1.1rem;
+}
+
+/* ===== P2: navbar ===== */
+.navbar.bg-primary {
+  background: var(--cargt-nav-bg) !important;
+}
+.navbar-brand img {
+  height: 32px;
+  width: auto;
+}
+.navbar-dark .nav-link,
+#swu-restart {
+  color: #fff;
+}
+#swu-restart {
+  border: 1px solid rgba(255, 255, 255, .6);
+  border-radius: .375rem;
+  padding: .3rem .8rem;
+  font-weight: 600;
+}
+#swu-restart:hover,
+#swu-restart:focus {
+  color: var(--cargt-electronic-mint);
+  border-color: var(--cargt-electronic-mint);
+}
+
+/* Light/dark toggle (theme defaults to dark; see the inline script in index.html) */
+#cargt-theme-toggle {
+  color: #fff;
+  border: 1px solid rgba(255, 255, 255, .6);
+  border-radius: .375rem;
+  padding: .3rem .6rem;
+  margin-right: .5rem;
+  line-height: 1;
+}
+#cargt-theme-toggle:hover,
+#cargt-theme-toggle:focus {
+  color: var(--cargt-electronic-mint);
+  border-color: var(--cargt-electronic-mint);
+}
+[data-bs-theme=dark] #cargt-theme-toggle .fa-moon,
+[data-bs-theme=light] #cargt-theme-toggle .fa-sun {
+  display: none;
+}
+
+/* ===== P4: dropzone, the main action ===== */
+.dropzone {
+  border: 2px dashed var(--cargt-emerald) !important;
+  border-radius: .75rem !important;
+  background: var(--cargt-drop-bg);
+  min-height: 180px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color .15s, border-color .15s;
+}
+.dropzone:hover,
+.dropzone.dz-drag-hover {
+  background: var(--cargt-drop-hover);
+  border-color: var(--cargt-kaitoke-green) !important;
+}
+[data-bs-theme=dark] .dropzone:hover,
+[data-bs-theme=dark] .dropzone.dz-drag-hover {
+  border-color: var(--cargt-circuit-green) !important;
+}
+.dropzone .dz-message {
+  margin: 0;
+  font-weight: 600;
+  color: var(--cargt-heading);
+}
+.dropzone .dz-message .fa-upload {
+  color: var(--cargt-accent);
+}
+.dropzone .dz-message small {
+  display: block;
+  margin-top: .25rem;
+  font-weight: 450;
+  color: var(--bs-secondary-color);
+}
+
+/* ===== P4: status and progress ===== */
+.alert {
+  border-left-width: 4px;
+  margin-bottom: .75rem;
+}
+[data-bs-theme=light] .alert-success {
+  --bs-alert-bg: #e6f7ef;
+  --bs-alert-color: #004437;
+  --bs-alert-border-color: #00ac69;
+}
+[data-bs-theme=dark] .alert-success {
+  --bs-alert-color: var(--cargt-electronic-mint);
+  --bs-alert-border-color: var(--cargt-emerald);
+}
+#swu-progress-spinner {
+  width: 1rem;
+  height: 1rem;
+  border-width: .15em;
+  vertical-align: -.125em;
+  margin-right: .25rem;
+}
+/* The idle spinner is only "invisible", which leaves an empty line */
+#swu-progress-spinner.invisible {
+  display: none;
+}
+#swu-progress-value {
+  float: right; /* upstream uses Bootstrap 4's float-right, which BS5 dropped */
+  font-weight: 700;
+}
+.progress {
+  height: 1.5rem;
+  margin-top: .5rem;
+  border-radius: .5rem;
+  background: var(--bs-secondary-bg);
+}
+.progress-bar {
+  background-color: var(--cargt-emerald);
+}
+/* Hide the empty progress track until an update starts. swupdate.min.js
+   hides #swu-idle with jQuery .hide(), which writes style="display: none;" */
+#swu-idle:not([style*="none"]) ~ .progress {
+  display: none;
+}
+
+/* ===== P5: update log ===== */
+#headingMessages a {
+  color: var(--cargt-heading);
+  text-decoration: none;
+  cursor: pointer;
+}
+#messages {
+  font-family: ui-monospace, "DejaVu Sans Mono", Menlo, Consolas, monospace;
+  font-size: .8125rem;
+  line-height: 1.5;
+  background: #0f1a17;
+  color: #d7e3df;
+  max-height: 40vh;
+  overflow: auto;
+  border-left: 4px solid var(--cargt-emerald);
+  border-radius: 0 0 .75rem .75rem;
+}
+#messages p {
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-word;
+}
+#messages .text-danger {
+  color: #ff6b6b !important;
+}
+#messages .text-muted {
+  color: var(--cargt-mid-gray) !important;
+}
+
+/* ===== P8: footer ===== */
+.cargt-footer {
+  text-align: center;
+  font-size: .8125rem;
+  color: var(--bs-secondary-color);
+  padding: .5rem 0 2rem;
+}
+
+/* ===== P6: phone ===== */
+@media (max-width: 575.98px) {
+  .container {
+    padding-inline: 16px;
+  }
+  .dropzone {
+    min-height: 140px;
+    padding: 1rem;
+  }
+  .navbar-brand img {
+    height: 26px;
+  }
+}
