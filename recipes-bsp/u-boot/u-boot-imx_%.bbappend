@@ -48,6 +48,7 @@ SRC_URI += "file://0002-Add-support-for-imx93_00363.patch \
             file://0034-board-cargt-imx8mp_00377-select-USB2-for-fastboot-o.patch \
             file://0034-Add-dts-and-config-for-00363-00428-board.patch \
             file://0035-board-cargt-imx91_00363-move-blank-EEPROM-fail-safe.patch \
+            file://0036-board-cargt-common-fix-EEPROM-example-to-big-endian.patch \
             "
 
 SRC_URI:remove = "file://0001-Add-Olimex-iMX8MP-SOM-EVB-IND.patch"

@@ -1,0 +1,90 @@
+From a4521612236b0acf3f0ffec1d637f3d93f0ddaa2 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 29 Oct 2026 15:21:44 -0500
+Subject: [PATCH] board: cargt: common: fix EEPROM example to big-endian
+
+The example EEPROM array in cargt_eeprom.h showed the size and DRAM
+size fields little-endian (0x30,0x00 and 0x00,0x04). The code reads
+every multi-byte field with be16_to_cpu()/be32_to_cpu(), and programmed
+EEPROMs are big-endian, so the example was misleading.
+
+Replace it with a struct_ver 2 example laid out like a real 00363 SOM:
+size 0x0030, part number 012-00363-FE, serial at 0x14-0x17, DRAM size
+0x0800 (2048 MB) and speed 0x0e95 (3733 MT/s), rank 2, and a CRC32 over
+bytes 0-43 that matches the example bytes.
+
+The reserved bytes are now annotated: byte 37 is the DRAM rank
+(struct_ver >= 2).
+
+Comment-only change; no code change.
+
+Upstream-Status: Inappropriate [Cargt board specific]
+
+Co-Authored-By: Claude Opus 5.5 <noreply@anthropic.com>
+---
+ board/cargt/common/cargt_eeprom.h | 43 +++++++++++++++++--------------
+ 1 file changed, 24 insertions(+), 19 deletions(-)
+
+diff --git a/board/cargt/common/cargt_eeprom.h b/board/cargt/common/cargt_eeprom.h
+index 6b5df99..94bf3ba 100644
+--- a/board/cargt/common/cargt_eeprom.h
++++ b/board/cargt/common/cargt_eeprom.h
+@@ -21,31 +21,36 @@
+ 
+ /*
+  * Example EEPROM data for testing and reference.
+- * This array represents a sample EEPROM structure with:
++ * Multi-byte fields are stored big-endian; the code reads them with
++ * be16_to_cpu()/be32_to_cpu(). This array represents a sample EEPROM
++ * structure (struct_ver 2, laid out like a real 00363 SOM) with:
+  * - Magic number ("CRGT")
+- * - Structure size (48 bytes)
+- * - Structure version (1)
+- * - Part number ("105-00359-02") (null terminated)
+- * - Serial number (0x12345678)
+- * - Build date ("20240610") (null terminated)
+- * - DRAM size (1024 MB)
+- * - DRAM speed (0 MT/s)
+- * - Reserved bytes
+- * - Example CRC32
++ * - Structure size (48 bytes, 0x0030)
++ * - Structure version (2)
++ * - Part number ("012-00363-FE") (null terminated)
++ * - Serial number (0x12345678, bytes 0x14-0x17)
++ * - Build date ("20250115") (null terminated)
++ * - DRAM size (2048 MB, 0x0800)
++ * - DRAM speed (3733 MT/s, 0x0e95)
++ * - Reserved bytes 37-43:
++ *     byte 37: DRAM rank/chip-select count (struct_ver >= 2)
++ *     bytes 38-43: reserved, 0x00
++ * - CRC32 over bytes 0-43, stored big-endian
+  *
+  * Usage: For unit tests or as a template for EEPROM programming.
+  *
+  * static const uint8_t cargt_eeprom_example[48] = {
+  *   0x43, 0x52, 0x47, 0x54,             // magic "CRGT"
+- *   0x30, 0x00,                         // size (48 bytes)
+- *   0x01,                               // struct_ver
+- *   '1','0','5','-','0','0','3','5','9','-','0','2',0x00, // cpn
+- *   0x12, 0x34, 0x56, 0x78,             // serial
+- *   '2','0','2','4','0','6','1','0',0x00, // date
+- *   0x00, 0x04,                         // dramsize_mbytes (1024)
+- *   0x00, 0x00,                         // dramspeed_mts (0)
+- *   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // reserved
+- *   0xE5, 0xB7, 0xA2, 0xC3              // crc32 (example)
++ *   0x00, 0x30,                         // size (48 bytes)
++ *   0x02,                               // struct_ver
++ *   '0','1','2','-','0','0','3','6','3','-','F','E',0x00, // cpn
++ *   0x12, 0x34, 0x56, 0x78,             // serial (0x12345678)
++ *   '2','0','2','5','0','1','1','5',0x00, // date
++ *   0x08, 0x00,                         // dramsize_mbytes (2048)
++ *   0x0e, 0x95,                         // dramspeed_mts (3733)
++ *   0x02,                               // reserved[0]: dram_rank (v2+)
++ *   0x00, 0x00, 0x00, 0x00, 0x00, 0x00, // reserved[1..6]
++ *   0xb9, 0xb7, 0x99, 0x4d              // crc32 (0xb9b7994d)
+  * };
+  */
+ struct __packed cargt_eeprom
+-- 
+2.34.1
+
