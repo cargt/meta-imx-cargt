@@ -30,6 +30,8 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0032-Add-00363-00428-board.patch \
             file://0033-arm64-dts-imx8mp-cargt-00377-osm-som-boost-uart1-clo.patch \
             file://0034-arm64-dts-imx93-cargt-00363-osm-som-hog-PMIC_IRQ_B-t.patch \
+            file://0035-arm64-dts-imx93-cargt-00324-mux-WDOG_ANY-for-the-wdo.patch \
+            file://0036-arm64-dts-imx9-13-cargt-00363-osm-som-mux-WDOG_ANY-f.patch \
             "
 
 SRC_URI += "file://cargt_router_kernel_config_mods.cfg \
