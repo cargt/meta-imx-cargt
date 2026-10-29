@@ -1,0 +1,34 @@
+software =
+{
+	version = "@@SW_VER_STRING@@";
+	
+	@@MACHINE@@ = {
+		hardware-compatibility: [ "1.0" ];
+
+		files: (
+			{
+				filename = "@@CARGT_SWU_ROOTFS@@";
+				path = "/data/swupdate/update.tar.zst";
+				installed-directly = true;  
+				install-if-different = true;
+				properties: {
+						create-destination = "true";
+				}
+			},
+			{
+				filename = "update-machine.sh";
+				path = "/data/swupdate/update-machine.sh";
+				properties: {
+						create-destination = "true";
+				}
+			}
+		);
+
+		scripts: (
+			{
+				filename = "update.sh";
+				type = "postinstall";
+			}
+		);
+	};
+}
