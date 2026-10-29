@@ -12,7 +12,10 @@ LIC_FILES_CHKSUM = "file://${COMMON_LICENSE_DIR}/MIT;md5=0835ade698e0bcf8506ecda
 # signed against it.
 PACKAGE_ARCH = "${MACHINE_ARCH}"
 
-# Takes these files over from older systemd packages on devices being upgraded
+# Takes these files over from systemd packages built before the split (they were
+# installed by systemd_%.bbappend) on devices being upgraded. Unversioned on
+# purpose: upstream systemd ships nothing at these paths, and a version bound
+# would have to track systemd's PV and PR-server revision.
 RREPLACES:${PN} = "systemd"
 
 S = "${WORKDIR}"
