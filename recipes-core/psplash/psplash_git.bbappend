@@ -99,10 +99,18 @@ do_install:append() {
 
         # Start the splash with sysinit rather than when udev gets round to
         # fb0, which is seconds after the kernel made /dev/fb0. udev still
-        # starts it if fb0 turns up later.
+        # starts it if fb0 turns up later. A drop-in can't remove the
+        # dependencies on the device, so edit the unit, and fail if oe-core
+        # changed it so that the edit no longer works.
+        unit=${D}${systemd_system_unitdir}/psplash-start@.service
         sed -i -e '/^After=dev-%i.device/d' -e '/^Wants=dev-%i.device/d' \
-            -e '/^\[Unit\]/a ConditionPathExists=/dev/%i' \
-            ${D}${systemd_system_unitdir}/psplash-start@.service
+            -e '/^\[Unit\]/a ConditionPathExists=/dev/%i' $unit
+        if grep -q 'dev-%i.device' $unit || ! grep -q '^ConditionPathExists=/dev/%i' $unit; then
+            bbfatal "psplash-start@.service from oe-core changed; update the edit in ${FILE}"
+        fi
+
+        # These links are static (not [Install]), so on a device the units
+        # are turned off with "systemctl mask", not "systemctl disable".
         install -d ${D}${systemd_system_unitdir}/sysinit.target.wants
         ln -sf ../psplash-start@.service \
             ${D}${systemd_system_unitdir}/sysinit.target.wants/psplash-start@fb0.service
