@@ -99,11 +99,13 @@ PACKAGE_ARCH:pn-smw = "${MACHINE_ARCH}"
 PACKAGE_ARCH:pn-el2go-agent = "${MACHINE_ARCH}"
 PACKAGE_ARCH:pn-oem-prov-app = "${MACHINE_ARCH}"
 
-# Package feed (the apt sources.list in the image). Cargt machine .conf files set their own; these defaults cover
-# machines that don't, e.g. NXP's FRDM boards from meta-imx (whose images had no sources.list at all). The feed
-# archs follow the machine's real package archs, so they stay right when a tune changes.
+# Package feed (the apt sources.list in the image), for every machine: Cargt machine .conf files only append
+# extra archs, and NXP's FRDM boards from meta-imx (whose images had no sources.list at all) get one too. The feed
+# archs follow the machine's real package archs, so they stay right when a tune changes. MACHINE_SOCARCH is only
+# set by fsl-dynamic-packagearch (i.MX machines), so it is left out when empty. Distros pick their feed with
+# CARGT_FEED_RELEASE (e.g. cargt-imx-rt.conf).
 CARGT_FEED_BASE ?= "https://yocto.cargt.com/linux-imx"
 CARGT_FEED_RELEASE ?= "wrynose"
 PACKAGE_FEED_URIS ?= "${CARGT_FEED_BASE}/${CARGT_FEED_RELEASE}"
 PACKAGE_FEED_BASE_PATHS ?= ""
-PACKAGE_FEED_ARCHS ?= "all ${TUNE_PKGARCH} ${MACHINE_SOCARCH} ${MACHINE_ARCH}"
+PACKAGE_FEED_ARCHS ?= "all ${TUNE_PKGARCH} ${@d.getVar('MACHINE_SOCARCH') or ''} ${MACHINE_ARCH}"
