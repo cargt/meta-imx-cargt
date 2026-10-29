@@ -26,12 +26,23 @@ SKIP_META_TPM_SANITY_CHECK = "1"
 
 # Set a more generic tuning for code reuse across parts
 DEFAULTTUNE:mx8-nxp-bsp    ?= "armv8a-crc-crypto"
-DEFAULTTUNE:mx8m-nxp-bsp   ?= "armv8a-crc-crypto"
+# i.MX8M builds with "virtualization" in DISTRO_FEATURES (added for mx8 above,
+# as in meta-imx), which changes recipes such as systemd (meta-virtualization
+# turns on its openssl PACKAGECONFIG). It must not share the armv8a package
+# arch with i.MX93, or the machines overwrite each other's packages in the
+# shared feed. cortexa53-crypto matches meta-freescale's mx8m default. Hard
+# assignment so a ?= default set earlier for this override can't win.
+DEFAULTTUNE:mx8m-nxp-bsp = "cortexa53-crypto"
 DEFAULTTUNE:mx8qm-nxp-bsp  ?= "armv8a-crc-crypto"
 DEFAULTTUNE:mx8x-nxp-bsp   ?= "armv8a-crc-crypto"
 DEFAULTTUNE:mx8ulp-nxp-bsp ?= "armv8a-crc-crypto"
 DEFAULTTUNE:mx9-nxp-bsp    ?= "armv8a-crc-crypto"
-DEFAULTTUNE:mx91-nxp-bsp  ?= "armv8a-crc-crypto"
+# i.MX91 builds with different DISTRO_FEATURES than i.MX93 (no wayland/opengl/
+# vulkan, see below), so it must not share the armv8a package arch with i.MX93:
+# the two machines would overwrite/delete each other's packages in the shared
+# feed. cortexa55 matches meta-freescale's mx91 default. Hard assignment so a ?=
+# default set earlier for this override can't win.
+DEFAULTTUNE:mx91-nxp-bsp = "cortexa55"
 DEFAULTTUNE:mx93-nxp-bsp   ?= "armv8a-crc-crypto"
 
 PACKAGECONFIG:append:pn-gstreamer1.0-plugins-ugly = " x264"
@@ -54,3 +65,18 @@ PACKAGECONFIG:remove:mx91-nxp-bsp:pn-qtbase = "gles2"
 PACKAGECONFIG:append:mx91-nxp-bsp:pn-qtbase = " no-opengl linuxfb"
 
 PACKAGECONFIG:append:pn-networkmanager = " modemmanager ppp"
+# Recipes packaged for a shared (tune/SoC) arch must build identically for every
+# machine sharing it, or the machines overwrite each other's packages in the feed.
+# These only recommend a machine-specific package, which doesn't change their
+# contents, so keep that dependency out of their signatures (as meta-freescale
+# does for imx-gpu-viv->kernel-module-imx-gpu-viv).
+SIGGEN_EXCLUDE_SAFE_RECIPE_DEPS:append = " \
+    openssl->cryptodev-module \
+    alsa-utils->alsa-state \
+    systemd->cargt-network-config \
+"
+# smw is built against the machine's OP-TEE TA dev kit, so it is machine-specific,
+# and so are the EdgeLock 2GO apps linked against it.
+PACKAGE_ARCH:pn-smw = "${MACHINE_ARCH}"
+PACKAGE_ARCH:pn-el2go-agent = "${MACHINE_ARCH}"
+PACKAGE_ARCH:pn-oem-prov-app = "${MACHINE_ARCH}"
