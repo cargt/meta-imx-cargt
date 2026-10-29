@@ -1,5 +1,8 @@
 [Match]
 Name=eth0
+# Leave NFS-root / kernel-ip= boots alone (as oe-core's 80-wired.network)
+KernelCommandLine=!nfsroot
+KernelCommandLine=!ip
 
 [Link]
 RequiredForOnline=yes
