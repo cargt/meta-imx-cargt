@@ -2,12 +2,12 @@ software =
 {
 	version = "@@SW_VER_STRING@@";
 	
-	imx93-cargt-00363-00428 = {
+	@@MACHINE@@ = {
 		hardware-compatibility: [ "1.0" ];
 
 		files: (
 			{
-				filename = "cargt-image-core-imx93-cargt-00363-00428.rootfs.tar.zst";
+				filename = "@@CARGT_SWU_ROOTFS@@";
 				path = "/data/swupdate/update.tar.zst";
 				installed-directly = true;  
 				install-if-different = true;
