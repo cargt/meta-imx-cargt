@@ -8,6 +8,11 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/files:"
 # (CARGT_WESTON_THEME in weston-init.bbappend).
 CARGT_SPLASH_THEME ?= "light"
 
+# Where psplash-systemd keeps how long boot takes. /var/lib isn't kept on
+# a read-only rootfs (cargt images on squashfs machines), so use the data
+# partition there; psplash-systemd finds the record once it's mounted.
+CARGT_SPLASH_BOOT_TIME_DIR ?= "${@bb.utils.contains('MACHINE_FEATURES', 'squashfs', '/data/psplash', '${localstatedir}/lib/psplash', d)}"
+
 # The theme can differ per machine and lands in /etc/default/psplash, so
 # the package is per machine, not per SoC as meta-imx has it.
 PACKAGE_ARCH = "${MACHINE_ARCH}"
@@ -93,6 +98,9 @@ do_install:append() {
     if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
         install -Dm 0644 ${UNPACKDIR}/zz-cargt.conf \
             ${D}${systemd_system_unitdir}/psplash-start@.service.d/zz-cargt.conf
+        install -d ${D}${systemd_system_unitdir}/psplash-systemd.service.d
+        printf '[Service]\nEnvironment=PSPLASH_BOOT_TIME_DIR=%s\n' ${CARGT_SPLASH_BOOT_TIME_DIR} \
+            > ${D}${systemd_system_unitdir}/psplash-systemd.service.d/zz-cargt.conf
 
         # Start the splash with sysinit rather than when udev gets round to
         # fb0, which is seconds after the kernel made /dev/fb0. udev still
@@ -122,6 +130,7 @@ FILES:${PN} += " \
     ${libexecdir}/psplash \
     ${sysconfdir}/default/psplash \
     ${systemd_system_unitdir}/psplash-start@.service.d \
+    ${systemd_system_unitdir}/psplash-systemd.service.d \
     ${systemd_system_unitdir}/sysinit.target.wants \
     ${systemd_system_unitdir}/graphical.target.wants \
     ${systemd_system_unitdir}/cargt-fbcon-*.service \

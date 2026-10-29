@@ -1,6 +1,6 @@
-From 3ba883b7ea8535e9c7f6000c33d0554ef37ce0bf Mon Sep 17 00:00:00 2001
+From 70cd12e6694371fedb3ad363244855860d1566ec Mon Sep 17 00:00:00 2001
 From: Tim Carney <tim.carney@cargt.com>
-Date: Tue, 27 Oct 2026 11:00:59 -0500
+Date: Thu, 29 Oct 2026 10:56:30 -0500
 Subject: [PATCH 2/2] psplash-systemd: estimate progress from boot time
 
 systemd's Progress property is finished jobs over queued jobs. Jobs keep
@@ -8,26 +8,32 @@ being queued during boot, so the bar stalled, jumped, and reached 100%
 when the boot transaction ended rather than when the UI appeared.
 
 Estimate progress from time since kernel start against how long the
-previous boots took to bring the UI up instead, stored in
-/var/lib/psplash/boot-msec. Each boot is blended 70/30 into it,
-starting from 20 s, so a slow first boot doesn't set the pace. Use
-sysinit.target, basic.target and multi-user.target as floors, cap the
-time estimate at 90% and creep toward 95% after it, and update ten
-times a second. Ask systemd five times a second over one bus
-connection, and stop asking about targets the bar has passed. Quit once one of the units in
-PSPLASH_READY_UNITS (default: weston.service graphical.target) is
-active, or when systemd reports a progress of 1.0.
+previous boots took to bring the UI up instead, stored in boot-msec
+under PSPLASH_BOOT_TIME_DIR (default /var/lib/psplash). Each boot is
+blended 70/30 into it, starting from 20 s, so a slow first boot doesn't
+set the pace; a boot counts as at most twice the estimate, so one very
+slow boot (fsck, an update) doesn't either. Changes under 200 ms aren't
+written back, and failures to store it are logged. If there's no record
+when the splash starts, keep looking for one, since the directory can
+be on a partition mounted later in boot.
+
+Use sysinit.target, basic.target and multi-user.target as floors, cap
+the time estimate at 90% and creep toward 95% after it, and update ten
+times a second. Ask systemd five times a second over one bus connection,
+and stop asking about targets the bar has passed. Quit once one of the
+units in PSPLASH_READY_UNITS (default: weston.service graphical.target)
+is active, or when systemd reports a progress of 1.0.
 
 Upstream-Status: Inappropriate [Cargt policy]
 ---
- psplash-systemd.c | 235 ++++++++++++++++++++++++++++++++++++----------
- 1 file changed, 186 insertions(+), 49 deletions(-)
+ psplash-systemd.c | 273 +++++++++++++++++++++++++++++++++++++---------
+ 1 file changed, 224 insertions(+), 49 deletions(-)
 
 diff --git a/psplash-systemd.c b/psplash-systemd.c
-index 840bd4e..a15b7bf 100644
+index 840bd4e..920a634 100644
 --- a/psplash-systemd.c
 +++ b/psplash-systemd.c
-@@ -5,85 +5,201 @@
+@@ -5,85 +5,235 @@
   *
   * Author: Stefan Agner <stefan.agner@toradex.com>
   *
@@ -58,8 +64,12 @@ index 840bd4e..a15b7bf 100644
 +
 +/* Expected time from kernel start to UI ready when no boot has been recorded */
 +#define DEFAULT_BOOT_MSEC 20000
-+#define BOOT_TIME_DIR     "/var/lib/psplash"
-+#define BOOT_TIME_FILE    BOOT_TIME_DIR "/boot-msec"
++/* Where boot-msec is kept; PSPLASH_BOOT_TIME_DIR overrides it */
++#define DEFAULT_BOOT_TIME_DIR "/var/lib/psplash"
++/* A boot counts as at most this many times the estimate (fsck, an update) */
++#define MAX_SAMPLE_RATIO 2.0
++/* Smaller changes to the estimate aren't written, to spare the flash */
++#define MIN_WRITE_MSEC 200
 +
 +/* Time-based progress runs to this, then creeps toward CREEP_LIMIT */
 +#define TIME_LIMIT  90.0
@@ -84,30 +94,42 @@ index 840bd4e..a15b7bf 100644
 +
  static int pipe_fd;
 +static sd_bus *bus;
-+static double expected_msec;
++static double expected_msec = DEFAULT_BOOT_MSEC;
++static int have_record;
++static const char *boot_time_dir;
++static char boot_time_file[256];
 +static const char *ready_units;
- 
--int get_progress(void)
++
 +static double boot_msec(void)
 +{
 +	struct timespec ts;
-+
+ 
+-int get_progress(void)
 +	clock_gettime(CLOCK_BOOTTIME, &ts);
 +	return ts.tv_sec * 1000.0 + ts.tv_nsec / 1000000.0;
 +}
 +
-+static double read_expected_msec(void)
++/* Sets expected_msec and returns 1 if there's a record of earlier boots */
++static int read_expected_msec(void)
 +{
-+	FILE *f = fopen(BOOT_TIME_FILE, "r");
++	static int logged;
++	FILE *f = fopen(boot_time_file, "r");
 +	double msec = 0;
 +
-+	if (f) {
-+		if (fscanf(f, "%lf", &msec) != 1)
-+			msec = 0;
-+		fclose(f);
++	if (!f) {
++		if (errno != ENOENT && !logged++)
++			fprintf(stderr, "Failed to read %s: %s\n",
++				boot_time_file, strerror(errno));
++		return 0;
 +	}
++	if (fscanf(f, "%lf", &msec) != 1)
++		msec = 0;
++	fclose(f);
 +
-+	return msec > 1000 ? msec : DEFAULT_BOOT_MSEC;
++	if (msec <= 1000)
++		return 0;
++	expected_msec = msec;
++	return 1;
 +}
 +
 +/*
@@ -117,16 +139,30 @@ index 840bd4e..a15b7bf 100644
 + */
 +static void write_expected_msec(double msec)
 +{
++	char tmp[sizeof(boot_time_file) + 4];
++	double blended, change;
 +	FILE *f;
-+	double blended = 0.7 * expected_msec + 0.3 * msec;
 +
-+	mkdir(BOOT_TIME_DIR, 0755);
-+	f = fopen(BOOT_TIME_FILE ".tmp", "w");
-+	if (!f)
++	if (msec > MAX_SAMPLE_RATIO * expected_msec)
++		msec = MAX_SAMPLE_RATIO * expected_msec;
++	blended = 0.7 * expected_msec + 0.3 * msec;
++	change = blended > expected_msec ? blended - expected_msec : expected_msec - blended;
++	if (have_record && change < MIN_WRITE_MSEC)
 +		return;
++
++	if (mkdir(boot_time_dir, 0755) < 0 && errno != EEXIST) {
++		fprintf(stderr, "Failed to create %s: %s\n", boot_time_dir, strerror(errno));
++		return;
++	}
++	snprintf(tmp, sizeof(tmp), "%s.tmp", boot_time_file);
++	f = fopen(tmp, "w");
++	if (!f) {
++		fprintf(stderr, "Failed to write %s: %s\n", tmp, strerror(errno));
++		return;
++	}
 +	fprintf(f, "%.0f\n", blended);
-+	if (fclose(f) == 0)
-+		rename(BOOT_TIME_FILE ".tmp", BOOT_TIME_FILE);
++	if (fclose(f) != 0 || rename(tmp, boot_time_file) < 0)
++		fprintf(stderr, "Failed to write %s: %s\n", boot_time_file, strerror(errno));
 +}
 +
 +static int unit_active(const char *unit)
@@ -207,6 +243,9 @@ index 840bd4e..a15b7bf 100644
 -		goto finish;
 -	}
 +	sd_bus_error_free(&error);
++
++	return progress == 1.0;
++}
  
 -	/*
 -	 * Systemd's progress seems go backwards at times. Prevent that
@@ -215,15 +254,12 @@ index 840bd4e..a15b7bf 100644
 -	 */
 -	if (current_progress < progress)
 -		current_progress = progress;
-+	return progress == 1.0;
-+}
- 
--	len = snprintf(buffer, 20, "PROGRESS %d", (int)(current_progress * 100));
 +static void send_progress(int value)
 +{
 +	char buffer[20];
 +	int len;
-+
+ 
+-	len = snprintf(buffer, 20, "PROGRESS %d", (int)(current_progress * 100));
 +	len = snprintf(buffer, sizeof(buffer), "PROGRESS %d", value);
  	write(pipe_fd, buffer, len + 1);
 +}
@@ -236,9 +272,13 @@ index 840bd4e..a15b7bf 100644
 +	static unsigned int tick;
 +	int query = tick++ % BUS_QUERY_TICKS == 0;
 +	double elapsed = boot_msec();
-+	double t = elapsed / expected_msec;
-+	double progress;
++	double t, progress;
 +	unsigned int i;
++
++	/* The record can be on a partition mounted after the splash started */
++	if (query && !have_record)
++		have_record = read_expected_msec();
++	t = elapsed / expected_msec;
 +
 +	if (query && ui_ready()) {
 +		send_progress(100);
@@ -277,7 +317,7 @@ index 840bd4e..a15b7bf 100644
  }
  
  int psplash_handler(sd_event_source *s,
-@@ -110,7 +226,7 @@ err:
+@@ -110,7 +260,7 @@ err:
  
  int main()
  {
@@ -286,14 +326,18 @@ index 840bd4e..a15b7bf 100644
  	sd_event_source *event_source = NULL;
  	int r;
  	sigset_t ss;
-@@ -130,6 +246,26 @@ int main()
+@@ -130,6 +280,30 @@ int main()
  		exit(EXIT_FAILURE);
  	}
  
 +	ready_units = getenv("PSPLASH_READY_UNITS");
 +	if (!ready_units || !*ready_units)
 +		ready_units = DEFAULT_READY_UNITS;
-+	expected_msec = read_expected_msec();
++	boot_time_dir = getenv("PSPLASH_BOOT_TIME_DIR");
++	if (!boot_time_dir || !*boot_time_dir)
++		boot_time_dir = DEFAULT_BOOT_TIME_DIR;
++	snprintf(boot_time_file, sizeof(boot_time_file), "%s/boot-msec", boot_time_dir);
++	have_record = read_expected_msec();
 +
 +	/* Connect to systemd's private bus once; it is up before D-Bus is */
 +	r = sd_bus_new(&bus);
@@ -313,7 +357,7 @@ index 840bd4e..a15b7bf 100644
  	r = sd_event_default(&event);
  	if (r < 0)
  		goto finish;
-@@ -173,6 +309,7 @@ int main()
+@@ -173,6 +347,7 @@ int main()
  	r = sd_event_loop(event);
  finish:
  	event = sd_event_unref(event);
