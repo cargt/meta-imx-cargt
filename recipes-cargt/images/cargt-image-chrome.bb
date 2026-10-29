@@ -89,7 +89,10 @@ install_launchers() {
     printf "\n[launcher]\nicon=/usr/share/weston/terminal.png\npath=/usr/bin/weston-terminal" >> ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini    
     if ! grep -q "icon=/usr/share/weston/icon/chromium.png" ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini
     then
-       printf "\n[launcher]\nicon=/usr/share/weston/icon/chromium.png\npath=QMLSCENE_DEVICE=softwarecontext /usr/lib/chromium/chromium-bin --use-gl=egl --ozone-platform=wayland --disable-features=VizDisplayCompositor --no-sandbox --no-first-run --start-maximized \n\n" >> ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini
+       # The chromium wrapper sets the GL flags meta-imx chose for this SoC;
+       # chromium-bin --use-gl=egl falls back to software rendering on
+       # Chromium 142 (ANGLE only).
+       printf "\n[launcher]\nicon=/usr/share/weston/icon/chromium.png\npath=/usr/bin/chromium --no-sandbox --no-first-run --start-maximized\n\n" >> ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini
     fi    
 }
 
@@ -98,5 +101,4 @@ nfs_symlink() {
     ln -fs ${IMAGE_ROOTFS} ${TMPDIR}/../rootfs
 }
 
-# GPU/CPU stress and benchmark tools for i.MX 95 bring-up
-IMAGE_INSTALL:append:mx95-nxp-bsp = " stress-ng glmark2"
+# stress-ng and glmark2 are in cargt-image-stress-test
