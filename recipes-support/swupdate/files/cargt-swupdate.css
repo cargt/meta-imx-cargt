@@ -55,6 +55,8 @@
   --bs-primary-rgb: 57, 242, 174;
   --bs-link-color: #8f8fff;
   --bs-link-color-rgb: 143, 143, 255;
+  --bs-link-hover-color: #8f8fff;
+  --bs-link-hover-color-rgb: 143, 143, 255;
   --bs-body-color: #e6ece9;
   --bs-body-color-rgb: 230, 236, 233;
   --bs-body-bg: #0f1a17;
@@ -204,9 +206,6 @@ h1.display-6 {
 #swu-progress-spinner.invisible {
   display: none;
 }
-.card-body > .alert:last-of-type {
-  margin-bottom: 0;
-}
 #swu-progress-value {
   float: right; /* upstream uses Bootstrap 4's float-right, which BS5 dropped */
   font-weight: 700;
@@ -220,7 +219,8 @@ h1.display-6 {
 .progress-bar {
   background-color: var(--cargt-emerald);
 }
-/* Hide the empty progress track until an update starts */
+/* Hide the empty progress track until an update starts. swupdate.min.js
+   hides #swu-idle with jQuery .hide(), which writes style="display: none;" */
 #swu-idle:not([style*="none"]) ~ .progress {
   display: none;
 }

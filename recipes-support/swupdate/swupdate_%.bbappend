@@ -64,8 +64,6 @@ do_install:append() {
         '<h5>Install an update</h5>'
     cargt_www_edit 's|<span class="dz-message">Click here, or drag and drop a software update image file to this area.</span>|<span class="dz-message"><i class="fas fa-upload fa-2x d-block mb-2"></i>Drop a .swu file here, or click to choose one.<small>The update starts as soon as you drop the file.</small></span>|' \
         'fa-upload'
-    cargt_www_edit 's|progress-bar progress-bar-striped"|progress-bar progress-bar-striped progress-bar-animated"|' \
-        'progress-bar-animated'
     cargt_www_edit 's|<i class="fas"></i> Messages</a>|<i class="fas"></i> Update log</a>|' \
         'Update log</a>'
     cargt_www_edit 's|</body>|<footer class="cargt-footer container">Cargt · Modern electronics. Confidence at every step.</footer>&|' \
