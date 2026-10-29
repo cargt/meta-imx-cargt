@@ -49,6 +49,14 @@ if [ -r /sys/class/graphics/$fb/virtual_size ]; then
     [ "$h" -lt 400 ] && size=200
 fi
 
+# Until Weston is up, fbcon on the display only shows a cursor under the
+# splash and clears the screen when Weston's unit switches VT, so take it
+# off the display. Done here, not at sysinit, so a display that probes
+# late (started by udev) is covered too. cargt-fbcon-attach puts it back.
+for v in /sys/class/vtconsole/vtcon*; do
+    grep -q "frame buffer" $v/name 2>/dev/null && echo 0 > $v/bind
+done
+
 bin=/usr/libexec/psplash/psplash-$CARGT_SPLASH_THEME-$size
 [ -x "$bin" ] || bin=/usr/bin/psplash
 

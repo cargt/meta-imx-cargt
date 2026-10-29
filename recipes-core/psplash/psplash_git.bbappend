@@ -26,7 +26,6 @@ SRC_URI += " \
     file://cargt-logo-dark-200.png \
     file://cargt-psplash-start \
     file://zz-cargt.conf \
-    file://cargt-fbcon-detach.service \
     file://cargt-fbcon-attach.service \
 "
 
@@ -110,15 +109,14 @@ do_install:append() {
         ln -sf ../psplash-systemd.service \
             ${D}${systemd_system_unitdir}/sysinit.target.wants/psplash-systemd.service
 
-        # Keep fbcon off the display under the splash and through Weston's
-        # VT switch, then attach it again for the text consoles.
-        install -m 0644 ${UNPACKDIR}/cargt-fbcon-detach.service \
-            ${UNPACKDIR}/cargt-fbcon-attach.service ${D}${systemd_system_unitdir}/
-        ln -sf ../cargt-fbcon-detach.service \
-            ${D}${systemd_system_unitdir}/sysinit.target.wants/cargt-fbcon-detach.service
-        install -d ${D}${systemd_system_unitdir}/graphical.target.wants
+        # cargt-psplash-start takes fbcon off the display under the splash;
+        # attach it again for the text consoles once Weston is up.
+        # multi-user.target wants it, so images without Weston or
+        # graphical.target get the console back too.
+        install -m 0644 ${UNPACKDIR}/cargt-fbcon-attach.service ${D}${systemd_system_unitdir}/
+        install -d ${D}${systemd_system_unitdir}/multi-user.target.wants
         ln -sf ../cargt-fbcon-attach.service \
-            ${D}${systemd_system_unitdir}/graphical.target.wants/cargt-fbcon-attach.service
+            ${D}${systemd_system_unitdir}/multi-user.target.wants/cargt-fbcon-attach.service
     fi
 }
 
@@ -128,7 +126,7 @@ FILES:${PN} += " \
     ${systemd_system_unitdir}/psplash-start@.service.d \
     ${systemd_system_unitdir}/psplash-systemd.service.d \
     ${systemd_system_unitdir}/sysinit.target.wants \
-    ${systemd_system_unitdir}/graphical.target.wants \
-    ${systemd_system_unitdir}/cargt-fbcon-*.service \
+    ${systemd_system_unitdir}/multi-user.target.wants \
+    ${systemd_system_unitdir}/cargt-fbcon-attach.service \
 "
 CONFFILES:${PN} += "${sysconfdir}/default/psplash"
