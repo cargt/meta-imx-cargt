@@ -63,6 +63,9 @@ SRC_URI += " \
             file://dts/freescale/imx95-cargt-00414-00365-os08a20-csi-dual.dts \
             file://dts/freescale/imx95-cargt-00414-00365-headless.dtsi \
             file://dts/freescale/imx95-cargt-00414-00365-headless.dts \
+            file://dts/freescale/imx95-cargt-00414-00365-headless-os08a20-csi1.dts \
+            file://dts/freescale/imx95-cargt-00414-00365-headless-os08a20-csi2.dts \
+            file://dts/freescale/imx95-cargt-00414-00365-headless-os08a20-csi-dual.dts \
             file://dts/freescale/imx95-cargt-00414-00365-glt0557201280is1.dts \
             file://dts/freescale/imx95-cargt-00414-00365-glt0557201280is1.dtsi \
             file://dts/freescale/imx95-cargt-00414-00365-glt1011280800is1.dts \
@@ -87,6 +90,9 @@ do_patch:append() {
                imx95-cargt-00414-00365-os08a20-csi2.dtb \
                imx95-cargt-00414-00365-os08a20-csi-dual.dtb \
                imx95-cargt-00414-00365-headless.dtb \
+               imx95-cargt-00414-00365-headless-os08a20-csi1.dtb \
+               imx95-cargt-00414-00365-headless-os08a20-csi2.dtb \
+               imx95-cargt-00414-00365-headless-os08a20-csi-dual.dtb \
                imx95-cargt-00414-00428.dtb; do
         grep -qxF "dtb-\$(CONFIG_ARCH_MXC) += $dtb" ${S}/arch/arm64/boot/dts/freescale/Makefile || \
             echo "dtb-\$(CONFIG_ARCH_MXC) += $dtb" >> ${S}/arch/arm64/boot/dts/freescale/Makefile
