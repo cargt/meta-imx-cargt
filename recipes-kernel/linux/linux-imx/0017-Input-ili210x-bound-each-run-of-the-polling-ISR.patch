@@ -15,6 +15,7 @@ INT for every report while a contact is held, so the IRQ fires again
 straight away and polling continues, while the handled count keeps up.
 
 Upstream-Status: Pending
+Signed-off-by: Tim Carney <tim.carney@cargt.com>
 ---
  drivers/input/touchscreen/ili210x.c | 5 ++++-
  1 file changed, 4 insertions(+), 1 deletion(-)

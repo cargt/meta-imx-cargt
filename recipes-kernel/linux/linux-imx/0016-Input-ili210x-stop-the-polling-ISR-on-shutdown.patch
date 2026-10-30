@@ -21,6 +21,7 @@ ISR leaves within one poll period. Use READ_ONCE()/WRITE_ONCE() for the
 flag since it is written outside the ISR thread.
 
 Upstream-Status: Pending
+Signed-off-by: Tim Carney <tim.carney@cargt.com>
 ---
  drivers/input/touchscreen/ili210x.c | 18 ++++++++++++++++--
  1 file changed, 16 insertions(+), 2 deletions(-)
