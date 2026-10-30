@@ -68,6 +68,7 @@ IMAGE_INSTALL += " \
     teleport \
     swupdate swupdate-progress swupdate-www \
     grow-data-part \
+    ${@bb.utils.contains('WKS_FILE', 'cargt-dev.wks.in', bb.utils.contains('MACHINE_FEATURES', 'optee', 'optee-storage-data', '', d), '', d)} \
     board-version \
     v4l-utils \
     libdrm-tests \
