@@ -307,6 +307,14 @@
 };
 
 /*
+ * imx91.dtsi leaves the TMU disabled, so cpu-thermal has no sensor and
+ * no thermal zone registers. Enable it as NXP's i.MX91 boards do.
+ */
+&tempsense0 {
+	status = "okay";
+};
+
+/*
  * The SOM wires WDOG_ANY (MPU_WDOG_B) through R35 to the PMIC's WDOG_B
  * input, as on NXP's i.MX93 EVK. Without fsl,ext-reset-output the
  * imx7ulp driver leaves CS[INT]=0 and a wdog3 timeout only wraps the
