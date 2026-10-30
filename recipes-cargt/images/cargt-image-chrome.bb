@@ -90,6 +90,8 @@ CHROMIUM_LAUNCHER = "${@bb.utils.contains('CORE_IMAGE_EXTRA_INSTALL', 'chromium-
 ROOTFS_POSTPROCESS_COMMAND:append = "install_launchers; "
 
 install_launchers() {
+    # No Weston on SoCs without wayland in DISTRO_FEATURES (the i.MX 91)
+    [ -f ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini ] || return 0
     printf "\n[launcher]\nicon=/usr/share/weston/terminal.png\npath=/usr/bin/weston-terminal" >> ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini    
     if [ -n "${CHROMIUM_LAUNCHER}" ] && \
        ! grep -q "icon=/usr/share/weston/icon/chromium.png" ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini
