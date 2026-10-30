@@ -43,7 +43,7 @@ CARGT_WIFI_COUNTRY ?= "US"
 do_install:append() {
     install -m 0644 ${UNPACKDIR}/wifi_mod_para.conf ${D}${nonarch_base_libdir}/firmware/nxp/wifi_mod_para.conf
     if [ -n "${CARGT_WIFI_COUNTRY}" ]; then
-        sed -i -E 's/^([A-Z0-9]+ = \{)$/\1\n\tdisable_regd_by_driver=0\n\treg_alpha2=${CARGT_WIFI_COUNTRY}/' \
+        sed -i -E 's/^([A-Z0-9_]+ = \{)$/\1\n\tdisable_regd_by_driver=0\n\treg_alpha2=${CARGT_WIFI_COUNTRY}/' \
             ${D}${nonarch_base_libdir}/firmware/nxp/wifi_mod_para.conf
     fi
 }

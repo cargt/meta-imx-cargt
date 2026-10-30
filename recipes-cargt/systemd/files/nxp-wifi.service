@@ -13,8 +13,10 @@ Type=simple
 # mounted, so it has no database and cannot apply moal's country. Load it now.
 ExecStartPre=-/usr/sbin/iw reg reload
 ExecStart=/usr/bin/env modprobe moal mod_para=nxp/wifi_mod_para.conf drvdbg=0x00000000
-# Wait (up to 5 s) for cfg80211 to apply the country before wpa_supplicant starts.
-ExecStartPost=/bin/sh -c 'for i in $(seq 1 20); do /usr/sbin/iw reg get | grep -q "^country 00" || exit 0; sleep 0.25; done'
+# Wait (up to 5 s) for cfg80211 to apply the country before wpa_supplicant
+# starts. Skipped when wifi_mod_para.conf sets no reg_alpha2 (CARGT_WIFI_COUNTRY
+# empty), because the domain then stays at world ("country 00") anyway.
+ExecStartPost=/bin/sh -c 'grep -q "^[[:space:]]*reg_alpha2=" /lib/firmware/nxp/wifi_mod_para.conf || exit 0; for i in $(seq 1 20); do /usr/sbin/iw reg get | grep -q "^country 00" || exit 0; sleep 0.25; done'
 ExecStartPost=/usr/bin/sleep 3
 
 [Install]
