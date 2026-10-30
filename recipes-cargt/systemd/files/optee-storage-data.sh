@@ -8,7 +8,11 @@
 # this on machines whose WKS has the data partition, and on a block-device
 # rootfs /data is mounted later by grow-data-part. A request before then fails
 # and is retried (see optee-storage-data.conf).
-case "$(awk '$2 == "/" { t = $3 } END { print t }' /proc/mounts)" in
+rootfs_type=
+while read -r dev mnt type rest; do
+	[ "$mnt" = / ] && rootfs_type=$type
+done </proc/mounts
+case "$rootfs_type" in
 nfs | nfs4 | cifs | smb3)
 	exec /usr/sbin/tee-supplicant "$@"
 	;;
