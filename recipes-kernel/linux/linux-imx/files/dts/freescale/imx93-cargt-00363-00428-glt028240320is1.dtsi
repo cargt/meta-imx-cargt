@@ -59,6 +59,7 @@
         touchscreen-size-x = <240>;
         touchscreen-size-y = <320>;
 		touchscreen-inverted-y;
+		touchscreen-swapped-x-y; /* the panel runs landscape (320x240) */
 		wakeup-source;
       };
 };
