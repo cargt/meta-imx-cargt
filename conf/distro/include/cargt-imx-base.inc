@@ -30,8 +30,9 @@ DEFAULTTUNE:mx8-nxp-bsp    ?= "armv8a-crc-crypto"
 # as in meta-imx), which changes recipes such as systemd (meta-virtualization
 # turns on its openssl PACKAGECONFIG). It must not share the armv8a package
 # arch with i.MX93, or the machines overwrite each other's packages in the
-# shared feed. cortexa53-crypto matches meta-freescale's mx8m default. Hard
-# assignment so a ?= default set earlier for this override can't win.
+# shared feed. cortexa53-crypto matches meta-freescale's mx8m default. The
+# mx8m-nxp-bsp override is what wins: it comes after mx8-nxp-bsp (above) and
+# imx-base.inc's DEFAULTTUNE:mx8m-generic-bsp in OVERRIDES.
 DEFAULTTUNE:mx8m-nxp-bsp = "cortexa53-crypto"
 DEFAULTTUNE:mx8qm-nxp-bsp  ?= "armv8a-crc-crypto"
 DEFAULTTUNE:mx8x-nxp-bsp   ?= "armv8a-crc-crypto"
@@ -40,8 +41,8 @@ DEFAULTTUNE:mx9-nxp-bsp    ?= "armv8a-crc-crypto"
 # i.MX91 builds with different DISTRO_FEATURES than i.MX93 (no wayland/opengl/
 # vulkan, see below), so it must not share the armv8a package arch with i.MX93:
 # the two machines would overwrite/delete each other's packages in the shared
-# feed. cortexa55 matches meta-freescale's mx91 default. Hard assignment so a ?=
-# default set earlier for this override can't win.
+# feed. cortexa55 matches meta-freescale's mx91 default. The mx91-nxp-bsp
+# override is what wins: it comes after mx9-nxp-bsp (above) in OVERRIDES.
 DEFAULTTUNE:mx91-nxp-bsp = "cortexa55"
 DEFAULTTUNE:mx93-nxp-bsp   ?= "armv8a-crc-crypto"
 
