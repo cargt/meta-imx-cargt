@@ -3,7 +3,8 @@
 # driver) is a plain SPI framebuffer. G2D needs PXP, which its DTs leave
 # disabled, and its primary plane only scans out RGB565/XRGB8888, so the
 # stock weston.ini (use-g2d=true, gbm-format=argb8888) makes Weston fail.
-# When that display is present, write a pixman/RGB565 copy of weston.ini
+# When that display is present, write a pixman/RGB565 copy of weston.ini,
+# with the small Cargt logo so it fits the 320x240 panel,
 # where Weston finds it first ($XDG_CONFIG_HOME, set by the unit drop-in).
 # Any other display keeps the stock /etc/xdg/weston/weston.ini.
 dir=/run/cargt-weston
@@ -14,6 +15,7 @@ for drv in /sys/class/drm/card*/device/driver; do
     sed -e 's/^use-g2d=.*/use-g2d=false/' \
         -e 's/^gbm-format=.*/gbm-format=rgb565/' \
         -e '/^renderer=/d' \
+        -e 's|^\(background-image=.*/cargt-background-[a-z]*\)\.png$|\1-small.png|' \
         -e '/^\[core\]/a renderer=pixman' \
         /etc/xdg/weston/weston.ini > "$dir/weston.ini"
     break
