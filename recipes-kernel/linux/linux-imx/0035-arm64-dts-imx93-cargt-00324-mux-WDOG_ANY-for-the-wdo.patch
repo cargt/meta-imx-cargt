@@ -1,0 +1,80 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 29 Oct 2026 16:22:04 -0500
+Subject: [PATCH 35/36] arm64: dts: imx93-cargt-00324: mux WDOG_ANY for the
+ wdog3 board reset
+
+The 00324 SOM wires the WDOG_ANY pad (MPU_WDOG_B) through R32 to the
+PCA9451's WDOG_B input, like NXP's i.MX93 EVK. Mux the pad in the SOM
+dtsi and state fsl,ext-reset-output on wdog3 there, so every 00324
+carrier gets the watchdog board reset. Drop the 00326 dts's own wdog3
+status = "okay", which the SOM now covers.
+
+NXP's lf-6.6 imx93.dtsi already sets fsl,ext-reset-output on wdog3, so
+here this mainly makes the pad mux explicit rather than relying on its
+reset default. On wrynose (6.18) the SoC dtsi no longer sets the
+property, and a wdog3 timeout only wrapped the counter without
+resetting the board. This keeps scarthgap's board DT the same as
+wrynose's.
+
+Upstream-Status: Inappropriate [board specific]
+---
+ .../dts/freescale/imx93-cargt-00324-00326.dts |  4 ----
+ .../boot/dts/freescale/imx93-cargt-00324.dtsi | 19 +++++++++++++++++++
+ 2 files changed, 19 insertions(+), 4 deletions(-)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx93-cargt-00324-00326.dts b/arch/arm64/boot/dts/freescale/imx93-cargt-00324-00326.dts
+index b7eae16f0668..907121611b5d 100644
+--- a/arch/arm64/boot/dts/freescale/imx93-cargt-00324-00326.dts
++++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00324-00326.dts
+@@ -86,10 +86,6 @@ aliases {
+ 	 };
+  };
+ 
+- &wdog3 {
+-	status = "okay";
+- };
+- 
+  &flexcan1 {
+ 	 pinctrl-names = "default";
+ 	 pinctrl-0 = <&pinctrl_flexcan1>;
+diff --git a/arch/arm64/boot/dts/freescale/imx93-cargt-00324.dtsi b/arch/arm64/boot/dts/freescale/imx93-cargt-00324.dtsi
+index c4cd59d35953..61de349d649c 100644
+--- a/arch/arm64/boot/dts/freescale/imx93-cargt-00324.dtsi
++++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00324.dtsi
+@@ -258,6 +258,19 @@ &usdhc1 {
+ 	status = "okay";
+ };
+ 
++/*
++ * The SOM wires WDOG_ANY (MPU_WDOG_B) through R32 to the PMIC's WDOG_B
++ * input, as on NXP's i.MX93 EVK. Without fsl,ext-reset-output the
++ * imx7ulp driver leaves CS[INT]=0 and a wdog3 timeout only wraps the
++ * counter instead of resetting the board.
++ */
++&wdog3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_wdog>;
++	fsl,ext-reset-output;
++	status = "okay";
++};
++
+ &iomuxc {
+ 	pinctrl_eqos: eqosgrp {
+ 		fsl,pins = <
+@@ -331,6 +344,12 @@ MX93_PAD_SD1_STROBE__USDHC1_STROBE	0x15fe
+ 		>;
+ 	};
+ 
++	pinctrl_wdog: wdoggrp {
++		fsl,pins = <
++			MX93_PAD_WDOG_ANY__WDOG1_WDOG_ANY	0x31e
++		>;
++	};
++
+ };
+ 
+ &epxp {
+-- 
+2.34.1
+

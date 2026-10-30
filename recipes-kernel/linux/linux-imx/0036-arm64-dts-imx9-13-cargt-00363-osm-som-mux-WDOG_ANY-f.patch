@@ -1,0 +1,92 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 29 Oct 2026 16:22:04 -0500
+Subject: [PATCH 36/36] arm64: dts: imx9[13]-cargt-00363-osm-som: mux WDOG_ANY
+ for the wdog3 board reset
+
+The 00363 SOM wires WDOG_ANY (MPU_WDOG_B, ball J18) through R35 (0 ohm)
+to the PCA9451's PMIC_WDOG_B input (014-00363 revs CE and FE), which is
+the same circuit as the 00324's R32. Mux the pad and state
+fsl,ext-reset-output on wdog3 in both the i.MX93 and i.MX91 SOM files.
+No 00363 carrier DT uses the pad (GPIO1_IO15) for anything else.
+
+NXP's lf-6.6 imx93.dtsi/imx91.dtsi already set fsl,ext-reset-output on
+wdog3, so here this mainly makes the pad mux explicit. It keeps
+scarthgap's board DT the same as wrynose's, where the 6.18 SoC dtsi
+dropped the property.
+
+Upstream-Status: Inappropriate [board specific]
+---
+ .../dts/freescale/imx91-cargt-00363-osm-som.dts   | 15 +++++++++++++++
+ .../dts/freescale/imx93-cargt-00363-osm-som.dts   | 15 +++++++++++++++
+ 2 files changed, 30 insertions(+)
+
+diff --git a/arch/arm64/boot/dts/freescale/imx91-cargt-00363-osm-som.dts b/arch/arm64/boot/dts/freescale/imx91-cargt-00363-osm-som.dts
+index 501a2f9bb59e..050721b2f1c5 100644
+--- a/arch/arm64/boot/dts/freescale/imx91-cargt-00363-osm-som.dts
++++ b/arch/arm64/boot/dts/freescale/imx91-cargt-00363-osm-som.dts
+@@ -292,7 +292,16 @@ &adc1 {
+ 	status = "disabled";
+ };
+ 
++/*
++ * The SOM wires WDOG_ANY (MPU_WDOG_B) through R35 to the PMIC's WDOG_B
++ * input, as on NXP's i.MX93 EVK. Without fsl,ext-reset-output the
++ * imx7ulp driver leaves CS[INT]=0 and a wdog3 timeout only wraps the
++ * counter instead of resetting the board.
++ */
+ &wdog3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_wdog>;
++	fsl,ext-reset-output;
+ 	status = "okay";
+ };
+ 
+@@ -408,4 +417,10 @@ MX91_PAD_PDM_BIT_STREAM1__GPIO1_IO10	0x31e /* PMIC_IRQ_B */
+ 		>;
+ 	};
+ 
++	pinctrl_wdog: wdoggrp {
++		fsl,pins = <
++			MX91_PAD_WDOG_ANY__WDOG1_WDOG_ANY	0x31e
++		>;
++	};
++
+ };
+diff --git a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts
+index 35936a9fe6ba..5eabc949aa5d 100644
+--- a/arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts
++++ b/arch/arm64/boot/dts/freescale/imx93-cargt-00363-osm-som.dts
+@@ -352,7 +352,16 @@ &adc1 {
+ 	status = "disabled";
+ };
+ 
++/*
++ * The SOM wires WDOG_ANY (MPU_WDOG_B) through R35 to the PMIC's WDOG_B
++ * input, as on NXP's i.MX93 EVK. Without fsl,ext-reset-output the
++ * imx7ulp driver leaves CS[INT]=0 and a wdog3 timeout only wraps the
++ * counter instead of resetting the board.
++ */
+ &wdog3 {
++	pinctrl-names = "default";
++	pinctrl-0 = <&pinctrl_wdog>;
++	fsl,ext-reset-output;
+ 	status = "okay";
+ };
+ 
+@@ -467,6 +476,12 @@ pinctrl_pmic: pmicgrp {
+ 			MX93_PAD_PDM_BIT_STREAM1__GPIO1_IO10	0x31e /* PMIC_IRQ_B */
+ 		>;
+ 	};
++
++	pinctrl_wdog: wdoggrp {
++		fsl,pins = <
++			MX93_PAD_WDOG_ANY__WDOG1_WDOG_ANY	0x31e
++		>;
++	};
+ 	
+ };
+ 
+-- 
+2.34.1
+
