@@ -8,7 +8,11 @@
  * /sys/class/remoteproc/remoteproc0 and talk to it over RPMsg (virtio vrings
  * in DDR, MU1 for the doorbells). The vring, vdev buffer and resource table
  * regions are already reserved in imx93-cargt-00363-osm-som.dts; this adds
- * the M33's own DDR region for firmware linked to run from DDR.
+ * the M33's 16 MB DDR region at 0xa5000000, as NXP's i.MX 93 EVK does, so
+ * Linux never uses it and M33 firmware can keep its data there at run time.
+ * remoteproc loads the firmware image itself into the M33 TCM: the i.MX 93
+ * address table in imx_rproc does not map 0xa5000000, so an ELF linked to
+ * run from this region cannot be loaded by Linux.
  *
  * NXP's i.MX 93 EVK firmware in /lib/firmware (rpmsg_lite_str_echo,
  * rpmsg_lite_pingpong, ...) uses LPUART2 as its debug console, and on the
