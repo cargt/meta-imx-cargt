@@ -220,6 +220,12 @@ SRC_URI += "file://cargt_netfilter_kernel_config_mods.cfg \
             ${@bb.utils.contains('MACHINE_FEATURES', 't1l', 'file://cargt_t1l_kernel_config_mods.cfg', '', d)} \
             ${@bb.utils.contains('MACHINE_FEATURES', 'ST7789T3', 'file://cargt_st7789t3_kernel_config_mods.cfg', '', d)} \
             "
+# OP-TEE trusted keys only where there is no CAAM (see the fragment's comment).
+SRC_URI:append:mx9-nxp-bsp = " file://cargt_imx9_trusted_keys_kernel_config_mods.cfg"
+# trusted.ko autoloads from the trusted-keys TA's tee: alias, but encrypted-keys.ko
+# has no alias; load it at boot so encrypted keys (and dm-crypt tables that use
+# them) work without a manual modprobe.
+KERNEL_MODULE_AUTOLOAD:append:mx9-nxp-bsp = " encrypted-keys"
 
 # cargt-imx-rt distro: NXP Real-time Edge PREEMPT_RT kernel. real-time-edge-linux
 # linux_6.18.20 is lf-6.18.20 plus PREEMPT_RT/TSN/DSA, and every Cargt patch above
