@@ -3,6 +3,7 @@
 # can switch by editing background-image/background-color in weston.ini.
 # The images are the boot splash's 480 px logos, shared with psplash.
 FILESEXTRAPATHS:prepend := "${THISDIR}/../../recipes-core/psplash/files:"
+FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 
 # "dark" or "light". Dark by default, after the light boot splash
 # (CARGT_SPLASH_THEME in psplash_git.bbappend).
@@ -13,6 +14,8 @@ CARGT_WESTON_COLOR[light] = "0xfff7f9fa"
 SRC_URI += " \
     file://cargt-logo-dark-480.png \
     file://cargt-logo-light-480.png \
+    file://cargt-weston-spi-panel \
+    file://cargt-spi-panel.conf \
 "
 
 do_install:append() {
@@ -30,6 +33,14 @@ do_install:append() {
         sed -i 's|\(--log=\${XDG_RUNTIME_DIR}/weston.log \)\1\+|\1|' \
             ${D}${systemd_system_unitdir}/weston.service
     fi
+
+    # The 00379 SPI display needs a pixman/RGB565 weston.ini at runtime.
+    install -Dm 0755 ${UNPACKDIR}/cargt-weston-spi-panel ${D}${libexecdir}/cargt-weston-spi-panel
+    install -Dm 0644 ${UNPACKDIR}/cargt-spi-panel.conf ${D}${systemd_system_unitdir}/weston.service.d/cargt-spi-panel.conf
 }
 
-FILES:${PN} += "${datadir}/weston/cargt-background-*.png"
+FILES:${PN} += " \
+    ${datadir}/weston/cargt-background-*.png \
+    ${libexecdir}/cargt-weston-spi-panel \
+    ${systemd_system_unitdir}/weston.service.d/cargt-spi-panel.conf \
+"
