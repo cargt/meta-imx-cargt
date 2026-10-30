@@ -16,7 +16,7 @@ IMAGE_INSTALL:append:imxgpu3d = " glmark2"
 # delegate, as in meta-imx-ml's packagegroup-imx-ml
 IMAGE_INSTALL:append = " tensorflow-lite"
 IMAGE_INSTALL:append:mx95-nxp-bsp = " tensorflow-lite-neutron-delegate neutron eiq-examples-npu-utils"
-IMAGE_INSTALL:append:mx93-nxp-bsp = " tensorflow-lite-ethosu-delegate ethos-u-driver-stack"
+IMAGE_INSTALL:append:mx93-nxp-bsp = " tensorflow-lite-ethosu-delegate ethos-u-driver-stack ethos-u-vela"
 IMAGE_INSTALL:append:mx8mp-nxp-bsp = " tensorflow-lite-vx-delegate"
 
 # Keep Weston running on a board with no display connected (a headless DT, or
@@ -27,20 +27,15 @@ IMAGE_INSTALL:append:mx8mp-nxp-bsp = " tensorflow-lite-vx-delegate"
 ROOTFS_POSTPROCESS_COMMAND:append = "weston_require_no_outputs; "
 
 weston_require_no_outputs() {
-    if [ -f ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini ] && \
-       ! grep -q "^require-outputs=" ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini
-    then
-        sed -i 's/^\[core\]$/[core]\nrequire-outputs=none/' ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini
+    ini=${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini
+    if [ -f $ini ] && ! grep -q "^require-outputs=" $ini; then
+        sed -i 's/^\[core\]$/[core]\nrequire-outputs=none/' $ini
+        grep -q "^require-outputs=none" $ini || \
+            bbfatal "weston.ini has no [core] line, so require-outputs=none was not added"
     fi
 }
 
 # The i.MX 91 has no GPU and will not drive a display: leave out Chromium,
-# which is built per SoC and takes hours, and its Weston launcher
+# which is built per SoC and takes hours (cargt-image-chrome then writes no
+# Chromium launcher)
 CORE_IMAGE_EXTRA_INSTALL:remove:mx91-nxp-bsp = "chromium-ozone-wayland"
-ROOTFS_POSTPROCESS_COMMAND:append:mx91-nxp-bsp = "remove_chromium_launcher; "
-
-remove_chromium_launcher() {
-    if [ -f ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini ]; then
-        sed -i '/^\[launcher\]$/{N;/chromium\.png/{N;d}}' ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini
-    fi
-}

@@ -83,11 +83,16 @@ DOCKER:mx8-nxp-bsp = "docker"
 
 export IMAGE_BASENAME = "cargt-image-chrome"
 
+# Only images that still install Chromium get its launcher (the stress image
+# removes it on the i.MX 91)
+CHROMIUM_LAUNCHER = "${@bb.utils.contains('CORE_IMAGE_EXTRA_INSTALL', 'chromium-ozone-wayland', '1', '', d)}"
+
 ROOTFS_POSTPROCESS_COMMAND:append = "install_launchers; "
 
 install_launchers() {
     printf "\n[launcher]\nicon=/usr/share/weston/terminal.png\npath=/usr/bin/weston-terminal" >> ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini    
-    if ! grep -q "icon=/usr/share/weston/icon/chromium.png" ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini
+    if [ -n "${CHROMIUM_LAUNCHER}" ] && \
+       ! grep -q "icon=/usr/share/weston/icon/chromium.png" ${IMAGE_ROOTFS}${sysconfdir}/xdg/weston/weston.ini
     then
        # The chromium wrapper sets the GL flags meta-imx chose for this SoC;
        # chromium-bin --use-gl=egl falls back to software rendering on
@@ -101,4 +106,3 @@ nfs_symlink() {
     ln -fs ${IMAGE_ROOTFS} ${TMPDIR}/../rootfs
 }
 
-# stress-ng and glmark2 are in cargt-image-stress-test
