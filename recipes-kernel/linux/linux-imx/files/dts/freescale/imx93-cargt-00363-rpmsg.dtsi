@@ -14,6 +14,13 @@
  * rpmsg_lite_pingpong, ...) uses LPUART2 as its debug console, and on the
  * 00363 that is the mikroBUS UART (pads UART2_TXD/UART2_RXD), so Linux gives
  * LPUART2 up here. Firmware built for the 00363 can use another UART instead.
+ *
+ * Start RPMsg firmware from Linux remoteproc
+ * (echo start > /sys/class/remoteproc/remoteproc0/state). Firmware started by
+ * U-Boot bootaux is attached by Linux and the RPMsg channel is created, but
+ * the firmware never answers: with rpmsg_lite_str_echo the first write to
+ * /dev/ttyRPMSG30 hangs, followed by RCU stalls on CPU1. Use bootaux only for
+ * standalone M33 firmware that does not use RPMsg with Linux.
  */
 
 / {
