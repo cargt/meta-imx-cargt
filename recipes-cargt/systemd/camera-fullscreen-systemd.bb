@@ -1,6 +1,10 @@
 LICENSE = "CLOSED"
 inherit systemd
 
+# Needs the i.MX8MP ISP (isp-imx), which only exists on i.MX8MP machines
+COMPATIBLE_MACHINE = "(mx8mp-nxp-bsp)"
+PACKAGE_ARCH = "${MACHINE_ARCH}"
+
 DESCRIPTION = "Camera fullscreen display service using GStreamer"
 SYSTEMD_AUTO_ENABLE = "enable"
 SYSTEMD_SERVICE:${PN} = "camera-fullscreen.service"
