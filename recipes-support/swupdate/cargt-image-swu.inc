@@ -3,9 +3,9 @@
 #
 # cargt-image-swu/ holds the files shared by every image and machine:
 # sw-description (a template, keyed by @@MACHINE@@), update.sh and a no-op
-# update-machine.sh. A machine that needs an extra update step overrides
-# them in cargt-image-swu/<machine>/: an update-machine.sh, plus a
-# sw-description that installs it (update.sh sources it).
+# update-machine.sh, which sw-description installs and update.sh sources. A
+# machine that needs an extra update step overrides update-machine.sh in
+# cargt-image-swu/<machine>/.
 
 DESCRIPTION = "swupdate file for ${CARGT_SWU_IMAGE}"
 SECTION = ""
