@@ -21,6 +21,15 @@ do_install:append() {
     done
     sed -i -e '/^\[shell\]/a background-image=${datadir}/weston/cargt-background-${CARGT_WESTON_THEME}.png\nbackground-type=centered\nbackground-color=${@d.getVarFlag("CARGT_WESTON_COLOR", d.getVar("CARGT_WESTON_THEME"))}' \
         ${D}${sysconfdir}/xdg/weston/weston.ini
+
+    # meta-freescale's and meta-imx-bsp's weston-init appends both add
+    # --log=${XDG_RUNTIME_DIR}/weston.log to weston.service's ExecStart, so
+    # it ends up there twice. This layer's append runs after both (higher
+    # layer priority); keep one.
+    if ${@bb.utils.contains('DISTRO_FEATURES', 'systemd', 'true', 'false', d)}; then
+        sed -i 's|\(--log=\${XDG_RUNTIME_DIR}/weston.log \)\1\+|\1|' \
+            ${D}${systemd_system_unitdir}/weston.service
+    fi
 }
 
 FILES:${PN} += "${datadir}/weston/cargt-background-*.png"
