@@ -52,8 +52,7 @@ grow() {
 	log "growing $part (partition $num) by $((free / 2048)) MiB to the end of $disk"
 	echo ",+" | sfdisk --quiet --no-reread --no-tell-kernel -N "$num" "$disk"
 	partx -u -n "$num" "$disk"
-	resize2fs "$part"
-	log "grown to $(( $(cat /sys/class/block/$p/size) / 2048 )) MiB"
+	log "partition grown to $(( $(cat /sys/class/block/$p/size) / 2048 )) MiB"
 }
 
 grow
@@ -62,17 +61,33 @@ grow
 # the same filesystem twice is fine, but while udev's mount is in progress the
 # device is held exclusively and mount fails with "Can't open blockdev", so
 # retry for a few seconds.
+mounted=
 if mountpoint -q /data; then
 	cur=$(findmnt -n -o SOURCE /data)
-	[ "$(readlink -f "$cur")" = "$part" ] && exit 0
-	log "/data is $cur, not $part on the boot disk; remounting"
-	umount /data
+	if [ "$(readlink -f "$cur")" = "$part" ]; then
+		mounted=1
+	else
+		log "/data is $cur, not $part on the boot disk; remounting"
+		umount /data
+	fi
 fi
-mkdir -p /data
-tries=10
-until mount -t ext4 "$part" /data; do
-	tries=$((tries - 1))
-	[ "$tries" -gt 0 ] || { log "could not mount $part on /data"; exit 1; }
-	sleep 1
-done
-log "mounted $part on /data"
+if [ -z "$mounted" ]; then
+	mkdir -p /data
+	tries=10
+	until mount -t ext4 "$part" /data; do
+		tries=$((tries - 1))
+		[ "$tries" -gt 0 ] || { log "could not mount $part on /data"; exit 1; }
+		sleep 1
+	done
+	log "mounted $part on /data"
+fi
+
+# Grow the filesystem to fill the partition, online. resize2fs refuses an
+# offline grow until e2fsck -f has run, but grows a mounted ext4 with no fsck.
+# Running it on every boot also catches up a filesystem that an earlier boot
+# left smaller than its partition; when it already fills it, nothing changes.
+if out=$(resize2fs "$part" 2>&1); then
+	case "$out" in *"is now"*) log "filesystem on $part grown to fill the partition" ;; esac
+else
+	log "resize2fs $part failed, /data keeps its current size: $(echo "$out" | tail -n1)"
+fi
