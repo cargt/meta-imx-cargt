@@ -16,6 +16,13 @@ CARGT_WESTON_THEME ?= "dark"
 CARGT_WESTON_COLOR[dark] = "0xff004437"
 CARGT_WESTON_COLOR[light] = "0xfff7f9fa"
 
+# With the rdp MACHINE_FEATURE, let meta-freescale's weston-init append wire up
+# screen sharing: it adds modules=screen-share.so to [core] and the TLS key
+# pair to the [screen-share] command. Without it, weston.ini has no
+# screen-share module, although Weston itself always has the RDP backend
+# (weston_%.bbappend).
+PACKAGECONFIG:append = " ${@bb.utils.contains('MACHINE_FEATURES', 'rdp', 'rdp', '', d)}"
+
 SRC_URI += " \
     file://cargt-logo-dark-480.png \
     file://cargt-logo-light-480.png \
