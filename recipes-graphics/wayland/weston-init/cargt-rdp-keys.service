@@ -4,8 +4,8 @@ Description=Generate the Weston RDP TLS key pair
 # /data/freerdp/keys/server.{crt,key}. Make a self-signed pair once per board,
 # so every board gets its own key instead of one baked into the image. /data
 # keeps it across A/B updates and works with a read-only rootfs.
-# grow-data-part.service mounts /data.
-After=grow-data-part.service
+# grow-data-part mounts /data on current images; data.mount covers an fstab entry.
+After=grow-data-part.service data.mount
 Before=weston.service
 ConditionPathIsMountPoint=/data
 ConditionPathExists=|!/data/freerdp/keys/server.key
