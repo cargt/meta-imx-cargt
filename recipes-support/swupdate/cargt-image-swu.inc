@@ -36,3 +36,8 @@ CARGT_SWU_ROOTFS = "${CARGT_SWU_IMAGE}${IMAGE_MACHINE_SUFFIX}.rootfs.tar.zst"
 # the list can have any binaries - images must be in the DEPLOY directory.
 # A full file name needs no SWUPDATE_IMAGES_FSTYPES flag.
 SWUPDATE_IMAGES = "${CARGT_SWU_ROOTFS}"
+
+# The A/B update needs the Cargt rootfs layout (cargt-dev.wks.in). The
+# NXP-layout FRDMs have a FAT boot partition on p1, which update.sh would
+# format, so build only for the Cargt machines and the A/B-layout FRDMs.
+COMPATIBLE_MACHINE = "(.*-cargt-.*|imx95-15x15-lpddr4x-frdm|imx95-19x19-lpddr5-frdm-pro)"
