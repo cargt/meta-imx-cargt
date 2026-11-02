@@ -1,6 +1,7 @@
 # Cargt desktop background: the logo on Kaitoke Green (dark, default) or
-# Light Gray, as in the boot splash. Both themes are installed, so a device
-# can switch by editing background-image/background-color in weston.ini.
+# Light Gray, as in the boot splash, under a themed top panel. Both themes
+# are installed, so a device can switch by editing background-image,
+# background-color and panel-color in weston.ini.
 # cargt-background-<theme>.png is the boot splash's 480 px logo, shared with
 # psplash. cargt-background-<theme>-small.png is its 200 px logo padded to
 # 200x48 with the theme color, for small panels such as the 320x240 00379
@@ -15,6 +16,10 @@ FILESEXTRAPATHS:prepend := "${THISDIR}/${PN}:"
 CARGT_WESTON_THEME ?= "dark"
 CARGT_WESTON_COLOR[dark] = "0xff004437"
 CARGT_WESTON_COLOR[light] = "0xfff7f9fa"
+# The top panel: darker Kaitoke Green on the dark theme, Kaitoke Green on
+# the light theme, as in meta-st-cargt.
+CARGT_WESTON_PANEL_COLOR[dark] = "0xff002a22"
+CARGT_WESTON_PANEL_COLOR[light] = "0xff004437"
 
 # With the rdp MACHINE_FEATURE, let meta-freescale's weston-init append wire up
 # screen sharing: it adds modules=screen-share.so to [core] and the TLS key
@@ -32,6 +37,16 @@ SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'rdp', 'file://cargt-rdp-ke
 SYSTEMD_SERVICE:${PN} += "${@bb.utils.contains('MACHINE_FEATURES', 'rdp', 'cargt-rdp-keys.service', '', d)}"
 RDEPENDS:${PN} += "${@bb.utils.contains('MACHINE_FEATURES', 'rdp', 'freerdp', '', d)}"
 
+# The colors for CARGT_WESTON_THEME, resolved once for the sed line below.
+CARGT_WESTON_BACKGROUND = "${@d.getVarFlag('CARGT_WESTON_COLOR', d.getVar('CARGT_WESTON_THEME'))}"
+CARGT_WESTON_PANEL = "${@d.getVarFlag('CARGT_WESTON_PANEL_COLOR', d.getVar('CARGT_WESTON_THEME'))}"
+
+python () {
+    theme = d.getVar('CARGT_WESTON_THEME')
+    if theme not in ('dark', 'light'):
+        bb.fatal('CARGT_WESTON_THEME must be "dark" or "light", not "%s"' % theme)
+}
+
 SRC_URI += " \
     file://cargt-logo-dark-480.png \
     file://cargt-logo-light-480.png \
@@ -46,7 +61,7 @@ do_install:append() {
         install -Dm 0644 ${UNPACKDIR}/cargt-logo-$t-480.png ${D}${datadir}/weston/cargt-background-$t.png
         install -Dm 0644 ${UNPACKDIR}/cargt-background-$t-small.png ${D}${datadir}/weston/cargt-background-$t-small.png
     done
-    sed -i -e '/^\[shell\]/a background-image=${datadir}/weston/cargt-background-${CARGT_WESTON_THEME}.png\nbackground-type=centered\nbackground-color=${@d.getVarFlag("CARGT_WESTON_COLOR", d.getVar("CARGT_WESTON_THEME"))}' \
+    sed -i -e '/^\[shell\]/a background-image=${datadir}/weston/cargt-background-${CARGT_WESTON_THEME}.png\nbackground-type=centered\nbackground-color=${CARGT_WESTON_BACKGROUND}\npanel-color=${CARGT_WESTON_PANEL}' \
         ${D}${sysconfdir}/xdg/weston/weston.ini
 
     # RDP screen sharing (rdp MACHINE_FEATURE). meta-freescale's append
@@ -80,6 +95,9 @@ do_install:append() {
     install -Dm 0755 ${UNPACKDIR}/cargt-weston-spi-panel ${D}${libexecdir}/cargt-weston-spi-panel
     install -Dm 0644 ${UNPACKDIR}/cargt-spi-panel.conf ${D}${systemd_system_unitdir}/weston.service.d/cargt-spi-panel.conf
 }
+# getVarFlag() with a non-literal flag name is not tracked, so list the
+# color flags or a changed color would not re-run do_install.
+do_install[vardeps] += "CARGT_WESTON_COLOR[dark] CARGT_WESTON_COLOR[light] CARGT_WESTON_PANEL_COLOR[dark] CARGT_WESTON_PANEL_COLOR[light]"
 
 FILES:${PN} += " \
     ${datadir}/weston/cargt-background-*.png \
