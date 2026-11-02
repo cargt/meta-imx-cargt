@@ -25,6 +25,15 @@ ATF_PLATFORM = "imx95"
 OEI_CORE = "m33"
 OEI_SOC  = "mx95"
 
+# Build the System Manager without its debug monitor (M=0). meta-imx defaults
+# to M=2, which enters the monitor when a character arrives on the SM debug
+# UART (LPUART2) and offers reset, shutdown and fault commands there. NXP's
+# sm/doc/monitor.md says the monitor changes SM timing and that M=0 is the
+# only valid option for production. On the 00414 the LPUART2 pads are also
+# the BOOT_MODE strap nets. For bring-up, set SYSTEM_MANAGER_MONITOR_MODE = "2"
+# in local.conf.
+SYSTEM_MANAGER_MONITOR_MODE ?= "0"
+
 # A55-only boot container (no M7 image). imx-boot's mx95 do_compile still
 # copies ${M4_DEFAULT_IMAGE} unconditionally, so point it at a stock
 # imx-m7-demos binary; it is not packed into the flash_a55 container.
