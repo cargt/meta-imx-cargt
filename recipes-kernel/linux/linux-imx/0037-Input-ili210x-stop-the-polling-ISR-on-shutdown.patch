@@ -1,0 +1,81 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Wed, 28 Oct 2026 12:00:00 -0500
+Subject: [PATCH] Input: ili210x - stop the polling ISR on shutdown
+
+The threaded ISR polls the controller for as long as it reports a
+contact and only quits on priv->stop, which is set by a devm action at
+unbind. The driver has no .shutdown, so i2c_device_shutdown() calls
+disable_irq(), which waits for the ISR thread. With a finger, or a stuck
+contact, on the panel that never happens and reboot hangs in
+device_shutdown(), after earlier devices (e.g. the SD/eMMC host) are
+already shut down.
+
+Seen on an ILI251x with a contact reported at a fixed point for hours:
+  kernel_restart -> device_shutdown -> i2c_device_shutdown ->
+  disable_irq -> __synchronize_irq   (forever)
+  irq/250-ili251x: ili210x_irq+0x1f0 (usleep_range in the poll loop)
+
+Add a .shutdown that sets priv->stop before disabling the IRQ, so the
+ISR leaves within one poll period. Use READ_ONCE()/WRITE_ONCE() for the
+flag since it is written outside the ISR thread.
+
+Upstream-Status: Pending
+Signed-off-by: Tim Carney <tim.carney@cargt.com>
+---
+ drivers/input/touchscreen/ili210x.c | 18 ++++++++++++++++--
+ 1 file changed, 16 insertions(+), 2 deletions(-)
+
+diff --git a/drivers/input/touchscreen/ili210x.c b/drivers/input/touchscreen/ili210x.c
+index ad6828e..988303e 100644
+--- a/drivers/input/touchscreen/ili210x.c
++++ b/drivers/input/touchscreen/ili210x.c
+@@ -355,7 +355,7 @@ static irqreturn_t ili210x_irq(int irq, void *irq_data)
+ 			if (time_delta > 0)
+ 				usleep_range(time_delta, time_delta + 1000);
+ 		}
+-	} while (!priv->stop && keep_polling);
++	} while (!READ_ONCE(priv->stop) && keep_polling);
+ 
+ 	return IRQ_HANDLED;
+ }
+@@ -921,7 +921,7 @@ static void ili210x_stop(void *data)
+ 	struct ili210x *priv = data;
+ 
+ 	/* Tell ISR to quit even if there is a contact. */
+-	priv->stop = true;
++	WRITE_ONCE(priv->stop, true);
+ }
+ 
+ static int ili210x_i2c_probe(struct i2c_client *client)
+@@ -1029,6 +1029,19 @@ static int ili210x_i2c_probe(struct i2c_client *client)
+ 	return 0;
+ }
+ 
++static void ili210x_i2c_shutdown(struct i2c_client *client)
++{
++	struct ili210x *priv = i2c_get_clientdata(client);
++
++	/*
++	 * The ISR keeps polling for as long as the controller reports a
++	 * contact, so a finger held on the panel (or a stuck contact) would
++	 * make disable_irq() wait for it forever. Stop it first.
++	 */
++	ili210x_stop(priv);
++	disable_irq(client->irq);
++}
++
+ static const struct i2c_device_id ili210x_i2c_id[] = {
+ 	{ "ili210x", (long)&ili210x_chip },
+ 	{ "ili2117", (long)&ili211x_chip },
+@@ -1054,6 +1067,7 @@ static struct i2c_driver ili210x_ts_driver = {
+ 	},
+ 	.id_table = ili210x_i2c_id,
+ 	.probe = ili210x_i2c_probe,
++	.shutdown = ili210x_i2c_shutdown,
+ };
+ 
+ module_i2c_driver(ili210x_ts_driver);
+-- 
+2.34.1
+

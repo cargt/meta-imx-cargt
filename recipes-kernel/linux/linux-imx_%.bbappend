@@ -32,6 +32,8 @@ SRC_URI += "file://0001-Add-device-tree-support-for-00363-and-00365.patch \
             file://0034-arm64-dts-imx93-cargt-00363-osm-som-hog-PMIC_IRQ_B-t.patch \
             file://0035-arm64-dts-imx93-cargt-00324-mux-WDOG_ANY-for-the-wdo.patch \
             file://0036-arm64-dts-imx9-13-cargt-00363-osm-som-mux-WDOG_ANY-f.patch \
+            file://0037-Input-ili210x-stop-the-polling-ISR-on-shutdown.patch \
+            file://0038-Input-ili210x-bound-each-run-of-the-polling-ISR.patch \
             "
 
 SRC_URI += "file://cargt_router_kernel_config_mods.cfg \
