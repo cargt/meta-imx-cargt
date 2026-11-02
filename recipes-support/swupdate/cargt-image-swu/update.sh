@@ -7,18 +7,23 @@
 LOG=/data/swupdate/log.txt
 MNT=/data/swupdate/mnt
 
-# Optional machine-specific step, installed next to the rootfs tarball by
-# that machine's sw-description. It runs in a subshell with the new rootfs
-# mounted at $MNT. Remove it on every exit, so only the copy installed by
-# this update can ever run.
+# Machine-specific step, installed next to the rootfs tarball by
+# sw-description (a no-op unless the machine has its own). It runs in a
+# subshell with the new rootfs mounted at $MNT. Remove it on every exit, so
+# only the copy installed by this update can ever run.
 UPDATE_MACHINE=/data/swupdate/update-machine.sh
 trap 'rm -f "$UPDATE_MACHINE"' EXIT
+trap 'fail "interrupted"' HUP INT TERM
 
+# Log the failure, unmount the new rootfs if it is mounted, and exit
+# non-zero. Inside the machine step's subshell it exits 2, which tells the
+# caller the failure is already logged.
 fail()
 {
 	echo "update.sh: $*" >&2
 	echo "******Update FAILED: $*********" >> "$LOG"
-	exit 1
+	umount "$MNT" 2>/dev/null
+	exit "${FAIL_STATUS:-1}"
 }
 
 get_current_root_device()
@@ -89,7 +94,12 @@ tar --zstd -xf /data/swupdate/update.tar.zst -C "$MNT" || fail "extracting rootf
 if [ -f "$UPDATE_MACHINE" ]; then
 	echo "running $UPDATE_MACHINE" >> "$LOG"
 	# shellcheck source=/dev/null
-	( . "$UPDATE_MACHINE" ) || fail "$UPDATE_MACHINE failed"
+	( FAIL_STATUS=2; . "$UPDATE_MACHINE" )
+	case $? in
+		0) ;;
+		2) exit 1 ;;	# fail() in the step logged it and unmounted $MNT
+		*) fail "$UPDATE_MACHINE failed" ;;
+	esac
 fi
 
 # flush the new rootfs to disk before switching the boot partition to it
