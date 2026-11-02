@@ -1,0 +1,92 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Graham Taylor-Jones <graham.taylor-jones@cargt.com>
+Date: Mon, 2 Nov 2026 17:24:16 -0600
+Subject: [PATCH] imx93-cargt-00363-00428: stop driving PMIC_IRQ_B from u-boot
+
+The 00428 u-boot dts carried an always-on, pre-reloc carrier-pwr-en
+regulator that drove GPIO1_IO10 high from SPL. On the 00363 SOM that
+pad (PDM_BIT_STREAM1) is PMIC_IRQ_B; CARRIER_PWR_EN is driven by the
+buffered reset, not a GPIO. The kernel 00428 dts has no such regulator.
+
+Drop the regulator, its pinctrl group, the unused pinctrl_pca21 group
+on the same pad and their bootph overrides, leaving the pin as an
+input.
+
+Backport of meta-imx-cargt wrynose 958501e (!58), by Tim Carney.
+
+Upstream-Status: Inappropriate [Cargt board support]
+Signed-off-by: Graham Taylor-Jones <graham.taylor-jones@cargt.com>
+---
+ .../dts/imx93-cargt-00363-00428-u-boot.dtsi   |  8 ------
+ arch/arm/dts/imx93-cargt-00363-00428.dts      | 26 -------------------
+ 2 files changed, 34 deletions(-)
+
+diff --git a/arch/arm/dts/imx93-cargt-00363-00428-u-boot.dtsi b/arch/arm/dts/imx93-cargt-00363-00428-u-boot.dtsi
+index b2cf771ef80..ca5895b4f4b 100644
+--- a/arch/arm/dts/imx93-cargt-00363-00428-u-boot.dtsi
++++ b/arch/arm/dts/imx93-cargt-00363-00428-u-boot.dtsi
+@@ -71,14 +71,6 @@
+ 	bootph-some-ram;
+ };
+ 
+-&reg_carrier_pwr_en {
+-	bootph-pre-ram;
+-};
+-
+-&pinctrl_reg_carrer_pwr_en{
+-	bootph-pre-ram;
+-};
+-
+ &pinctrl_uart1 {
+ 	bootph-pre-ram;
+ 	bootph-some-ram;
+diff --git a/arch/arm/dts/imx93-cargt-00363-00428.dts b/arch/arm/dts/imx93-cargt-00363-00428.dts
+index 7a50a303045..f99f65cf227 100644
+--- a/arch/arm/dts/imx93-cargt-00363-00428.dts
++++ b/arch/arm/dts/imx93-cargt-00363-00428.dts
+@@ -16,20 +16,6 @@
+ 		 rtc1 = &bbnsm_rtc;
+ 	 };
+ 
+-	 reg_carrier_pwr_en: regulator-carrier-pwr-en {
+-		 compatible = "regulator-fixed";
+-		 pinctrl-names = "default";
+-		 pinctrl-0 = <&pinctrl_reg_carrer_pwr_en>;
+-		 regulator-name = "carrier-pwr-en";
+-		 regulator-min-microvolt = <3300000>;
+-		 regulator-max-microvolt = <3300000>;
+-		 gpio = <&gpio1 10 GPIO_ACTIVE_HIGH>;
+-		 off-on-delay-us = <12000>;
+-		 enable-active-high;
+-		 regulator-boot-on;
+-		 regulator-always-on;
+-	 };
+-
+ 	 reg_usb2_vbus: regulator-usb2-vbus {
+ 		 pinctrl-names = "default";
+ 		 pinctrl-0 = <&pinctrl_usb2_vbus>;
+@@ -211,12 +197,6 @@
+ 		 >;
+ 	 };
+ 
+-	 pinctrl_pca21: pca21grp {
+-		 fsl,pins = <
+-			 MX93_PAD_PDM_BIT_STREAM1__GPIO1_IO10 	0x31e
+-		 >;
+-	 };
+-
+ 	 pinctrl_ptn5110_51: ptn5110_51grp {
+ 		 fsl,pins = <
+ 			  MX93_PAD_GPIO_IO10__GPIO2_IO10			0x31e
+@@ -229,11 +209,5 @@
+ 		 >;
+ 	  };
+ 
+-	  pinctrl_reg_carrer_pwr_en: carrerpwrengrp {
+-		 fsl,pins = <
+-			 MX93_PAD_PDM_BIT_STREAM1__GPIO1_IO10		0x31e
+-		 >;
+-	 };
+-
+  };
+ 
