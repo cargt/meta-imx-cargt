@@ -1,0 +1,54 @@
+#!/bin/sh
+# The 00379 mikroBUS display (GLT028240320IS1 on the ST7789T3 tinydrm
+# driver) is a plain SPI framebuffer. G2D needs PXP, which its DTs leave
+# disabled, and its primary plane only scans out RGB565/XRGB8888, so the
+# stock weston.ini (use-g2d=true, gbm-format=argb8888) makes Weston fail.
+# When that display is present, write a pixman/RGB565 copy of weston.ini,
+# with the small Cargt logo so it fits the 320x240 panel, and an
+# environment file that points $XDG_CONFIG_HOME at it, so Weston finds it
+# first (the unit drop-in reads the file). Any other display keeps the
+# stock /etc/xdg/weston/weston.ini and Weston's normal environment.
+dir=/run/cargt-weston
+rm -rf "$dir"
+
+panel_bound() {
+    for drv in /sys/class/drm/card*/device/driver; do
+        [ "$(basename "$(readlink -f "$drv")")" = st7789t3 ] && return 0
+    done
+    return 1
+}
+
+# True if the DT has an enabled ST7789T3 node, whether or not it has probed.
+panel_in_dt() {
+    for c in $(find /sys/firmware/devicetree/base -name compatible -exec grep -l st7789t3 {} +); do
+        s="${c%/compatible}/status"
+        [ ! -e "$s" ] || grep -q okay "$s" && return 0
+    done
+    return 1
+}
+
+# The SPI panel can probe after Weston starts (deferred probe), so give
+# it up to 10 s when the DT says it's there.
+if ! panel_bound && panel_in_dt; then
+    i=0
+    while [ $i -lt 10 ] && ! panel_bound; do
+        sleep 1
+        i=$((i + 1))
+    done
+fi
+panel_bound || exit 0
+
+mkdir -p "$dir"
+sed -e 's/^use-g2d=.*/use-g2d=false/' \
+    -e 's/^gbm-format=.*/gbm-format=rgb565/' \
+    -e '/^renderer=/d' \
+    -e 's|^\(background-image=.*/cargt-background-[a-z]*\)\.png$|\1-small.png|' \
+    -e '/^\[core\]/a renderer=pixman' \
+    /etc/xdg/weston/weston.ini > "$dir/weston.ini"
+# renderer= goes in [core]; add the section if the stock file has none.
+if ! grep -q '^\[core\]' "$dir/weston.ini"; then
+    printf '[core]\nrenderer=pixman\n\n' | cat - "$dir/weston.ini" > "$dir/weston.ini.new"
+    mv "$dir/weston.ini.new" "$dir/weston.ini"
+fi
+echo "XDG_CONFIG_HOME=$dir" > "$dir/env"
+exit 0

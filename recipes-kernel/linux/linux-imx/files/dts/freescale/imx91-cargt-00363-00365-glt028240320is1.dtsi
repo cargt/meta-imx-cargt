@@ -57,7 +57,7 @@
         touchscreen-size-x = <240>;
         touchscreen-size-y = <320>;
 		touchscreen-inverted-y;
-		reset-gpios = <&gpio1 6 GPIO_ACTIVE_LOW>;
+		touchscreen-swapped-x-y; /* the panel runs landscape (320x240) */
 		wakeup-source;
       };
 };
@@ -81,7 +81,7 @@
 
 	pinctrl_touch_io: touchiogrp {
 		fsl,pins = <
-			MX91_PAD_UART2_RXD__GPIO1_IO6		0x3fe // RST
+			MX91_PAD_UART2_RXD__GPIO1_IO6		0x3fe // touch RST: input-only (mikroBUS RX), held released on the 00379
 			MX91_PAD_GPIO_IO08__GPIO2_IO8		0x3fe // INT
 		>;
 	};
