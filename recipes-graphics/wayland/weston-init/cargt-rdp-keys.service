@@ -1,0 +1,21 @@
+[Unit]
+Description=Generate the Weston RDP TLS key pair
+# weston.ini's [screen-share] command points weston --backend=rdp-backend.so at
+# /data/freerdp/keys/server.{crt,key}. Make a self-signed pair once per board,
+# so every board gets its own key instead of one baked into the image. /data
+# keeps it across A/B updates and works with a read-only rootfs.
+# grow-data-part.service mounts /data.
+After=grow-data-part.service
+Before=weston.service
+ConditionPathIsMountPoint=/data
+ConditionPathExists=|!/data/freerdp/keys/server.key
+ConditionPathExists=|!/data/freerdp/keys/server.crt
+
+[Service]
+Type=oneshot
+ExecStart=/bin/mkdir -p /data/freerdp/keys
+ExecStart=/usr/bin/winpr-makecert -rdp -silent -path /data/freerdp/keys -n server
+ExecStart=/bin/chmod 0600 /data/freerdp/keys/server.key
+
+[Install]
+WantedBy=multi-user.target

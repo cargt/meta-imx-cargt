@@ -23,6 +23,15 @@ CARGT_WESTON_COLOR[light] = "0xfff7f9fa"
 # (weston_%.bbappend).
 PACKAGECONFIG:append = " ${@bb.utils.contains('MACHINE_FEATURES', 'rdp', 'rdp', '', d)}"
 
+# Start sharing the display over RDP when Weston starts ("1"), instead of on
+# Ctrl+Alt+S. Off by default: Weston's RDP backend has no login, so anyone who
+# can reach port 3389 sees and controls the screen.
+CARGT_WESTON_RDP_AUTOSTART ?= "0"
+
+SRC_URI += "${@bb.utils.contains('MACHINE_FEATURES', 'rdp', 'file://cargt-rdp-keys.service', '', d)}"
+SYSTEMD_SERVICE:${PN} += "${@bb.utils.contains('MACHINE_FEATURES', 'rdp', 'cargt-rdp-keys.service', '', d)}"
+RDEPENDS:${PN} += "${@bb.utils.contains('MACHINE_FEATURES', 'rdp', 'freerdp', '', d)}"
+
 SRC_URI += " \
     file://cargt-logo-dark-480.png \
     file://cargt-logo-light-480.png \
@@ -39,6 +48,24 @@ do_install:append() {
     done
     sed -i -e '/^\[shell\]/a background-image=${datadir}/weston/cargt-background-${CARGT_WESTON_THEME}.png\nbackground-type=centered\nbackground-color=${@d.getVarFlag("CARGT_WESTON_COLOR", d.getVar("CARGT_WESTON_THEME"))}' \
         ${D}${sysconfdir}/xdg/weston/weston.ini
+
+    # RDP screen sharing (rdp MACHINE_FEATURE). meta-freescale's append
+    # points the TLS key pair at /etc/freerdp/keys; cargt-rdp-keys.service
+    # generates it in /data/freerdp/keys instead, so move the paths there.
+    if ${@bb.utils.contains('MACHINE_FEATURES', 'rdp', 'true', 'false', d)}; then
+        install -Dm 0644 ${UNPACKDIR}/cargt-rdp-keys.service \
+            ${D}${systemd_system_unitdir}/cargt-rdp-keys.service
+        sed -i 's|=${sysconfdir}/freerdp/keys/|=/data/freerdp/keys/|g' \
+            ${D}${sysconfdir}/xdg/weston/weston.ini
+        grep -q -- '--rdp-tls-key=/data/freerdp/keys/server.key' ${D}${sysconfdir}/xdg/weston/weston.ini || \
+            bbfatal "weston.ini: no --rdp-tls-key in [screen-share] to point at /data/freerdp/keys"
+        if [ "${CARGT_WESTON_RDP_AUTOSTART}" = "1" ]; then
+            sed -i 's/^#start-on-startup=true/start-on-startup=true/' \
+                ${D}${sysconfdir}/xdg/weston/weston.ini
+            grep -q '^start-on-startup=true' ${D}${sysconfdir}/xdg/weston/weston.ini || \
+                bbfatal "weston.ini: no #start-on-startup=true in [screen-share] to enable"
+        fi
+    fi
 
     # meta-freescale's and meta-imx-bsp's weston-init appends both add
     # --log=${XDG_RUNTIME_DIR}/weston.log to weston.service's ExecStart, so
