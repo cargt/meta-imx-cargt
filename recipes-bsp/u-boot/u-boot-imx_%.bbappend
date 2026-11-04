@@ -51,6 +51,8 @@ SRC_URI += "file://0002-Add-support-for-imx93_00363.patch \
             file://0036-board-cargt-common-fix-EEPROM-example-to-big-endian.patch \
             file://0037-imx93-cargt-00363-00428-stop-driving-PMIC_IRQ_B-from.patch \
             file://0038-imx93-cargt-00363-00365-stop-driving-PMIC_IRQ_B-from.patch \
+            file://0039-imx93-cargt-00363-00365-bring-u-boot-dts-in-line-with.patch \
+            file://0040-imx91-cargt-00363-tuned-RGMII-pads-on-the-00365-eMMC.patch \
             "
 
 SRC_URI:remove = "file://0001-Add-Olimex-iMX8MP-SOM-EVB-IND.patch"
