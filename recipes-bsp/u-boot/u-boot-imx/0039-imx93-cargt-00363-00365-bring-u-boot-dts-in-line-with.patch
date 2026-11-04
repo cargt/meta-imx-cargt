@@ -1,0 +1,191 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Graham Taylor-Jones <graham.taylor-jones@cargt.com>
+Date: Wed, 4 Nov 2026 10:18:44 -0600
+Subject: [PATCH 1/2] imx93-cargt-00363-00365: bring u-boot dts in line with
+ the kernel dts
+
+Two mismatches against the kernel imx93-cargt-00363-00365.dts:
+
+- TCPCs: the 00365 rev 4 moved U17 to I2C 0x51, so the first PTN5110
+  is tcpc@51, and the second one's ALERT is GPIO2_IO10, not IO11. The
+  board code already probes 0x51/0x52 by hardcoded address, so this is
+  a DT fix rather than a behaviour change for the tcpc setup.
+- EQOS PHY reset: the 00365 Ethernet resets are active-low (rev A,
+  "Inverted Ethernet reset signals"). U-Boot's eth-phy uclass drives
+  the PHY node's reset-gpios, so with ACTIVE_HIGH the "deassert" step
+  drove PCA9555 P00 low and left the EQOS PHY held in reset. Fix both
+  the &ethphy1 override and snps,reset-gpios.
+
+Also use the kernel's tuned RGMII pad settings for EQOS and FEC: 0x50e
+for MDC/MDIO and 0x51e for RGMII, instead of the NXP EVK's 0x57e data
+and 0x5fe clocks, so U-Boot networking runs on the drive strength the
+board is validated with under Linux.
+
+Backport of meta-imx-cargt wrynose cbd8a96 and 17f8c82 (!56), by Tim
+Carney. Its carrier-pwr-en removal is in the patch before this one.
+
+Upstream-Status: Inappropriate [Cargt board support]
+Signed-off-by: Graham Taylor-Jones <graham.taylor-jones@cargt.com>
+---
+ .../dts/imx93-cargt-00363-00365-u-boot.dtsi   |  6 +-
+ arch/arm/dts/imx93-cargt-00363-00365.dts      | 72 +++++++++----------
+ 2 files changed, 39 insertions(+), 39 deletions(-)
+
+diff --git a/arch/arm/dts/imx93-cargt-00363-00365-u-boot.dtsi b/arch/arm/dts/imx93-cargt-00363-00365-u-boot.dtsi
+index 27d1b3a9108..ec1b41d1496 100644
+--- a/arch/arm/dts/imx93-cargt-00363-00365-u-boot.dtsi
++++ b/arch/arm/dts/imx93-cargt-00363-00365-u-boot.dtsi
+@@ -158,7 +158,7 @@
+ };
+ 
+ &ethphy1 {
+-	reset-gpios = <&pca9555_20 0 GPIO_ACTIVE_HIGH>;
++	reset-gpios = <&pca9555_20 0 GPIO_ACTIVE_LOW>;
+ 	reset-assert-us = <15000>;
+ 	reset-deassert-us = <100000>;
+ };
+@@ -173,12 +173,12 @@
+ 
+ &usbotg1 {
+ 	status = "okay";
+-	//extcon = <&ptn5110>;
++	//extcon = <&ptn5110_51>;
+ };
+ 
+ &usbotg2 {
+ 	status = "okay";
+-	//extcon = <&ptn5110_2>;
++	//extcon = <&ptn5110_52>;
+ };
+ 
+ &s4muap {
+diff --git a/arch/arm/dts/imx93-cargt-00363-00365.dts b/arch/arm/dts/imx93-cargt-00363-00365.dts
+index fc645d4ad9c..f397f96f269 100644
+--- a/arch/arm/dts/imx93-cargt-00363-00365.dts
++++ b/arch/arm/dts/imx93-cargt-00363-00365.dts
+@@ -57,11 +57,11 @@
+ 		 reg = <0x20>;
+ 	 };
+  
+-	 ptn5110: tcpc@50 {
++	 ptn5110_51: tcpc@51 {
+ 		 compatible = "nxp,ptn5110";
+-		 reg = <0x50>;
++		 reg = <0x51>;
+ 		 pinctrl-names = "default";
+-		 pinctrl-0 = <&pinctrl_ptn5110_50>;
++		 pinctrl-0 = <&pinctrl_ptn5110_51>;
+ 		 interrupt-parent = <&gpio2>;
+ 		 interrupts = <9 IRQ_TYPE_LEVEL_LOW>;	
+ 		 status = "okay";
+@@ -86,13 +86,13 @@
+ 		 };
+ 	 };
+  
+-	 ptn5110_2: tcpc@52 {
++	 ptn5110_52: tcpc@52 {
+ 		 compatible = "nxp,ptn5110";
+ 		 reg = <0x52>;
+ 		 pinctrl-names = "default";
+ 		 pinctrl-0 = <&pinctrl_ptn5110_52>;
+ 		 interrupt-parent = <&gpio2>;
+-		 interrupts = <11 IRQ_TYPE_LEVEL_LOW>;			
++		 interrupts = <10 IRQ_TYPE_LEVEL_LOW>;			
+ 		 status = "okay";
+  
+ 		 port {
+@@ -135,7 +135,7 @@
+ 	 pinctrl-0 = <&pinctrl_eqos>;
+ 	 phy-mode = "rgmii-id";
+ 	 phy-handle = <&ethphy1>;
+-	 snps,reset-gpios = <&pca9555_20 0 GPIO_ACTIVE_HIGH>;
++	 snps,reset-gpios = <&pca9555_20 0 GPIO_ACTIVE_LOW>;
+ 	 snps,reset-delays-us = <10 20 200000>;
+ 	 status = "okay";
+  
+@@ -257,39 +257,39 @@
+ 	 
+ 	 pinctrl_eqos: eqosgrp {
+ 		 fsl,pins = <
+-			 MX93_PAD_ENET1_MDC__ENET_QOS_MDC						0x57e
+-			 MX93_PAD_ENET1_MDIO__ENET_QOS_MDIO						0x57e
+-			 MX93_PAD_ENET1_RD0__ENET_QOS_RGMII_RD0					0x57e
+-			 MX93_PAD_ENET1_RD1__ENET_QOS_RGMII_RD1					0x57e
+-			 MX93_PAD_ENET1_RD2__ENET_QOS_RGMII_RD2					0x57e
+-			 MX93_PAD_ENET1_RD3__ENET_QOS_RGMII_RD3					0x57e
+-			 MX93_PAD_ENET1_RXC__CCM_ENET_QOS_CLOCK_GENERATE_RX_CLK	0x5fe
+-			 MX93_PAD_ENET1_RX_CTL__ENET_QOS_RGMII_RX_CTL			0x57e
+-			 MX93_PAD_ENET1_TD0__ENET_QOS_RGMII_TD0					0x57e
+-			 MX93_PAD_ENET1_TD1__ENET_QOS_RGMII_TD1					0x57e
+-			 MX93_PAD_ENET1_TD2__ENET_QOS_RGMII_TD2					0x57e
+-			 MX93_PAD_ENET1_TD3__ENET_QOS_RGMII_TD3					0x57e
+-			 MX93_PAD_ENET1_TXC__CCM_ENET_QOS_CLOCK_GENERATE_TX_CLK	0x5fe
+-			 MX93_PAD_ENET1_TX_CTL__ENET_QOS_RGMII_TX_CTL			0x57e
++			 MX93_PAD_ENET1_MDC__ENET_QOS_MDC						0x50e
++			 MX93_PAD_ENET1_MDIO__ENET_QOS_MDIO						0x50e
++			 MX93_PAD_ENET1_RD0__ENET_QOS_RGMII_RD0					0x51e
++			 MX93_PAD_ENET1_RD1__ENET_QOS_RGMII_RD1					0x51e
++			 MX93_PAD_ENET1_RD2__ENET_QOS_RGMII_RD2					0x51e
++			 MX93_PAD_ENET1_RD3__ENET_QOS_RGMII_RD3					0x51e
++			 MX93_PAD_ENET1_RXC__CCM_ENET_QOS_CLOCK_GENERATE_RX_CLK	0x51e
++			 MX93_PAD_ENET1_RX_CTL__ENET_QOS_RGMII_RX_CTL			0x51e
++			 MX93_PAD_ENET1_TD0__ENET_QOS_RGMII_TD0					0x51e
++			 MX93_PAD_ENET1_TD1__ENET_QOS_RGMII_TD1					0x51e
++			 MX93_PAD_ENET1_TD2__ENET_QOS_RGMII_TD2					0x51e
++			 MX93_PAD_ENET1_TD3__ENET_QOS_RGMII_TD3					0x51e
++			 MX93_PAD_ENET1_TXC__CCM_ENET_QOS_CLOCK_GENERATE_TX_CLK	0x51e
++			 MX93_PAD_ENET1_TX_CTL__ENET_QOS_RGMII_TX_CTL			0x51e
+ 		 >;
+ 	 };
+  
+ 	 pinctrl_fec: fecgrp {
+ 		 fsl,pins = <
+-			 MX93_PAD_ENET2_MDC__ENET1_MDC			0x57e
+-			 MX93_PAD_ENET2_MDIO__ENET1_MDIO			0x57e
+-			 MX93_PAD_ENET2_RD0__ENET1_RGMII_RD0		0x57e
+-			 MX93_PAD_ENET2_RD1__ENET1_RGMII_RD1		0x57e
+-			 MX93_PAD_ENET2_RD2__ENET1_RGMII_RD2		0x57e
+-			 MX93_PAD_ENET2_RD3__ENET1_RGMII_RD3		0x57e
+-			 MX93_PAD_ENET2_RXC__ENET1_RGMII_RXC		0x5fe
+-			 MX93_PAD_ENET2_RX_CTL__ENET1_RGMII_RX_CTL	0x57e
+-			 MX93_PAD_ENET2_TD0__ENET1_RGMII_TD0		0x57e
+-			 MX93_PAD_ENET2_TD1__ENET1_RGMII_TD1		0x57e
+-			 MX93_PAD_ENET2_TD2__ENET1_RGMII_TD2		0x57e
+-			 MX93_PAD_ENET2_TD3__ENET1_RGMII_TD3		0x57e
+-			 MX93_PAD_ENET2_TXC__ENET1_RGMII_TXC		0x5fe
+-			 MX93_PAD_ENET2_TX_CTL__ENET1_RGMII_TX_CTL	0x57e
++			 MX93_PAD_ENET2_MDC__ENET1_MDC			0x50e
++			 MX93_PAD_ENET2_MDIO__ENET1_MDIO			0x50e
++			 MX93_PAD_ENET2_RD0__ENET1_RGMII_RD0		0x51e
++			 MX93_PAD_ENET2_RD1__ENET1_RGMII_RD1		0x51e
++			 MX93_PAD_ENET2_RD2__ENET1_RGMII_RD2		0x51e
++			 MX93_PAD_ENET2_RD3__ENET1_RGMII_RD3		0x51e
++			 MX93_PAD_ENET2_RXC__ENET1_RGMII_RXC		0x51e
++			 MX93_PAD_ENET2_RX_CTL__ENET1_RGMII_RX_CTL	0x51e
++			 MX93_PAD_ENET2_TD0__ENET1_RGMII_TD0		0x51e
++			 MX93_PAD_ENET2_TD1__ENET1_RGMII_TD1		0x51e
++			 MX93_PAD_ENET2_TD2__ENET1_RGMII_TD2		0x51e
++			 MX93_PAD_ENET2_TD3__ENET1_RGMII_TD3		0x51e
++			 MX93_PAD_ENET2_TXC__ENET1_RGMII_TXC		0x51e
++			 MX93_PAD_ENET2_TX_CTL__ENET1_RGMII_TX_CTL	0x51e
+ 		 >;
+ 	 };
+  
+@@ -355,7 +355,7 @@
+ 		 >;
+ 	  };
+ 	  
+-	  pinctrl_ptn5110_50: ptn5110_50grp {
++	  pinctrl_ptn5110_51: ptn5110_51grp {
+ 		 fsl,pins = <
+ 			  MX93_PAD_GPIO_IO09__GPIO2_IO09			0x31e
+ 		 >;
+@@ -363,7 +363,7 @@
+  
+ 	  pinctrl_ptn5110_52: ptn5110_52grp {
+ 		 fsl,pins = <
+-			 MX93_PAD_GPIO_IO11__GPIO2_IO11			0x31e
++			 MX93_PAD_GPIO_IO10__GPIO2_IO10			0x31e
+ 		 >;
+ 	  };
+  
