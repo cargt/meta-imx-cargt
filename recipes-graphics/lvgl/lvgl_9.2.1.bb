@@ -35,7 +35,7 @@ do_generate_protocols() {
     cmake .
     make
 }
-addtask generate_protocols before do_configure after do_prepare_recipe_sysroot
+addtask generate_protocols before do_configure after do_patch do_prepare_recipe_sysroot
 
 do_install:append() {
     install -m 0644 ${S}/lv_conf_ext.h ${D}${includedir}/${PN}/
