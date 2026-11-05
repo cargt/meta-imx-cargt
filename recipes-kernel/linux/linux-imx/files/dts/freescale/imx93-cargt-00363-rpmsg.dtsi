@@ -19,12 +19,15 @@
  * 00363 that is the mikroBUS UART (pads UART2_TXD/UART2_RXD), so Linux gives
  * LPUART2 up here. Firmware built for the 00363 can use another UART instead.
  *
- * Start RPMsg firmware from Linux remoteproc
- * (echo start > /sys/class/remoteproc/remoteproc0/state). Firmware started by
- * U-Boot bootaux is attached by Linux and the RPMsg channel is created, but
- * the firmware never answers: with rpmsg_lite_str_echo the first write to
- * /dev/ttyRPMSG30 hangs, followed by RCU stalls on CPU1. Use bootaux only for
- * standalone M33 firmware that does not use RPMsg with Linux.
+ * Firmware can be started from Linux remoteproc
+ * (echo start > /sys/class/remoteproc/remoteproc0/state), or by U-Boot bootaux
+ * and then attached by Linux. With bootaux the firmware is already running
+ * when Linux turns off clocks no Linux driver uses (clk_disable_unused), so
+ * every clock the firmware needs is listed on &cm33: imx_rproc keeps the
+ * clocks after the first one enabled (linux-imx patch 0018). Without
+ * LPUART2's, the EVK demos stop at their first print, and RPMsg writes from
+ * Linux hang. Firmware that uses other peripherals Linux does not drive needs
+ * their clocks added here too.
  */
 
 / {
@@ -37,6 +40,7 @@
 };
 
 &cm33 {
+	clocks = <&clk IMX93_CLK_CM33_GATE>, <&clk IMX93_CLK_LPUART2>;
 	mbox-names = "tx", "rx", "rxdb";
 	mboxes = <&mu1 0 1>,
 		 <&mu1 1 1>,
