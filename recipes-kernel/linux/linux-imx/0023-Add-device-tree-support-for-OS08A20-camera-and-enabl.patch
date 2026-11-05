@@ -23,7 +23,7 @@ index 138bcd339109..344790a2197b 100644
 +#include "imx8mp-cargt-00377-00365-os08a20.dtsi"
  
  / {
- 	model = "Cargt i.MX8MP 00377 OSM-L SOM on 00365 carrier board with 10-in LVDS Display(GLT10111280800IS1-CTP)";
+ 	model = "Cargt i.MX8MP 00377 OSM-L SOM on 00365 carrier board with 10-in LVDS Display(GLT1011280800IS1-CTP)";
 diff --git a/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-os08a20.dtsi b/arch/arm64/boot/dts/freescale/imx8mp-cargt-00377-00365-os08a20.dtsi
 new file mode 100644
 index 000000000000..5e0716de0f72
