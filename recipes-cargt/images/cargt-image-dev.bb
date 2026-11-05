@@ -1,5 +1,17 @@
 LICENSE = "MIT"
 
+# Also build a debug-symbols root file system (rootfs-dbg, deployed as
+# ${IMAGE_LINK_NAME}-dbg.<IMAGE_FSTYPES_DEBUGFS>) for cross gdb and gdbserver.
+# Weak default, set before "inherit core-image" so it beats image.bbclass's
+# IMAGE_GEN_DEBUGFS ?= "0": IMAGE_GEN_DEBUGFS = "0" in local.conf turns it off.
+IMAGE_GEN_DEBUGFS ?= "1"
+# With deb packaging, the locale archive step removes glibc-binary-localedata-*
+# with dpkg --force-depends, which leaves locale-base-* with unmet dependencies.
+# The debugfs step then runs apt-get on that package database and fails. Keep
+# the binary locales installed, without an archive, while the debugfs is built.
+# The image keeps the same IMAGE_LINGUAS locales.
+IMAGE_LOCALES_ARCHIVE ?= "${@'0' if d.getVar('IMAGE_GEN_DEBUGFS') == '1' else '1'}"
+
 inherit core-image
 
 IMAGE_FEATURES += " \    
