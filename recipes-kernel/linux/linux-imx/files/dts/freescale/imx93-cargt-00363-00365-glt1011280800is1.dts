@@ -11,5 +11,5 @@
  #include "imx93-cargt-00363-00365-glt1011280800is1.dtsi"
  
 / {
-	model = "Cargt i.MX93 00365 carrier board with 10-in LVDS Display(GLT10111280800IS1-CTP)";
+	model = "Cargt i.MX93 00365 carrier board with 10-in LVDS Display(GLT1011280800IS1-CTP)";
 };
