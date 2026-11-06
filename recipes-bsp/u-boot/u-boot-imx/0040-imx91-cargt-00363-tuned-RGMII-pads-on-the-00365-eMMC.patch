@@ -11,9 +11,10 @@ Subject: [PATCH 2/2] imx91-cargt-00363: tuned RGMII pads on the 00365; eMMC
   change.
 - imx91-cargt-00363-00365 and -osm-som defconfigs: turn off
   MMC_HS400_SUPPORT and MMC_HS400_ES_SUPPORT, matching the i.MX93 00363
-  defconfigs. The SOM DT has one usdhc1 pinctrl state for all speed
-  modes, so the eMMC runs HS200. The kernel dts gets no-mmc-hs400 to
-  match.
+  defconfigs, so U-Boot runs the eMMC at HS200. The SOM DT has one
+  usdhc1 pinctrl state for all speed modes. HS400 is disabled in U-Boot
+  only, because of U-Boot's support for some eMMC parts. HS400 has
+  always worked in Linux, so the kernel dts keeps it.
 
 Backport of meta-imx-cargt wrynose 0881b68 (!56) and the HS400 part of
 !45, by Tim Carney.
