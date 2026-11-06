@@ -4,13 +4,10 @@ LICENSE = "MIT"
 # ${IMAGE_LINK_NAME}-dbg.<IMAGE_FSTYPES_DEBUGFS>) for cross gdb and gdbserver.
 # Weak default, set before "inherit core-image" so it beats image.bbclass's
 # IMAGE_GEN_DEBUGFS ?= "0": IMAGE_GEN_DEBUGFS = "0" in local.conf turns it off.
+# Images that require this recipe (cargt-image-rt, cargt-image-demo) set it to
+# "0" first, so they don't get one unless local.conf asks for it. The locale
+# workaround it needs is in conf/distro/include/cargt-imx-base.inc.
 IMAGE_GEN_DEBUGFS ?= "1"
-# With deb packaging, the locale archive step removes glibc-binary-localedata-*
-# with dpkg --force-depends, which leaves locale-base-* with unmet dependencies.
-# The debugfs step then runs apt-get on that package database and fails. Keep
-# the binary locales installed, without an archive, while the debugfs is built.
-# The image keeps the same IMAGE_LINGUAS locales.
-IMAGE_LOCALES_ARCHIVE ?= "${@'0' if d.getVar('IMAGE_GEN_DEBUGFS') == '1' else '1'}"
 
 inherit core-image
 

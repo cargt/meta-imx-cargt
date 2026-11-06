@@ -56,6 +56,16 @@ DEFAULTTUNE:mx93-nxp-bsp   ?= "armv8a-crc-crypto"
 # OVERRIDES and would beat the mx9 line above, while mx95-nxp-bsp comes after mx95-generic-bsp.
 DEFAULTTUNE:mx95-nxp-bsp = "armv8-2a-crypto"
 
+# Any image built with IMAGE_GEN_DEBUGFS = "1" (on by default for
+# cargt-image-dev, opt-in from local.conf for the others): with deb packaging,
+# the locale archive step removes glibc-binary-localedata-* with
+# dpkg --force-depends, which leaves locale-base-* with unmet dependencies. The
+# debugfs step then runs apt-get on that package database and fails. Keep the
+# binary locales installed, without an archive, while a debugfs is built. The
+# image keeps the same IMAGE_LINGUAS locales, as /usr/lib/locale/<name>/
+# directories. Set before image.bbclass's IMAGE_LOCALES_ARCHIVE ?= "1".
+IMAGE_LOCALES_ARCHIVE ?= "${@'0' if d.getVar('IMAGE_GEN_DEBUGFS') == '1' else '1'}"
+
 PACKAGECONFIG:append:pn-gstreamer1.0-plugins-ugly = " x264"
 
 PACKAGECONFIG:append:pn-perf = " jevents"

@@ -1,5 +1,8 @@
 LICENSE = "MIT"
 
+# No debug-symbols rootfs by default (cargt-image-dev turns it on);
+# IMAGE_GEN_DEBUGFS = "1" in local.conf still builds one.
+IMAGE_GEN_DEBUGFS ?= "0"
 require recipes-cargt/images/cargt-image-dev.bb
 
 
