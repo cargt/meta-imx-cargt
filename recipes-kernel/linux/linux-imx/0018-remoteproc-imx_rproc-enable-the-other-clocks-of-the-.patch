@@ -1,0 +1,108 @@
+From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
+From: Tim Carney <tim.carney@cargt.com>
+Date: Thu, 5 Nov 2026 13:30:00 -0600
+Subject: [PATCH] remoteproc: imx_rproc: enable the other clocks of the remote
+ core's node
+
+imx_rproc only enables the first clock of the remote core's node (and
+the optional "audio" clock around start/stop). Clocks of peripherals the
+remote firmware uses on its own, such as its debug UART, have no Linux
+consumer, so clk_disable_unused() gates them at the end of boot.
+
+That only matters when the bootloader started the firmware (U-Boot
+bootaux) and Linux attaches. When Linux starts it, the firmware runs
+after the gating and enables what it needs. On i.MX 93 with NXP's
+rpmsg_lite_str_echo demo started by bootaux, Linux gated lpuart2_root
+under it, and the M33 stopped at its first print to the UART: the RPMsg
+channel was created, but the M33 never answered, and writes to
+/dev/ttyRPMSG30 hung. With clk_ignore_unused it answered.
+
+Enable every clock listed after the first one, except "audio", at probe
+and keep it enabled while the driver is bound. Nodes that list only one
+clock behave as before.
+
+Upstream-Status: Pending
+Signed-off-by: Tim Carney <tim.carney@cargt.com>
+---
+ drivers/remoteproc/imx_rproc.c | 43 +++++++++++++++++++++++++++++++++++++++++++
+ 1 file changed, 43 insertions(+)
+
+diff --git a/drivers/remoteproc/imx_rproc.c b/drivers/remoteproc/imx_rproc.c
+--- a/drivers/remoteproc/imx_rproc.c
++++ b/drivers/remoteproc/imx_rproc.c
+@@ -18,6 +18,7 @@
+ #include <linux/module.h>
+ #include <linux/of.h>
+ #include <linux/of_address.h>
++#include <linux/of_clk.h>
+ #include <linux/of_reserved_mem.h>
+ #include <linux/platform_device.h>
+ #include <linux/pm_domain.h>
+@@ -1271,6 +1272,54 @@
+ 	return ret;
+ }
+ 
++static void imx_rproc_put_clk(void *data)
++{
++	struct clk *clk = data;
++
++	clk_disable_unprepare(clk);
++	clk_put(clk);
++}
++
++/*
++ * Enable any clocks listed after the first one on the remote core's node,
++ * except "audio", which start()/stop() handle. These are for peripherals
++ * the remote firmware uses that no Linux driver claims, such as its debug
++ * UART. Without a consumer, clk_disable_unused() gates them at the end of
++ * boot, under firmware that the bootloader may already have started.
++ */
++static int imx_rproc_enable_extra_clks(struct imx_rproc *priv)
++{
++	struct device *dev = priv->dev;
++	struct device_node *np = dev->of_node;
++	int i, n, ret;
++
++	n = of_clk_get_parent_count(np);
++	for (i = 1; i < n; i++) {
++		const char *name = NULL;
++		struct clk *clk;
++
++		of_property_read_string_index(np, "clock-names", i, &name);
++		if (name && !strcmp(name, "audio"))
++			continue;
++
++		clk = of_clk_get(np, i);
++		if (IS_ERR(clk))
++			return dev_err_probe(dev, PTR_ERR(clk), "Failed to get clock %d\n", i);
++
++		ret = clk_prepare_enable(clk);
++		if (ret) {
++			clk_put(clk);
++			return dev_err_probe(dev, ret, "Failed to enable clock %d\n", i);
++		}
++
++		ret = devm_add_action_or_reset(dev, imx_rproc_put_clk, clk);
++		if (ret)
++			return ret;
++	}
++
++	return 0;
++}
++
+ static int imx_rproc_detect_mode(struct imx_rproc *priv)
+ {
+ 	/*
+@@ -1383,6 +1432,10 @@
+ 		priv->clk = devm_clk_get_enabled(dev, NULL);
+ 		if (IS_ERR(priv->clk))
+ 			return dev_err_probe(dev, PTR_ERR(priv->clk), "Failed to enable clock\n");
++
++		ret = imx_rproc_enable_extra_clks(priv);
++		if (ret)
++			return ret;
+ 	}
+ 
+ 	if (rproc->state != RPROC_DETACHED)
+-- 
+2.43.0

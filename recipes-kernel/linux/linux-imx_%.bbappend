@@ -116,6 +116,7 @@ SRC_URI += "file://0001-arm64-dts-freescale-register-Cargt-board-dtb-y-entri.pat
             file://0015-i2c-cargt-sm-eeprom-also-forward-the-RX8111-RTC.patch \
             file://0016-Input-ili210x-stop-the-polling-ISR-on-shutdown.patch \
             file://0017-Input-ili210x-bound-each-run-of-the-polling-ISR.patch \
+            file://0018-remoteproc-imx_rproc-enable-the-other-clocks-of-the-.patch \
             "
 
 # Re-audited 2026-07-16 while diagnosing "bluetooth doesn't come up on its own":
