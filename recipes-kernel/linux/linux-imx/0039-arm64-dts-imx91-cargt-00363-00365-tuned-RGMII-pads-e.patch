@@ -1,46 +1,31 @@
 From 0000000000000000000000000000000000000000 Mon Sep 17 00:00:00 2001
 From: Graham Taylor-Jones <graham.taylor-jones@cargt.com>
 Date: Wed, 4 Nov 2026 10:19:32 -0600
-Subject: [PATCH] arm64: dts: imx91-cargt-00363-00365: tuned RGMII pads; eMMC
- out of HS400
+Subject: [PATCH] arm64: dts: imx91-cargt-00363-00365: tuned RGMII pads
 
-- The dts carried the NXP EVK pad values (0x57e data, 0x5fe clocks) for
-  EQOS and FEC. The iMX93 00365 dts uses the tuned 0x50e (MDC/MDIO) /
-  0x51e (RGMII) values for the same carrier, so use those on iMX91 too.
-  On wrynose this took FEC from 339 TX retransmits in a 60 s iperf3 run
-  to 0.
-- U-Boot for this machine now has HS400 and HS400ES disabled, but Linux
-  still brings the eMMC up in HS400ES (the i.MX91 uSDHC advertises
-  both). Add no-mmc-hs400 to usdhc1 so the kernel settles on HS200 too.
-  sdhci-esdhc-imx calls mmc_of_parse() after it sets the HS400 caps, so
-  the property clears HS400 and HS400ES.
+The dts carried the NXP EVK pad values (0x57e data, 0x5fe clocks) for
+EQOS and FEC. The iMX93 00365 dts uses the tuned 0x50e (MDC/MDIO) /
+0x51e (RGMII) values for the same carrier, so use those on iMX91 too.
+On wrynose this took FEC from 339 TX retransmits in a 60 s iperf3 run
+to 0.
 
-Backport of meta-imx-cargt wrynose 0881b68 and 5a43aa9 (!56), by Tim
-Carney.
+HS400 and HS400ES are disabled in U-Boot only (U-Boot patch 0040),
+because of U-Boot's support for some eMMC parts. HS400 has always
+worked in Linux, so Linux keeps it: this patch leaves usdhc1 alone.
+
+Backport of meta-imx-cargt wrynose 0881b68 (!56), by Tim Carney.
 
 Upstream-Status: Inappropriate [Cargt board support]
 Signed-off-by: Graham Taylor-Jones <graham.taylor-jones@cargt.com>
 ---
- .../dts/freescale/imx91-cargt-00363-00365.dts | 61 ++++++++++---------
- 1 file changed, 33 insertions(+), 28 deletions(-)
+ .../dts/freescale/imx91-cargt-00363-00365.dts | 56 ++++++++----------
+ 1 file changed, 28 insertions(+), 28 deletions(-)
 
 diff --git a/arch/arm64/boot/dts/freescale/imx91-cargt-00363-00365.dts b/arch/arm64/boot/dts/freescale/imx91-cargt-00363-00365.dts
 index 5202517..979a550 100644
 --- a/arch/arm64/boot/dts/freescale/imx91-cargt-00363-00365.dts
 +++ b/arch/arm64/boot/dts/freescale/imx91-cargt-00363-00365.dts
-@@ -215,6 +215,11 @@
-          };
- };
- 
-+&usdhc1 {
-+	/* eMMC: run HS200, matching U-Boot (HS400/HS400ES disabled in the defconfig) */
-+	no-mmc-hs400;
-+};
-+
- &usdhc2 {
-          pinctrl-names = "default", "state_100mhz", "state_200mhz";
-          pinctrl-0 = <&pinctrl_usdhc2>, <&pinctrl_usdhc2_gpio>;
-@@ -250,39 +255,39 @@
+@@ -250,39 +250,39 @@
  
          pinctrl_eqos: eqosgrp {
                  fsl,pins = <
