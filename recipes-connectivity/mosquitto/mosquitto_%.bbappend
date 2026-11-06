@@ -2,7 +2,11 @@
 # network-online.target. Upstream's unit waits for it, so on NetworkManager
 # images boot holds mosquitto (and cargt-python-nm-mqtt behind it) until
 # NetworkManager-wait-online finishes, 20 to 30 s on boards with the IW612
-# while NM runs its first Wi-Fi scans. The stock mosquitto.conf configures no
+# while NM runs its first Wi-Fi scans. Only mosquitto and the units ordered
+# after it start earlier: boot completion still waits for wait-online, since
+# nfs-server, nfs-mountd and rpc-statd (in cargt-image-core, -chrome and -dev)
+# and lora-packet-forwarder (where MACHINE_FEATURES has lora) still want
+# network-online.target. The stock mosquitto.conf configures no
 # listener, so mosquitto 2.x listens on localhost:1883 only, which is up long
 # before network.target. A product that binds a listener to a specific
 # interface address needs network-online.target back:
@@ -14,7 +18,7 @@ do_install:append() {
             ${D}${systemd_unitdir}/system/mosquitto.service
         # sed exits 0 when nothing matches, so check the result: fail if
         # upstream changed the unit and the edit no longer applies.
-        if ! grep -q '^After=network.target$' ${D}${systemd_unitdir}/system/mosquitto.service || \
+        if ! grep -q '^After=network\.target$' ${D}${systemd_unitdir}/system/mosquitto.service || \
            grep -q 'network-online' ${D}${systemd_unitdir}/system/mosquitto.service; then
             bbfatal "mosquitto.service changed upstream; update this bbappend"
         fi
