@@ -12,5 +12,11 @@ do_install:append() {
         sed -i -e '/^Wants=network-online.target$/d' \
             -e 's/^After=network-online.target$/After=network.target/' \
             ${D}${systemd_unitdir}/system/mosquitto.service
+        # sed exits 0 when nothing matches, so check the result: fail if
+        # upstream changed the unit and the edit no longer applies.
+        if ! grep -q '^After=network.target$' ${D}${systemd_unitdir}/system/mosquitto.service || \
+           grep -q 'network-online' ${D}${systemd_unitdir}/system/mosquitto.service; then
+            bbfatal "mosquitto.service changed upstream; update this bbappend"
+        fi
     fi
 }
