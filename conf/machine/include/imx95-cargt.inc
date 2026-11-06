@@ -29,10 +29,13 @@ OEI_SOC  = "mx95"
 # to M=2, which enters the monitor when a character arrives on the SM debug
 # UART (LPUART2) and offers reset, shutdown and fault commands there. NXP's
 # sm/doc/monitor.md says the monitor changes SM timing and that M=0 is the
-# only valid option for production. On the 00414 the LPUART2 pads are also
-# the BOOT_MODE strap nets. This only removes the monitor: mx95cargt00414.cfg
-# keeps DEBUG_UART_INSTANCE=2, so the SM still prints its banner and log on
-# LPUART2. For bring-up, set SYSTEM_MANAGER_MONITOR_MODE = "2" in local.conf.
+# only valid option for production. M=0 also drops libc stdio (the SM
+# Makefile only sets INC_LIBC when M is not 0), so the SM leaves LPUART2
+# unconfigured and prints nothing at all; DEBUG_UART_INSTANCE=2 in
+# mx95cargt00414.cfg is then unused. On the 00414 the LPUART2 pads are also
+# the BOOT_MODE strap nets, so the default build no longer drives them. For
+# bring-up, set SYSTEM_MANAGER_MONITOR_MODE = "2" (or "1") in local.conf to
+# get the SM banner, log and monitor back on LPUART2.
 SYSTEM_MANAGER_MONITOR_MODE ?= "0"
 
 # A55-only boot container (no M7 image). imx-boot's mx95 do_compile still
