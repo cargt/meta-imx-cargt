@@ -182,7 +182,7 @@ index 000000000000..5a70d9258970
 + #include "imx93-cargt-00324-00326-glt1011280800is1.dtsi"
 + 
 +/ {
-+	model = "Cargt i.MX93 00326 carrier board with 10-in LVDS Display(GLT10111280800IS1-CTP)";
++	model = "Cargt i.MX93 00326 carrier board with 10-in LVDS Display(GLT1011280800IS1-CTP)";
 +};
 diff --git a/arch/arm64/boot/dts/freescale/imx93-cargt-00324-00326-glt1011280800is1.dtsi b/arch/arm64/boot/dts/freescale/imx93-cargt-00324-00326-glt1011280800is1.dtsi
 new file mode 100644
