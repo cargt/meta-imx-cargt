@@ -64,6 +64,9 @@ DEFAULTTUNE:mx95-nxp-bsp = "armv8-2a-crypto"
 # binary locales installed, without an archive, while a debugfs is built. The
 # image keeps the same IMAGE_LINGUAS locales, as /usr/lib/locale/<name>/
 # directories. Set before image.bbclass's IMAGE_LOCALES_ARCHIVE ?= "1".
+# Only the Cargt distros have this: building a debugfs under another DISTRO
+# (e.g. poky) needs IMAGE_LOCALES_ARCHIVE = "0" in local.conf as well, or
+# do_rootfs fails with the unmet locale-base-* dependencies.
 IMAGE_LOCALES_ARCHIVE ?= "${@'0' if d.getVar('IMAGE_GEN_DEBUGFS') == '1' else '1'}"
 
 PACKAGECONFIG:append:pn-gstreamer1.0-plugins-ugly = " x264"
