@@ -28,6 +28,16 @@
  * LPUART2's, the EVK demos stop at their first print, and RPMsg writes from
  * Linux hang. Firmware that uses other peripherals Linux does not drive needs
  * their clocks added here too.
+ *
+ * IMX93_CLK_LPUART2 is LPUART2's clock root, not its LPCG gate
+ * (IMX93_CLK_LPUART2_GATE), and the root is what has to be held. The root has
+ * one on/off control, so clk_disable_unused really gates it. The LPCG runs in
+ * CPU low-power mode (CPULPM_EN in its AUTHEN register), where each domain has
+ * its own on/off setting: Linux turning it off only clears Linux's setting, and
+ * the M33's own setting keeps the gate running. Checked with bootaux and
+ * rpmsg_lite_str_echo: clk_summary shows lpuart2_root enabled for
+ * remoteproc-cm33 and lpuart2 as off (Linux's setting), and the M33 echoes
+ * RPMsg tty writes long after "clk: Disabling unused clocks".
  */
 
 / {
