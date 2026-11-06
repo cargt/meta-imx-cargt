@@ -44,6 +44,7 @@ SRC_URI += " \
             file://dts/freescale/imx8mp-cargt-00377-00365-glt0557201280is1.dtsi \
             file://dts/freescale/imx8mp-cargt-00377-00365-glt1011280800is1.dts \
             file://dts/freescale/imx8mp-cargt-00377-00365-glt1011280800is1.dtsi \
+            file://dts/freescale/imx8mp-cargt-00377-00365-glt1011280800is1-hdmi.dts \
             file://dts/freescale/imx8mp-cargt-00377-00365-hdmi.dts \
             file://dts/freescale/imx8mp-cargt-00377-00365-hdmi.dtsi \
             file://dts/freescale/imx8mp-cargt-00377-00365-os08a20.dtsi \
